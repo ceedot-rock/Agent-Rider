@@ -93,6 +93,9 @@ export default function Home() {
           >
             How it works
           </a>
+          <a href="/demo" style={{ fontSize: 14, color: "var(--muted)" }}>
+            Demo
+          </a>
           <a href="#pricing" style={{ fontSize: 14, color: "var(--muted)" }}>
             Pricing
           </a>
@@ -190,7 +193,7 @@ export default function Home() {
               Start at $49/mo
             </a>
             <a
-              href="#pipeline"
+              href="/demo"
               style={{
                 padding: "13px 26px",
                 border: "1px solid var(--panel-line)",
@@ -199,7 +202,7 @@ export default function Home() {
                 color: "var(--white)",
               }}
             >
-              See how the gate works
+              View benefits demo
             </a>
           </div>
         </div>
