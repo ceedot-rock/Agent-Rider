@@ -1,1 +1,34 @@
-aW1wb3J0IHsgTmV4dFJlcXVlc3QsIE5leHRSZXNwb25zZSB9IGZyb20gIm5leHQvc2VydmVyIjsKaW1wb3J0IHsgcmV0cmlldmVTZXNzaW9uIH0gZnJvbSAiQC9saWIvc3RyaXBlIjsKCmZ1bmN0aW9uIGdlbmVyYXRlTWVyY2hhbnRLZXkoKTogc3RyaW5nIHsKICBjb25zdCBieXRlcyA9IG5ldyBVaW50OEFycmF5KDI0KTsKICBjcnlwdG8uZ2V0UmFuZG9tVmFsdWVzKGJ5dGVzKTsKICBjb25zdCBoZXggPSBBcnJheS5mcm9tKGJ5dGVzKS5tYXAoKGIpID0+IGIudG9TdHJpbmcoMTYpLnBhZFN0YXJ0KDIsICIwIikpLmpvaW4oIiIpOwogIHJldHVybiBgcmlkZXJfbGl2ZV8ke2hleH1gOwp9CgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gR0VUKHJlcTogTmV4dFJlcXVlc3QpIHsKICBjb25zdCBzZXNzaW9uSWQgPSByZXEubmV4dFVybC5zZWFyY2hQYXJhbXMuZ2V0KCJzZXNzaW9uX2lkIik7CiAgaWYgKCFzZXNzaW9uSWQpIHsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAic2Vzc2lvbl9pZCByZXF1aXJlZCIgfSwgeyBzdGF0dXM6IDQwMCB9KTsKICB9CgogIHRyeSB7CiAgICBjb25zdCBzZXNzaW9uID0gYXdhaXQgcmV0cmlldmVTZXNzaW9uKHNlc3Npb25JZCk7CiAgICBpZiAoc2Vzc2lvbi5wYXltZW50X3N0YXR1cyAhPT0gInBhaWQiICYmIHNlc3Npb24uc3RhdHVzICE9PSAiY29tcGxldGUiKSB7CiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiAiU2Vzc2lvbiBub3QgY29tcGxldGVkIiB9LCB7IHN0YXR1czogNDAyIH0pOwogICAgfQoKICAgIGNvbnN0IG1lcmNoYW50S2V5ID0gZ2VuZXJhdGVNZXJjaGFudEtleSgpOwoKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7CiAgICAgIG1lcmNoYW50S2V5LAogICAgICBjdXN0b21lckVtYWlsOiBzZXNzaW9uLmN1c3RvbWVyX2RldGFpbHM/LmVtYWlsID8/IG51bGwsCiAgICAgIHN1YnNjcmlwdGlvbklkOiBzZXNzaW9uLnN1YnNjcmlwdGlvbj8uaWQgPz8gc2Vzc2lvbi5zdWJzY3JpcHRpb24gPz8gbnVsbCwKICAgIH0pOwogIH0gY2F0Y2ggKGVycjogYW55KSB7CiAgICBjb25zb2xlLmVycm9yKCJwcm92aXNpb24gZXJyb3IiLCBlcnIpOwogICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6IGVycj8ubWVzc2FnZSB8fCAiUHJvdmlzaW9uaW5nIGZhaWxlZCIgfSwgeyBzdGF0dXM6IDUwMCB9KTsKICB9Cn0K
+import { NextRequest, NextResponse } from "next/server";
+import { retrieveSession } from "@/lib/stripe";
+
+function generateMerchantKey(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `rider_live_${hex}`;
+}
+
+export async function GET(req: NextRequest) {
+  const sessionId = req.nextUrl.searchParams.get("session_id");
+  if (!sessionId) {
+    return NextResponse.json({ error: "session_id required" }, { status: 400 });
+  }
+
+  try {
+    const session = await retrieveSession(sessionId);
+    if (session.payment_status !== "paid" && session.status !== "complete") {
+      return NextResponse.json({ error: "Session not completed" }, { status: 402 });
+    }
+
+    const merchantKey = generateMerchantKey();
+
+    return NextResponse.json({
+      merchantKey,
+      customerEmail: session.customer_details?.email ?? null,
+      subscriptionId: session.subscription?.id ?? session.subscription ?? null,
+    });
+  } catch (err: any) {
+    console.error("provision error", err);
+    return NextResponse.json({ error: err?.message || "Provisioning failed" }, { status: 500 });
+  }
+}

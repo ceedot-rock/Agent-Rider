@@ -1,1 +1,112 @@
-InVzZSBjbGllbnQiOwoKaW1wb3J0IHsgU3VzcGVuc2UsIHVzZUVmZmVjdCwgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CmltcG9ydCB7IHVzZVNlYXJjaFBhcmFtcyB9IGZyb20gIm5leHQvbmF2aWdhdGlvbiI7CgpmdW5jdGlvbiBSaWRlck1hcmsoeyBzaXplID0gMzYgfTogeyBzaXplPzogbnVtYmVyIH0pIHsKICByZXR1cm4gKAogICAgPHN2ZyB3aWR0aD17c2l6ZX0gaGVpZ2h0PXtzaXplfSB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgZmlsbD0ibm9uZSIgc3R5bGU9e3sgbWFyZ2luOiAiMCBhdXRvIDI0cHgiIH19PgogICAgICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSIjQzlBMjRBIiBzdHJva2VXaWR0aD0iMiIgLz4KICAgICAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMzQiIGZpbGw9IiNENjFCMUMiIC8+CiAgICAgIDxwYXRoIGQ9Ik01MCAyNiBMNjggNjIgSDMyIFoiIGZpbGw9IiNGNUY1RjAiIC8+CiAgICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiNDOUEyNEEiIHN0cm9rZVdpZHRoPSIxLjUiIG9wYWNpdHk9IjAuNiIgLz4KICAgIDwvc3ZnPgogICk7Cn0KCmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIFN1Y2Nlc3MoKSB7CiAgcmV0dXJuICgKICAgIDxTdXNwZW5zZSBmYWxsYmFjaz17bnVsbH0+CiAgICAgIDxTdWNjZXNzSW5uZXIgLz4KICAgIDwvU3VzcGVuc2U+CiAgKTsKfQoKZnVuY3Rpb24gU3VjY2Vzc0lubmVyKCkgewogIGNvbnN0IHBhcmFtcyA9IHVzZVNlYXJjaFBhcmFtcygpOwogIGNvbnN0IHNlc3Npb25JZCA9IHBhcmFtcy5nZXQoInNlc3Npb25faWQiKTsKICBjb25zdCBba2V5LCBzZXRLZXldID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7CiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTsKICBjb25zdCBbbG9hZGluZywgc2V0TG9hZGluZ10gPSB1c2VTdGF0ZSh0cnVlKTsKCiAgdXNlRWZmZWN0KCgpID0+IHsKICAgIGlmICghc2Vzc2lvbklkKSB7CiAgICAgIHNldEVycm9yKCJNaXNzaW5nIHNlc3Npb24g4oCUIGlmIHlvdSBqdXN0IHBhaWQsIHJlZnJlc2ggdGhpcyBwYWdlLiIpOwogICAgICBzZXRMb2FkaW5nKGZhbHNlKTsKICAgICAgcmV0dXJuOwogICAgfQogICAgZmV0Y2goYC9hcGkvcHJvdmlzaW9uP3Nlc3Npb25faWQ9JHtlbmNvZGVVUklDb21wb25lbnQoc2Vzc2lvbklkKX1gKQogICAgICAudGhlbihhc3luYyAocmVzKSA9PiB7CiAgICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IHJlcy5qc29uKCk7CiAgICAgICAgaWYgKCFyZXMub2spIHRocm93IG5ldyBFcnJvcihkYXRhLmVycm9yIHx8ICJQcm92aXNpb25pbmcgZmFpbGVkIik7CiAgICAgICAgc2V0S2V5KGRhdGEubWVyY2hhbnRLZXkpOwogICAgICB9KQogICAgICAuY2F0Y2goKGVycikgPT4gc2V0RXJyb3IoZXJyLm1lc3NhZ2UpKQogICAgICAuZmluYWxseSgoKSA9PiBzZXRMb2FkaW5nKGZhbHNlKSk7CiAgfSwgW3Nlc3Npb25JZF0pOwoKICByZXR1cm4gKAogICAgPG1haW4KICAgICAgc3R5bGU9e3sKICAgICAgICBtYXhXaWR0aDogNTYwLAogICAgICAgIG1hcmdpbjogIjAgYXV0byIsCiAgICAgICAgcGFkZGluZzogIjgwcHggMjRweCIsCiAgICAgICAgdGV4dEFsaWduOiAiY2VudGVyIiwKICAgICAgfX0KICAgID4KICAgICAgPFJpZGVyTWFyayBzaXplPXs1Nn0gLz4KICAgICAgPGgxCiAgICAgICAgc3R5bGU9e3sKICAgICAgICAgIGZvbnRGYW1pbHk6ICJ2YXIoLS1mb250LWRpc3BsYXkpIiwKICAgICAgICAgIGZvbnRTaXplOiAyOCwKICAgICAgICAgIGZvbnRXZWlnaHQ6IDcwMCwKICAgICAgICAgIG1hcmdpbkJvdHRvbTogMTIsCiAgICAgICAgfX0KICAgICAgPgogICAgICAgIE1lcmNoYW50IEdhdGUgaXMgYWN0aXZlCiAgICAgIDwvaDE+CiAgICAgIDxwIHN0eWxlPXt7IGNvbG9yOiAidmFyKC0tbXV0ZWQpIiwgbWFyZ2luQm90dG9tOiAzMiB9fT4KICAgICAgICBZb3VyIHN1YnNjcmlwdGlvbiBpcyBsaXZlLiBIZXJlJ3MgeW91ciBtZXJjaGFudCBBUEkga2V5IOKAlCBzdG9yZSBpdAogICAgICAgIHNvbWV3aGVyZSBzYWZlLCBpdCB3b24ndCBiZSBzaG93biBhZ2Fpbi4KICAgICAgPC9wPgoKICAgICAge2xvYWRpbmcgJiYgPHAgc3R5bGU9e3sgY29sb3I6ICJ2YXIoLS1tdXRlZCkiIH19PlByb3Zpc2lvbmluZyB5b3VyIGtleeKApjwvcD59CgogICAgICB7ZXJyb3IgJiYgKAogICAgICAgIDxwIHN0eWxlPXt7IGNvbG9yOiAidmFyKC0tY3JpbXNvbikiIH19PgogICAgICAgICAge2Vycm9yfSBJZiB5b3Ugd2VyZSBjaGFyZ2VkLCBlbWFpbCBzdXBwb3J0IGFuZCB3ZSdsbCBpc3N1ZSBpdAogICAgICAgICAgbWFudWFsbHkuCiAgICAgICAgPC9wPgogICAgICApfQoKICAgICAge2tleSAmJiAoCiAgICAgICAgPGRpdgogICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgYmFja2dyb3VuZDogInZhcigtLXBhbmVsKSIsCiAgICAgICAgICAgIGJvcmRlcjogIjFweCBzb2xpZCB2YXIoLS1wYW5lbC1saW5lKSIsCiAgICAgICAgICAgIGJvcmRlclJhZGl1czogOCwKICAgICAgICAgICAgcGFkZGluZzogIjE4cHggMjBweCIsCiAgICAgICAgICAgIGZvbnRGYW1pbHk6ICJ2YXIoLS1mb250LW1vbm8pIiwKICAgICAgICAgICAgZm9udFNpemU6IDE0LAogICAgICAgICAgICB3b3JkQnJlYWs6ICJicmVhay1hbGwiLAogICAgICAgICAgICB0ZXh0QWxpZ246ICJsZWZ0IiwKICAgICAgICAgIH19CiAgICAgICAgPgogICAgICAgICAge2tleX0KICAgICAgICA8L2Rpdj4KICAgICAgKX0KCiAgICAgIDxhCiAgICAgICAgaHJlZj0iLyIKICAgICAgICBzdHlsZT17ewogICAgICAgICAgZGlzcGxheTogImlubGluZS1ibG9jayIsCiAgICAgICAgICBtYXJnaW5Ub3A6IDMyLAogICAgICAgICAgZm9udFNpemU6IDE0LAogICAgICAgICAgY29sb3I6ICJ2YXIoLS1nb2xkKSIsCiAgICAgICAgfX0KICAgICAgPgogICAgICAgIOKGkCBCYWNrIHRvIEFnZW50XlJpZGVyCiAgICAgIDwvYT4KICAgIDwvbWFpbj4KICApOwp9Cg==
+"use client";
+
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+function RiderMark({ size = 36 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ margin: "0 auto 24px" }}>
+      <circle cx="50" cy="50" r="48" fill="#000000" stroke="#C9A24A" strokeWidth="2" />
+      <circle cx="50" cy="50" r="34" fill="#D61B1C" />
+      <path d="M50 26 L68 62 H32 Z" fill="#F5F5F0" />
+      <circle cx="50" cy="50" r="48" fill="none" stroke="#C9A24A" strokeWidth="1.5" opacity="0.6" />
+    </svg>
+  );
+}
+
+export default function Success() {
+  return (
+    <Suspense fallback={null}>
+      <SuccessInner />
+    </Suspense>
+  );
+}
+
+function SuccessInner() {
+  const params = useSearchParams();
+  const sessionId = params.get("session_id");
+  const [key, setKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!sessionId) {
+      setError("Missing session — if you just paid, refresh this page.");
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/provision?session_id=${encodeURIComponent(sessionId)}`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Provisioning failed");
+        setKey(data.merchantKey);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [sessionId]);
+
+  return (
+    <main
+      style={{
+        maxWidth: 560,
+        margin: "0 auto",
+        padding: "80px 24px",
+        textAlign: "center",
+      }}
+    >
+      <RiderMark size={56} />
+      <h1
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 28,
+          fontWeight: 700,
+          marginBottom: 12,
+        }}
+      >
+        Merchant Gate is active
+      </h1>
+      <p style={{ color: "var(--muted)", marginBottom: 32 }}>
+        Your subscription is live. Here's your merchant API key — store it
+        somewhere safe, it won't be shown again.
+      </p>
+
+      {loading && <p style={{ color: "var(--muted)" }}>Provisioning your key…</p>}
+
+      {error && (
+        <p style={{ color: "var(--crimson)" }}>
+          {error} If you were charged, email support and we'll issue it
+          manually.
+        </p>
+      )}
+
+      {key && (
+        <div
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--panel-line)",
+            borderRadius: 8,
+            padding: "18px 20px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 14,
+            wordBreak: "break-all",
+            textAlign: "left",
+          }}
+        >
+          {key}
+        </div>
+      )}
+
+      <a
+        href="/"
+        style={{
+          display: "inline-block",
+          marginTop: 32,
+          fontSize: 14,
+          color: "var(--gold)",
+        }}
+      >
+        ← Back to Agent^Rider
+      </a>
+    </main>
+  );
+}

@@ -41,7 +41,14 @@ function apiGet(urlPath) {
 
 async function fetchFileContent(uid) {
   const raw = await apiGet(`/v7/deployments/${DEPLOY_ID}/files/${uid}?teamId=${TEAM_ID}`);
-  try { const p = JSON.parse(raw); return p.data !== undefined ? p.data : raw; } catch { return raw; }
+  try {
+    const p = JSON.parse(raw);
+    // The v7 file content endpoint always base64-encodes `data`; it doesn't send an `encoding` field.
+    if (p.data === undefined) return Buffer.from(raw);
+    return Buffer.from(p.data, 'base64');
+  } catch {
+    return Buffer.from(raw);
+  }
 }
 
 let fileCount = 0, errorCount = 0;

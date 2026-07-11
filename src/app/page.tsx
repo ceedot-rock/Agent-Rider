@@ -1,1 +1,483 @@
-InVzZSBjbGllbnQiOwoKaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CgpmdW5jdGlvbiBSaWRlck1hcmsoeyBzaXplID0gMzYgfTogeyBzaXplPzogbnVtYmVyIH0pIHsKICByZXR1cm4gKAogICAgPHN2ZyB3aWR0aD17c2l6ZX0gaGVpZ2h0PXtzaXplfSB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgZmlsbD0ibm9uZSI+CiAgICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSIjMDAwMDAwIiBzdHJva2U9IiNDOUEyNEEiIHN0cm9rZVdpZHRoPSIyIiAvPgogICAgICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSIzNCIgZmlsbD0iI0Q2MUIxQyIgLz4KICAgICAgPHBhdGgKICAgICAgICBkPSJNNTAgMjYgTDY4IDYyIEgzMiBaIgogICAgICAgIGZpbGw9IiNGNUY1RjAiCiAgICAgIC8+CiAgICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9IiNDOUEyNEEiIHN0cm9rZVdpZHRoPSIxLjUiIG9wYWNpdHk9IjAuNiIgLz4KICAgIDwvc3ZnPgogICk7Cn0KCmNvbnN0IFNURVBTID0gWwogIHsKICAgIG46ICIwMSIsCiAgICBsYWJlbDogIlJlcXVlc3QiLAogICAgYm9keTogIkFuIGFnZW50IGFza3MgQWdlbnReUmlkZXIgZm9yIGEgY3JlZGVudGlhbCBiZWZvcmUgaXQgZXZlciB0b3VjaGVzIHlvdXIgc3lzdGVtcy4iLAogIH0sCiAgewogICAgbjogIjAyIiwKICAgIGxhYmVsOiAiVmVyaWZ5IiwKICAgIGJvZHk6ICJXZSBydW4gdGhlIGlkZW50aXR5IGFuZCBjbGVhcmFuY2UgY2hlY2tzIG9uY2Ug4oCUIG9yaWdpbiBuZXR3b3JrLCBvcGVyYXRvciwgc2NvcGUuIiwKICB9LAogIHsKICAgIG46ICIwMyIsCiAgICBsYWJlbDogIklzc3VlIiwKICAgIGJvZHk6ICJBIHNpZ25lZCByaWRlciBpcyBoYW5kZWQgYmFjazogYSBjb21wYWN0LCB0YW1wZXItZXZpZGVudCBwcm9vZiBvZiB3aG8ncyBhc2tpbmcgYW5kIHdoYXQgdGhleSdyZSBjbGVhcmVkIGZvci4iLAogIH0sCiAgewogICAgbjogIjA0IiwKICAgIGxhYmVsOiAiUHJlc2VudCIsCiAgICBib2R5OiAiWW91ciBnYXRlIHJlYWRzIHRoZSByaWRlciwgbm90IHRoZSBhZ2VudCdzIHdob2xlIGhpc3RvcnkuIE5vIHJlLXZlcmlmaWNhdGlvbiwgbm8gcm91bmQgdHJpcC4iLAogIH0sCl07CgpleHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBIb21lKCkgewogIGNvbnN0IFtsb2FkaW5nLCBzZXRMb2FkaW5nXSA9IHVzZVN0YXRlKGZhbHNlKTsKICBjb25zdCBbZW1haWwsIHNldEVtYWlsXSA9IHVzZVN0YXRlKCIiKTsKICBjb25zdCBbZXJyb3IsIHNldEVycm9yXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpOwoKICBhc3luYyBmdW5jdGlvbiBzdGFydENoZWNrb3V0KCkgewogICAgc2V0TG9hZGluZyh0cnVlKTsKICAgIHNldEVycm9yKG51bGwpOwogICAgdHJ5IHsKICAgICAgY29uc3QgcmVzID0gYXdhaXQgZmV0Y2goIi9hcGkvY2hlY2tvdXQiLCB7CiAgICAgICAgbWV0aG9kOiAiUE9TVCIsCiAgICAgICAgaGVhZGVyczogeyAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iIH0sCiAgICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkoeyBlbWFpbDogZW1haWwgfHwgdW5kZWZpbmVkIH0pLAogICAgICB9KTsKICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IHJlcy5qc29uKCk7CiAgICAgIGlmICghcmVzLm9rKSB0aHJvdyBuZXcgRXJyb3IoZGF0YS5lcnJvciB8fCAiQ2hlY2tvdXQgZmFpbGVkIik7CiAgICAgIHdpbmRvdy5sb2NhdGlvbi5ocmVmID0gZGF0YS51cmw7CiAgICB9IGNhdGNoIChlcnI6IGFueSkgewogICAgICBzZXRFcnJvcihlcnIubWVzc2FnZSB8fCAiU29tZXRoaW5nIHdlbnQgd3JvbmcuIFRyeSBhZ2Fpbi4iKTsKICAgICAgc2V0TG9hZGluZyhmYWxzZSk7CiAgICB9CiAgfQoKICByZXR1cm4gKAogICAgPG1haW4gc3R5bGU9e3sgbWF4V2lkdGg6IDExMjAsIG1hcmdpbjogIjAgYXV0byIsIHBhZGRpbmc6ICIwIDI0cHgiIH19PgogICAgICB7LyogSGVhZGVyICovfQogICAgICA8aGVhZGVyCiAgICAgICAgc3R5bGU9e3sKICAgICAgICAgIGRpc3BsYXk6ICJmbGV4IiwKICAgICAgICAgIGFsaWduSXRlbXM6ICJjZW50ZXIiLAogICAgICAgICAganVzdGlmeUNvbnRlbnQ6ICJzcGFjZS1iZXR3ZWVuIiwKICAgICAgICAgIHBhZGRpbmc6ICIyOHB4IDAiLAogICAgICAgIH19CiAgICAgID4KICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICJmbGV4IiwgYWxpZ25JdGVtczogImNlbnRlciIsIGdhcDogMTIgfX0+CiAgICAgICAgICA8UmlkZXJNYXJrIHNpemU9ezM2fSAvPgogICAgICAgICAgPHNwYW4KICAgICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgICBmb250RmFtaWx5OiAidmFyKC0tZm9udC1kaXNwbGF5KSIsCiAgICAgICAgICAgICAgZm9udFdlaWdodDogNzAwLAogICAgICAgICAgICAgIGZvbnRTaXplOiAxOSwKICAgICAgICAgICAgICBsZXR0ZXJTcGFjaW5nOiAiLTAuMDFlbSIsCiAgICAgICAgICAgIH19CiAgICAgICAgICA+CiAgICAgICAgICAgIEFnZW50PHNwYW4gc3R5bGU9e3sgY29sb3I6ICJ2YXIoLS1nb2xkKSIgfX0+Xjwvc3Bhbj5SaWRlcgogICAgICAgICAgPC9zcGFuPgogICAgICAgIDwvZGl2PgogICAgICAgIDxuYXYgc3R5bGU9e3sgZGlzcGxheTogImZsZXgiLCBhbGlnbkl0ZW1zOiAiY2VudGVyIiwgZ2FwOiAyOCB9fT4KICAgICAgICAgIDxhCiAgICAgICAgICAgIGhyZWY9IiNwaXBlbGluZSIKICAgICAgICAgICAgc3R5bGU9e3sgZm9udFNpemU6IDE0LCBjb2xvcjogInZhcigtLW11dGVkKSIgfX0KICAgICAgICAgID4KICAgICAgICAgICAgSG93IGl0IHdvcmtzCiAgICAgICAgICA8L2E+CiAgICAgICAgICA8YSBocmVmPSIjcHJpY2luZyIgc3R5bGU9e3sgZm9udFNpemU6IDE0LCBjb2xvcjogInZhcigtLW11dGVkKSIgfX0+CiAgICAgICAgICAgIFByaWNpbmcKICAgICAgICAgIDwvYT4KICAgICAgICAgIDxhCiAgICAgICAgICAgIGhyZWY9IiNwcmljaW5nIgogICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgIGZvbnRTaXplOiAxNCwKICAgICAgICAgICAgICBmb250V2VpZ2h0OiA2MDAsCiAgICAgICAgICAgICAgcGFkZGluZzogIjlweCAxOHB4IiwKICAgICAgICAgICAgICBib3JkZXJSYWRpdXM6IDQsCiAgICAgICAgICAgICAgYmFja2dyb3VuZDogInZhcigtLWNyaW1zb24pIiwKICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXdoaXRlKSIsCiAgICAgICAgICAgIH19CiAgICAgICAgICA+CiAgICAgICAgICAgIEdldCBNZXJjaGFudCBHYXRlCiAgICAgICAgICA8L2E+CiAgICAgICAgPC9uYXY+CiAgICAgIDwvaGVhZGVyPgoKICAgICAgey8qIEhlcm8gKi99CiAgICAgIDxzZWN0aW9uCiAgICAgICAgc3R5bGU9e3sKICAgICAgICAgIGRpc3BsYXk6ICJncmlkIiwKICAgICAgICAgIGdyaWRUZW1wbGF0ZUNvbHVtbnM6ICIxLjFmciAwLjlmciIsCiAgICAgICAgICBnYXA6IDU2LAogICAgICAgICAgYWxpZ25JdGVtczogImNlbnRlciIsCiAgICAgICAgICBwYWRkaW5nOiAiNjRweCAwIDg4cHgiLAogICAgICAgIH19CiAgICAgICAgY2xhc3NOYW1lPSJoZXJvLWdyaWQiCiAgICAgID4KICAgICAgICA8ZGl2PgogICAgICAgICAgPGRpdgogICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgIGRpc3BsYXk6ICJpbmxpbmUtZmxleCIsCiAgICAgICAgICAgICAgYWxpZ25JdGVtczogImNlbnRlciIsCiAgICAgICAgICAgICAgZ2FwOiA4LAogICAgICAgICAgICAgIGZvbnRGYW1pbHk6ICJ2YXIoLS1mb250LW1vbm8pIiwKICAgICAgICAgICAgICBmb250U2l6ZTogMTIsCiAgICAgICAgICAgICAgY29sb3I6ICJ2YXIoLS1nb2xkKSIsCiAgICAgICAgICAgICAgYm9yZGVyOiAiMXB4IHNvbGlkIHZhcigtLXBhbmVsLWxpbmUpIiwKICAgICAgICAgICAgICBwYWRkaW5nOiAiNXB4IDEwcHgiLAogICAgICAgICAgICAgIGJvcmRlclJhZGl1czogMywKICAgICAgICAgICAgICBtYXJnaW5Cb3R0b206IDI0LAogICAgICAgICAgICB9fQogICAgICAgICAgPgogICAgICAgICAgICA8c3BhbgogICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICB3aWR0aDogNiwKICAgICAgICAgICAgICAgIGhlaWdodDogNiwKICAgICAgICAgICAgICAgIGJvcmRlclJhZGl1czogIjUwJSIsCiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kOiAidmFyKC0tY3JpbXNvbikiLAogICAgICAgICAgICAgICAgZGlzcGxheTogImlubGluZS1ibG9jayIsCiAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgLz4KICAgICAgICAgICAgTElWRSDigJQgTUVSQ0hBTlQgR0FURSBBQ0NFUFRJTkcgUklERVJTCiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxoMQogICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgIGZvbnRGYW1pbHk6ICJ2YXIoLS1mb250LWRpc3BsYXkpIiwKICAgICAgICAgICAgICBmb250U2l6ZTogImNsYW1wKDM4cHgsIDV2dywgNThweCkiLAogICAgICAgICAgICAgIGxpbmVIZWlnaHQ6IDEuMDUsCiAgICAgICAgICAgICAgZm9udFdlaWdodDogNzAwLAogICAgICAgICAgICAgIGxldHRlclNwYWNpbmc6ICItMC4wMmVtIiwKICAgICAgICAgICAgICBtYXJnaW46ICIwIDAgMjJweCIsCiAgICAgICAgICAgIH19CiAgICAgICAgICA+CiAgICAgICAgICAgIE9uZSB2ZXJpZmljYXRpb24uCiAgICAgICAgICAgIDxiciAvPgogICAgICAgICAgICBDYXJyaWVkIDxzcGFuIHN0eWxlPXt7IGNvbG9yOiAidmFyKC0tY3JpbXNvbikiIH19PmV2ZXJ5d2hlcmU8L3NwYW4+LgogICAgICAgICAgPC9oMT4KICAgICAgICAgIDxwCiAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgZm9udFNpemU6IDE3LAogICAgICAgICAgICAgIGxpbmVIZWlnaHQ6IDEuNiwKICAgICAgICAgICAgICBjb2xvcjogInZhcigtLW11dGVkKSIsCiAgICAgICAgICAgICAgbWF4V2lkdGg6IDQ4MCwKICAgICAgICAgICAgICBtYXJnaW46ICIwIDAgMzJweCIsCiAgICAgICAgICAgIH19CiAgICAgICAgICA+CiAgICAgICAgICAgIEFnZW50XlJpZGVyIGlzc3VlcyBhIHNpZ25lZCBjcmVkZW50aWFsIHlvdXIgQUkgYWdlbnRzIHByZXNlbnQgYXQKICAgICAgICAgICAgZXZlcnkgZ2F0ZSB0aGV5IGNyb3NzIOKAlCBjaGVja291dCwgY2F0YWxvZywgYWNjb3VudCBzeXN0ZW1zLiBWZXJpZnkKICAgICAgICAgICAgb25jZS4gU3RvcCByZS1jaGVja2luZyBpZGVudGl0eSBhdCBldmVyeSBuZXR3b3JrIHRoZXkgdG91Y2guCiAgICAgICAgICA8L3A+CiAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICJmbGV4IiwgZ2FwOiAxMiB9fT4KICAgICAgICAgICAgPGEKICAgICAgICAgICAgICBocmVmPSIjcHJpY2luZyIKICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgcGFkZGluZzogIjEzcHggMjZweCIsCiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kOiAidmFyKC0tY3JpbXNvbikiLAogICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiA0LAogICAgICAgICAgICAgICAgZm9udFdlaWdodDogNjAwLAogICAgICAgICAgICAgICAgZm9udFNpemU6IDE1LAogICAgICAgICAgICAgIH19CiAgICAgICAgICAgID4KICAgICAgICAgICAgICBTdGFydCBhdCAkNDkvbW8KICAgICAgICAgICAgPC9hPgogICAgICAgICAgICA8YQogICAgICAgICAgICAgIGhyZWY9IiNwaXBlbGluZSIKICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgcGFkZGluZzogIjEzcHggMjZweCIsCiAgICAgICAgICAgICAgICBib3JkZXI6ICIxcHggc29saWQgdmFyKC0tcGFuZWwtbGluZSkiLAogICAgICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiA0LAogICAgICAgICAgICAgICAgZm9udFNpemU6IDE1LAogICAgICAgICAgICAgICAgY29sb3I6ICJ2YXIoLS13aGl0ZSkiLAogICAgICAgICAgICAgIH19CiAgICAgICAgICAgID4KICAgICAgICAgICAgICBTZWUgaG93IHRoZSBnYXRlIHdvcmtzCiAgICAgICAgICAgIDwvYT4KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvZGl2PgoKICAgICAgICB7LyogU2lnbmF0dXJlIGVsZW1lbnQ6IHRoZSBjcmVkZW50aWFsIGNhcmQgKi99CiAgICAgICAgPGRpdgogICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgYmFja2dyb3VuZDogInZhcigtLXBhbmVsKSIsCiAgICAgICAgICAgIGJvcmRlcjogIjFweCBzb2xpZCB2YXIoLS1wYW5lbC1saW5lKSIsCiAgICAgICAgICAgIGJvcmRlclJhZGl1czogMTAsCiAgICAgICAgICAgIHBhZGRpbmc6IDI4LAogICAgICAgICAgICBwb3NpdGlvbjogInJlbGF0aXZlIiwKICAgICAgICAgICAgb3ZlcmZsb3c6ICJoaWRkZW4iLAogICAgICAgICAgfX0KICAgICAgICA+CiAgICAgICAgICA8ZGl2CiAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgcG9zaXRpb246ICJhYnNvbHV0ZSIsCiAgICAgICAgICAgICAgdG9wOiAtNjAsCiAgICAgICAgICAgICAgcmlnaHQ6IC02MCwKICAgICAgICAgICAgICB3aWR0aDogMjAwLAogICAgICAgICAgICAgIGhlaWdodDogMjAwLAogICAgICAgICAgICAgIGJvcmRlclJhZGl1czogIjUwJSIsCiAgICAgICAgICAgICAgYmFja2dyb3VuZDogInZhcigtLWNyaW1zb24pIiwKICAgICAgICAgICAgICBvcGFjaXR5OiAwLjEyLAogICAgICAgICAgICAgIGZpbHRlcjogImJsdXIoNDBweCkiLAogICAgICAgICAgICB9fQogICAgICAgICAgLz4KICAgICAgICAgIDxkaXYKICAgICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgICBkaXNwbGF5OiAiZmxleCIsCiAgICAgICAgICAgICAganVzdGlmeUNvbnRlbnQ6ICJzcGFjZS1iZXR3ZWVuIiwKICAgICAgICAgICAgICBhbGlnbkl0ZW1zOiAiZmxleC1zdGFydCIsCiAgICAgICAgICAgICAgbWFyZ2luQm90dG9tOiAxOCwKICAgICAgICAgICAgfX0KICAgICAgICAgID4KICAgICAgICAgICAgPHNwYW4KICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgZm9udEZhbWlseTogInZhcigtLWZvbnQtbW9ubykiLAogICAgICAgICAgICAgICAgZm9udFNpemU6IDExLAogICAgICAgICAgICAgICAgY29sb3I6ICJ2YXIoLS1tdXRlZCkiLAogICAgICAgICAgICAgICAgbGV0dGVyU3BhY2luZzogIjAuMDVlbSIsCiAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgPgogICAgICAgICAgICAgIFJJREVSIENSRURFTlRJQUwKICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICA8c3BhbgogICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICBmb250RmFtaWx5OiAidmFyKC0tZm9udC1tb25vKSIsCiAgICAgICAgICAgICAgICBmb250U2l6ZTogMTEsCiAgICAgICAgICAgICAgICBjb2xvcjogInZhcigtLWdvbGQpIiwKICAgICAgICAgICAgICAgIGJvcmRlcjogIjFweCBzb2xpZCB2YXIoLS1nb2xkKSIsCiAgICAgICAgICAgICAgICBib3JkZXJSYWRpdXM6IDMsCiAgICAgICAgICAgICAgICBwYWRkaW5nOiAiMnB4IDdweCIsCiAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgPgogICAgICAgICAgICAgIFZFUklGSUVECiAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPGRpdgogICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgIGZvbnRGYW1pbHk6ICJ2YXIoLS1mb250LW1vbm8pIiwKICAgICAgICAgICAgICBmb250U2l6ZTogMTMsCiAgICAgICAgICAgICAgY29sb3I6ICJ2YXIoLS13aGl0ZSkiLAogICAgICAgICAgICAgIGxpbmVIZWlnaHQ6IDEuOSwKICAgICAgICAgICAgfX0KICAgICAgICAgID4KICAgICAgICAgICAgPGRpdj4KICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogInZhcigtLW11dGVkKSIgfX0+YWdlbnRfaWQ8L3NwYW4+eyIgIn0KICAgICAgICAgICAgICBhN2YyLXJpZGVyLTljMTQKICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXY+CiAgICAgICAgICAgICAgPHNwYW4gc3R5bGU9e3sgY29sb3I6ICJ2YXIoLS1tdXRlZCkiIH19Pm9yaWdpbjwvc3Bhbj57IiAifQogICAgICAgICAgICAgIG5ldHdvcmsuYWNtZS1mbGVldAogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdj4KICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogInZhcigtLW11dGVkKSIgfX0+Y2xlYXJhbmNlPC9zcGFuPnsiICJ9CiAgICAgICAgICAgICAgY2hlY2tvdXQgwrcgY2F0YWxvZwogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdj4KICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogInZhcigtLW11dGVkKSIgfX0+aXNzdWVkPC9zcGFuPiBqdXN0IG5vdwogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdj4KICAgICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBjb2xvcjogInZhcigtLW11dGVkKSIgfX0+ZXhwaXJlczwvc3Bhbj4gMjRoCiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8ZGl2CiAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgbWFyZ2luVG9wOiAyMiwKICAgICAgICAgICAgICBwYWRkaW5nVG9wOiAxOCwKICAgICAgICAgICAgICBib3JkZXJUb3A6ICIxcHggZGFzaGVkIHZhcigtLXBhbmVsLWxpbmUpIiwKICAgICAgICAgICAgICBkaXNwbGF5OiAiZmxleCIsCiAgICAgICAgICAgICAgYWxpZ25JdGVtczogImNlbnRlciIsCiAgICAgICAgICAgICAgZ2FwOiAxMCwKICAgICAgICAgICAgfX0KICAgICAgICAgID4KICAgICAgICAgICAgPFJpZGVyTWFyayBzaXplPXsyMn0gLz4KICAgICAgICAgICAgPHNwYW4gc3R5bGU9e3sgZm9udFNpemU6IDEyLCBjb2xvcjogInZhcigtLW11dGVkKSIgfX0+CiAgICAgICAgICAgICAgU2lnbmVkIG9uY2UuIFByZXNlbnRlZCBhdCBldmVyeSBnYXRlLgogICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICA8L2Rpdj4KICAgICAgPC9zZWN0aW9uPgoKICAgICAgey8qIFBpcGVsaW5lICovfQogICAgICA8c2VjdGlvbiBpZD0icGlwZWxpbmUiIHN0eWxlPXt7IHBhZGRpbmc6ICI0MHB4IDAgODhweCIgfX0+CiAgICAgICAgPGgyCiAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICBmb250RmFtaWx5OiAidmFyKC0tZm9udC1kaXNwbGF5KSIsCiAgICAgICAgICAgIGZvbnRTaXplOiAyOCwKICAgICAgICAgICAgZm9udFdlaWdodDogNzAwLAogICAgICAgICAgICBtYXJnaW5Cb3R0b206IDgsCiAgICAgICAgICB9fQogICAgICAgID4KICAgICAgICAgIFRoZSBnYXRlLCBpbiBmb3VyIHN0ZXBzCiAgICAgICAgPC9oMj4KICAgICAgICA8cCBzdHlsZT17eyBjb2xvcjogInZhcigtLW11dGVkKSIsIG1hcmdpbkJvdHRvbTogNDAsIG1heFdpZHRoOiA1NjAgfX0+CiAgICAgICAgICBUaGlzIGlzIHRoZSBhY3R1YWwgb3JkZXIgYSByZXF1ZXN0IG1vdmVzIHRocm91Z2gg4oCUIG5vdCBhIG1hcmtldGluZwogICAgICAgICAgc2VxdWVuY2UuCiAgICAgICAgPC9wPgogICAgICAgIDxkaXYKICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgIGRpc3BsYXk6ICJncmlkIiwKICAgICAgICAgICAgZ3JpZFRlbXBsYXRlQ29sdW1uczogInJlcGVhdCg0LCAxZnIpIiwKICAgICAgICAgICAgZ2FwOiAxLAogICAgICAgICAgICBiYWNrZ3JvdW5kOiAidmFyKC0tcGFuZWwtbGluZSkiLAogICAgICAgICAgICBib3JkZXJSYWRpdXM6IDEwLAogICAgICAgICAgICBvdmVyZmxvdzogImhpZGRlbiIsCiAgICAgICAgICB9fQogICAgICAgICAgY2xhc3NOYW1lPSJwaXBlbGluZS1ncmlkIgogICAgICAgID4KICAgICAgICAgIHtTVEVQUy5tYXAoKHMpID0+ICgKICAgICAgICAgICAgPGRpdiBrZXk9e3Mubn0gc3R5bGU9e3sgYmFja2dyb3VuZDogInZhcigtLXBhbmVsKSIsIHBhZGRpbmc6IDI0IH19PgogICAgICAgICAgICAgIDxkaXYKICAgICAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgICAgIGZvbnRGYW1pbHk6ICJ2YXIoLS1mb250LW1vbm8pIiwKICAgICAgICAgICAgICAgICAgY29sb3I6ICJ2YXIoLS1nb2xkKSIsCiAgICAgICAgICAgICAgICAgIGZvbnRTaXplOiAxMywKICAgICAgICAgICAgICAgICAgbWFyZ2luQm90dG9tOiAxNCwKICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAge3Mubn0KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2CiAgICAgICAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICAgICAgICBmb250RmFtaWx5OiAidmFyKC0tZm9udC1kaXNwbGF5KSIsCiAgICAgICAgICAgICAgICAgIGZvbnRXZWlnaHQ6IDYwMCwKICAgICAgICAgICAgICAgICAgZm9udFNpemU6IDE2LAogICAgICAgICAgICAgICAgICBtYXJnaW5Cb3R0b206IDgsCiAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgIHtzLmxhYmVsfQogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZm9udFNpemU6IDEzLjUsIGNvbG9yOiAidmFyKC0tbXV0ZWQpIiwgbGluZUhlaWdodDogMS41NSB9fT4KICAgICAgICAgICAgICAgIHtzLmJvZHl9CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgKSl9CiAgICAgICAgPC9kaXY+CiAgICAgIDwvc2VjdGlvbj4KCiAgICAgIHsvKiBQcmljaW5nIC8gQ2hlY2tvdXQgKi99CiAgICAgIDxzZWN0aW9uCiAgICAgICAgaWQ9InByaWNpbmciCiAgICAgICAgc3R5bGU9e3sKICAgICAgICAgIHBhZGRpbmc6ICIwIDAgMTAwcHgiLAogICAgICAgICAgZGlzcGxheTogImZsZXgiLAogICAgICAgICAganVzdGlmeUNvbnRlbnQ6ICJjZW50ZXIiLAogICAgICAgIH19CiAgICAgID4KICAgICAgICA8ZGl2CiAgICAgICAgICBzdHlsZT17ewogICAgICAgICAgICBiYWNrZ3JvdW5kOiAidmFyKC0tcGFuZWwpIiwKICAgICAgICAgICAgYm9yZGVyOiAiMXB4IHNvbGlkIHZhcigtLXBhbmVsLWxpbmUpIiwKICAgICAgICAgICAgYm9yZGVyUmFkaXVzOiAxMiwKICAgICAgICAgICAgcGFkZGluZzogNDAsCiAgICAgICAgICAgIG1heFdpZHRoOiA0MjAsCiAgICAgICAgICAgIHdpZHRoOiAiMTAwJSIsCiAgICAgICAgICB9fQogICAgICAgID4KICAgICAgICAgIDxkaXYKICAgICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgICBmb250RmFtaWx5OiAidmFyKC0tZm9udC1tb25vKSIsCiAgICAgICAgICAgICAgZm9udFNpemU6IDEyLAogICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tZ29sZCkiLAogICAgICAgICAgICAgIG1hcmdpbkJvdHRvbTogNiwKICAgICAgICAgICAgfX0KICAgICAgICAgID4KICAgICAgICAgICAgTUVSQ0hBTlQgR0FURSDigJQgQkFTRQogICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICJmbGV4IiwgYWxpZ25JdGVtczogImJhc2VsaW5lIiwgZ2FwOiA2LCBtYXJnaW5Cb3R0b206IDE4IH19PgogICAgICAgICAgICA8c3BhbiBzdHlsZT17eyBmb250RmFtaWx5OiAidmFyKC0tZm9udC1kaXNwbGF5KSIsIGZvbnRTaXplOiA0NCwgZm9udFdlaWdodDogNzAwIH19PgogICAgICAgICAgICAgICQ0OQogICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgIDxzcGFuIHN0eWxlPXt7IGNvbG9yOiAidmFyKC0tbXV0ZWQpIiwgZm9udFNpemU6IDE1IH19Pi9tb250aDwvc3Bhbj4KICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPHVsCiAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgbGlzdFN0eWxlOiAibm9uZSIsCiAgICAgICAgICAgICAgcGFkZGluZzogMCwKICAgICAgICAgICAgICBtYXJnaW46ICIwIDAgMjhweCIsCiAgICAgICAgICAgICAgZm9udFNpemU6IDE0LAogICAgICAgICAgICAgIGNvbG9yOiAidmFyKC0tbXV0ZWQpIiwKICAgICAgICAgICAgICBsaW5lSGVpZ2h0OiAyLAogICAgICAgICAgICB9fQogICAgICAgICAgPgogICAgICAgICAgICA8bGk+RHJvcC1pbiBnYXRlIG1pZGRsZXdhcmU8L2xpPgogICAgICAgICAgICA8bGk+UmlkZXIgaXNzdWFuY2UgQVBJPC9saT4KICAgICAgICAgICAgPGxpPlVubGltaXRlZCB2ZXJpZmljYXRpb24gY2hlY2tzPC9saT4KICAgICAgICAgICAgPGxpPldlYmhvb2stYmFzZWQgcHJvdmlzaW9uaW5nPC9saT4KICAgICAgICAgIDwvdWw+CiAgICAgICAgICA8aW5wdXQKICAgICAgICAgICAgdHlwZT0iZW1haWwiCiAgICAgICAgICAgIHBsYWNlaG9sZGVyPSJ5b3VAY29tcGFueS5jb20iCiAgICAgICAgICAgIHZhbHVlPXtlbWFpbH0KICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRFbWFpbChlLnRhcmdldC52YWx1ZSl9CiAgICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgICAgd2lkdGg6ICIxMDAlIiwKICAgICAgICAgICAgICBwYWRkaW5nOiAiMTJweCAxNHB4IiwKICAgICAgICAgICAgICBiYWNrZ3JvdW5kOiAidmFyKC0tYmcpIiwKICAgICAgICAgICAgICBib3JkZXI6ICIxcHggc29saWQgdmFyKC0tcGFuZWwtbGluZSkiLAogICAgICAgICAgICAgIGJvcmRlclJhZGl1czogNiwKICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXdoaXRlKSIsCiAgICAgICAgICAgICAgZm9udFNpemU6IDE0LAogICAgICAgICAgICAgIG1hcmdpbkJvdHRvbTogMTQsCiAgICAgICAgICAgIH19CiAgICAgICAgICAvPgogICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICBvbkNsaWNrPXtzdGFydENoZWNrb3V0fQogICAgICAgICAgICBkaXNhYmxlZD17bG9hZGluZ30KICAgICAgICAgICAgc3R5bGU9e3sKICAgICAgICAgICAgICB3aWR0aDogIjEwMCUiLAogICAgICAgICAgICAgIHBhZGRpbmc6ICIxNHB4IiwKICAgICAgICAgICAgICBiYWNrZ3JvdW5kOiBsb2FkaW5nID8gInZhcigtLWNyaW1zb24tZGltKSIgOiAidmFyKC0tY3JpbXNvbikiLAogICAgICAgICAgICAgIGJvcmRlcjogIm5vbmUiLAogICAgICAgICAgICAgIGJvcmRlclJhZGl1czogNiwKICAgICAgICAgICAgICBjb2xvcjogInZhcigtLXdoaXRlKSIsCiAgICAgICAgICAgICAgZm9udFdlaWdodDogNjAwLAogICAgICAgICAgICAgIGZvbnRTaXplOiAxNSwKICAgICAgICAgICAgfX0KICAgICAgICAgID4KICAgICAgICAgICAge2xvYWRpbmcgPyAiUmVkaXJlY3RpbmcgdG8gY2hlY2tvdXTigKYiIDogIlN1YnNjcmliZSB0byBNZXJjaGFudCBHYXRlIn0KICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAge2Vycm9yICYmICgKICAgICAgICAgICAgPHAgc3R5bGU9e3sgY29sb3I6ICJ2YXIoLS1jcmltc29uKSIsIGZvbnRTaXplOiAxMywgbWFyZ2luVG9wOiAxMCB9fT4KICAgICAgICAgICAgICB7ZXJyb3J9CiAgICAgICAgICAgIDwvcD4KICAgICAgICAgICl9CiAgICAgICAgICA8cCBzdHlsZT17eyBmb250U2l6ZTogMTIsIGNvbG9yOiAidmFyKC0tbXV0ZWQpIiwgbWFyZ2luVG9wOiAxNCB9fT4KICAgICAgICAgICAgQmlsbGVkIG1vbnRobHkgdmlhIFN0cmlwZS4gQ2FuY2VsIGFueXRpbWUuCiAgICAgICAgICA8L3A+CiAgICAgICAgPC9kaXY+CiAgICAgIDwvc2VjdGlvbj4KCiAgICAgIDxmb290ZXIKICAgICAgICBzdHlsZT17ewogICAgICAgICAgYm9yZGVyVG9wOiAiMXB4IHNvbGlkIHZhcigtLXBhbmVsLWxpbmUpIiwKICAgICAgICAgIHBhZGRpbmc6ICIyOHB4IDAiLAogICAgICAgICAgZGlzcGxheTogImZsZXgiLAogICAgICAgICAganVzdGlmeUNvbnRlbnQ6ICJzcGFjZS1iZXR3ZWVuIiwKICAgICAgICAgIGZvbnRTaXplOiAxMywKICAgICAgICAgIGNvbG9yOiAidmFyKC0tbXV0ZWQpIiwKICAgICAgICB9fQogICAgICA+CiAgICAgICAgPHNwYW4+QWdlbnReUmlkZXI8L3NwYW4+CiAgICAgICAgPHNwYW4+UG9ydGFibGUgdHJ1c3QgZm9yIEFJIGFnZW50czwvc3Bhbj4KICAgICAgPC9mb290ZXI+CgogICAgICA8c3R5bGUganN4PntgCiAgICAgICAgQG1lZGlhIChtYXgtd2lkdGg6IDc4MHB4KSB7CiAgICAgICAgICAuaGVyby1ncmlkIHsKICAgICAgICAgICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOiAxZnIgIWltcG9ydGFudDsKICAgICAgICAgIH0KICAgICAgICAgIC5waXBlbGluZS1ncmlkIHsKICAgICAgICAgICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOiByZXBlYXQoMiwgMWZyKSAhaW1wb3J0YW50OwogICAgICAgICAgfQogICAgICAgIH0KICAgICAgYH08L3N0eWxlPgogICAgPC9tYWluPgogICk7Cn0K
+"use client";
+
+import { useState } from "react";
+
+function RiderMark({ size = 36 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="48" fill="#000000" stroke="#C9A24A" strokeWidth="2" />
+      <circle cx="50" cy="50" r="34" fill="#D61B1C" />
+      <path
+        d="M50 26 L68 62 H32 Z"
+        fill="#F5F5F0"
+      />
+      <circle cx="50" cy="50" r="48" fill="none" stroke="#C9A24A" strokeWidth="1.5" opacity="0.6" />
+    </svg>
+  );
+}
+
+const STEPS = [
+  {
+    n: "01",
+    label: "Request",
+    body: "An agent asks Agent^Rider for a credential before it ever touches your systems.",
+  },
+  {
+    n: "02",
+    label: "Verify",
+    body: "We run the identity and clearance checks once — origin network, operator, scope.",
+  },
+  {
+    n: "03",
+    label: "Issue",
+    body: "A signed rider is handed back: a compact, tamper-evident proof of who's asking and what they're cleared for.",
+  },
+  {
+    n: "04",
+    label: "Present",
+    body: "Your gate reads the rider, not the agent's whole history. No re-verification, no round trip.",
+  },
+];
+
+export default function Home() {
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function startCheckout() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      window.location.href = data.url;
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Try again.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px" }}>
+      {/* Header */}
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "28px 0",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <RiderMark size={36} />
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 19,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Agent<span style={{ color: "var(--gold)" }}>^</span>Rider
+          </span>
+        </div>
+        <nav style={{ display: "flex", alignItems: "center", gap: 28 }}>
+          <a
+            href="#pipeline"
+            style={{ fontSize: 14, color: "var(--muted)" }}
+          >
+            How it works
+          </a>
+          <a href="#pricing" style={{ fontSize: 14, color: "var(--muted)" }}>
+            Pricing
+          </a>
+          <a
+            href="#pricing"
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              padding: "9px 18px",
+              borderRadius: 4,
+              background: "var(--crimson)",
+              color: "var(--white)",
+            }}
+          >
+            Get Merchant Gate
+          </a>
+        </nav>
+      </header>
+
+      {/* Hero */}
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.1fr 0.9fr",
+          gap: 56,
+          alignItems: "center",
+          padding: "64px 0 88px",
+        }}
+        className="hero-grid"
+      >
+        <div>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--gold)",
+              border: "1px solid var(--panel-line)",
+              padding: "5px 10px",
+              borderRadius: 3,
+              marginBottom: 24,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "var(--crimson)",
+                display: "inline-block",
+              }}
+            />
+            LIVE — MERCHANT GATE ACCEPTING RIDERS
+          </div>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(38px, 5vw, 58px)",
+              lineHeight: 1.05,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              margin: "0 0 22px",
+            }}
+          >
+            One verification.
+            <br />
+            Carried <span style={{ color: "var(--crimson)" }}>everywhere</span>.
+          </h1>
+          <p
+            style={{
+              fontSize: 17,
+              lineHeight: 1.6,
+              color: "var(--muted)",
+              maxWidth: 480,
+              margin: "0 0 32px",
+            }}
+          >
+            Agent^Rider issues a signed credential your AI agents present at
+            every gate they cross — checkout, catalog, account systems. Verify
+            once. Stop re-checking identity at every network they touch.
+          </p>
+          <div style={{ display: "flex", gap: 12 }}>
+            <a
+              href="#pricing"
+              style={{
+                padding: "13px 26px",
+                background: "var(--crimson)",
+                borderRadius: 4,
+                fontWeight: 600,
+                fontSize: 15,
+              }}
+            >
+              Start at $49/mo
+            </a>
+            <a
+              href="#pipeline"
+              style={{
+                padding: "13px 26px",
+                border: "1px solid var(--panel-line)",
+                borderRadius: 4,
+                fontSize: 15,
+                color: "var(--white)",
+              }}
+            >
+              See how the gate works
+            </a>
+          </div>
+        </div>
+
+        {/* Signature element: the credential card */}
+        <div
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--panel-line)",
+            borderRadius: 10,
+            padding: 28,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: -60,
+              right: -60,
+              width: 200,
+              height: 200,
+              borderRadius: "50%",
+              background: "var(--crimson)",
+              opacity: 0.12,
+              filter: "blur(40px)",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: 18,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--muted)",
+                letterSpacing: "0.05em",
+              }}
+            >
+              RIDER CREDENTIAL
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--gold)",
+                border: "1px solid var(--gold)",
+                borderRadius: 3,
+                padding: "2px 7px",
+              }}
+            >
+              VERIFIED
+            </span>
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 13,
+              color: "var(--white)",
+              lineHeight: 1.9,
+            }}
+          >
+            <div>
+              <span style={{ color: "var(--muted)" }}>agent_id</span>{" "}
+              a7f2-rider-9c14
+            </div>
+            <div>
+              <span style={{ color: "var(--muted)" }}>origin</span>{" "}
+              network.acme-fleet
+            </div>
+            <div>
+              <span style={{ color: "var(--muted)" }}>clearance</span>{" "}
+              checkout · catalog
+            </div>
+            <div>
+              <span style={{ color: "var(--muted)" }}>issued</span> just now
+            </div>
+            <div>
+              <span style={{ color: "var(--muted)" }}>expires</span> 24h
+            </div>
+          </div>
+          <div
+            style={{
+              marginTop: 22,
+              paddingTop: 18,
+              borderTop: "1px dashed var(--panel-line)",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <RiderMark size={22} />
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>
+              Signed once. Presented at every gate.
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Pipeline */}
+      <section id="pipeline" style={{ padding: "40px 0 88px" }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 28,
+            fontWeight: 700,
+            marginBottom: 8,
+          }}
+        >
+          The gate, in four steps
+        </h2>
+        <p style={{ color: "var(--muted)", marginBottom: 40, maxWidth: 560 }}>
+          This is the actual order a request moves through — not a marketing
+          sequence.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 1,
+            background: "var(--panel-line)",
+            borderRadius: 10,
+            overflow: "hidden",
+          }}
+          className="pipeline-grid"
+        >
+          {STEPS.map((s) => (
+            <div key={s.n} style={{ background: "var(--panel)", padding: 24 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--gold)",
+                  fontSize: 13,
+                  marginBottom: 14,
+                }}
+              >
+                {s.n}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 600,
+                  fontSize: 16,
+                  marginBottom: 8,
+                }}
+              >
+                {s.label}
+              </div>
+              <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.55 }}>
+                {s.body}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing / Checkout */}
+      <section
+        id="pricing"
+        style={{
+          padding: "0 0 100px",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--panel-line)",
+            borderRadius: 12,
+            padding: 40,
+            maxWidth: 420,
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--gold)",
+              marginBottom: 6,
+            }}
+          >
+            MERCHANT GATE — BASE
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 18 }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 700 }}>
+              $49
+            </span>
+            <span style={{ color: "var(--muted)", fontSize: 15 }}>/month</span>
+          </div>
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: "0 0 28px",
+              fontSize: 14,
+              color: "var(--muted)",
+              lineHeight: 2,
+            }}
+          >
+            <li>Drop-in gate middleware</li>
+            <li>Rider issuance API</li>
+            <li>Unlimited verification checks</li>
+            <li>Webhook-based provisioning</li>
+          </ul>
+          <input
+            type="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              background: "var(--bg)",
+              border: "1px solid var(--panel-line)",
+              borderRadius: 6,
+              color: "var(--white)",
+              fontSize: 14,
+              marginBottom: 14,
+            }}
+          />
+          <button
+            onClick={startCheckout}
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: loading ? "var(--crimson-dim)" : "var(--crimson)",
+              border: "none",
+              borderRadius: 6,
+              color: "var(--white)",
+              fontWeight: 600,
+              fontSize: 15,
+            }}
+          >
+            {loading ? "Redirecting to checkout…" : "Subscribe to Merchant Gate"}
+          </button>
+          {error && (
+            <p style={{ color: "var(--crimson)", fontSize: 13, marginTop: 10 }}>
+              {error}
+            </p>
+          )}
+          <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 14 }}>
+            Billed monthly via Stripe. Cancel anytime.
+          </p>
+        </div>
+      </section>
+
+      <footer
+        style={{
+          borderTop: "1px solid var(--panel-line)",
+          padding: "28px 0",
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 13,
+          color: "var(--muted)",
+        }}
+      >
+        <span>Agent^Rider</span>
+        <span>Portable trust for AI agents</span>
+      </footer>
+
+      <style jsx>{`
+        @media (max-width: 780px) {
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .pipeline-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
