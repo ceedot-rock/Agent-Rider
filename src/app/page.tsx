@@ -16,29 +16,6 @@ function RiderMark({ size = 36 }: { size?: number }) {
   );
 }
 
-const STEPS = [
-  {
-    n: "01",
-    label: "Request",
-    body: "An agent asks Agent^Rider for a credential before it ever touches your systems.",
-  },
-  {
-    n: "02",
-    label: "Verify",
-    body: "We run the identity and clearance checks once — origin network, operator, scope.",
-  },
-  {
-    n: "03",
-    label: "Issue",
-    body: "A signed rider is handed back: a compact, tamper-evident proof of who's asking and what they're cleared for.",
-  },
-  {
-    n: "04",
-    label: "Present",
-    body: "Your gate reads the rider, not the agent's whole history. No re-verification, no round trip.",
-  },
-];
-
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -87,13 +64,7 @@ export default function Home() {
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          <a
-            href="#pipeline"
-            style={{ fontSize: 14, color: "var(--muted)" }}
-          >
-            How it works
-          </a>
-          <a href="/demo" style={{ fontSize: 14, color: "var(--muted)" }}>
+          <a href="/demo" style={{ fontSize: 14, color: "var(--gold)", fontWeight: 600 }}>
             Demo
           </a>
           <a href="#pricing" style={{ fontSize: 14, color: "var(--muted)" }}>
@@ -135,7 +106,7 @@ export default function Home() {
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               color: "var(--gold)",
-              border: "1px solid var(--panel-line)",
+              border: "1px solid rgba(201, 162, 74, 0.35)",
               padding: "5px 10px",
               borderRadius: 3,
               marginBottom: 24,
@@ -146,7 +117,8 @@ export default function Home() {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "var(--crimson)",
+                background: "var(--gold)",
+                boxShadow: "0 0 14px rgba(201, 162, 74, 0.45)",
                 display: "inline-block",
               }}
             />
@@ -164,7 +136,7 @@ export default function Home() {
           >
             One verification.
             <br />
-            Carried <span style={{ color: "var(--crimson)" }}>everywhere</span>.
+            Carried <span style={{ color: "var(--gold)" }}>everywhere</span>.
           </h1>
           <p
             style={{
@@ -184,8 +156,9 @@ export default function Home() {
               href="#pricing"
               style={{
                 padding: "13px 26px",
-                background: "var(--crimson)",
+                background: "linear-gradient(135deg, var(--crimson), var(--gold))",
                 borderRadius: 4,
+                boxShadow: "0 12px 30px rgba(201, 162, 74, 0.18)",
                 fontWeight: 600,
                 fontSize: 15,
               }}
@@ -196,10 +169,10 @@ export default function Home() {
               href="/demo"
               style={{
                 padding: "13px 26px",
-                border: "1px solid var(--panel-line)",
+                border: "1px solid rgba(201, 162, 74, 0.65)",
                 borderRadius: 4,
                 fontSize: 15,
-                color: "var(--white)",
+                color: "var(--gold)",
               }}
             >
               View benefits demo
@@ -210,8 +183,8 @@ export default function Home() {
         {/* Signature element: the credential card */}
         <div
           style={{
-            background: "var(--panel)",
-            border: "1px solid var(--panel-line)",
+            background: "linear-gradient(180deg, rgba(201, 162, 74, 0.08), var(--panel))",
+            border: "1px solid rgba(201, 162, 74, 0.35)",
             borderRadius: 10,
             padding: 28,
             position: "relative",
@@ -226,8 +199,8 @@ export default function Home() {
               width: 200,
               height: 200,
               borderRadius: "50%",
-              background: "var(--crimson)",
-              opacity: 0.12,
+              background: "var(--gold)",
+              opacity: 0.16,
               filter: "blur(40px)",
             }}
           />
@@ -293,7 +266,7 @@ export default function Home() {
             style={{
               marginTop: 22,
               paddingTop: 18,
-              borderTop: "1px dashed var(--panel-line)",
+              borderTop: "1px dashed rgba(201, 162, 74, 0.45)",
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -304,63 +277,6 @@ export default function Home() {
               Signed once. Presented at every gate.
             </span>
           </div>
-        </div>
-      </section>
-
-      {/* Pipeline */}
-      <section id="pipeline" style={{ padding: "40px 0 88px" }}>
-        <h2
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 28,
-            fontWeight: 700,
-            marginBottom: 8,
-          }}
-        >
-          The gate, in four steps
-        </h2>
-        <p style={{ color: "var(--muted)", marginBottom: 40, maxWidth: 560 }}>
-          This is the actual order a request moves through — not a marketing
-          sequence.
-        </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 1,
-            background: "var(--panel-line)",
-            borderRadius: 10,
-            overflow: "hidden",
-          }}
-          className="pipeline-grid"
-        >
-          {STEPS.map((s) => (
-            <div key={s.n} style={{ background: "var(--panel)", padding: 24 }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--gold)",
-                  fontSize: 13,
-                  marginBottom: 14,
-                }}
-              >
-                {s.n}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  marginBottom: 8,
-                }}
-              >
-                {s.label}
-              </div>
-              <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.55 }}>
-                {s.body}
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -376,8 +292,9 @@ export default function Home() {
         <div
           style={{
             background: "var(--panel)",
-            border: "1px solid var(--panel-line)",
+            border: "1px solid rgba(201, 162, 74, 0.35)",
             borderRadius: 12,
+            boxShadow: "0 20px 60px rgba(201, 162, 74, 0.08)",
             padding: 40,
             maxWidth: 420,
             width: "100%",
@@ -436,7 +353,7 @@ export default function Home() {
             style={{
               width: "100%",
               padding: "14px",
-              background: loading ? "var(--crimson-dim)" : "var(--crimson)",
+              background: loading ? "var(--crimson-dim)" : "linear-gradient(135deg, var(--crimson), var(--gold))",
               border: "none",
               borderRadius: 6,
               color: "var(--white)",
@@ -475,9 +392,6 @@ export default function Home() {
         @media (max-width: 780px) {
           .hero-grid {
             grid-template-columns: 1fr !important;
-          }
-          .pipeline-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
           }
         }
       `}</style>
