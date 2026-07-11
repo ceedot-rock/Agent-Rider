@@ -1,1 +1,32 @@
-aW1wb3J0IHsgTmV4dFJlcXVlc3QsIE5leHRSZXNwb25zZSB9IGZyb20gIm5leHQvc2VydmVyIjsKaW1wb3J0IHsgY3JlYXRlQ2hlY2tvdXRTZXNzaW9uIH0gZnJvbSAiQC9saWIvc3RyaXBlIjsKCmNvbnN0IE1FUkNIQU5UX0dBVEVfUFJJQ0VfSUQgPSAicHJpY2VfMVRyOTk2SzhKc21YRnp2SUFxNDJKdzlFIjsKCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBQT1NUKHJlcTogTmV4dFJlcXVlc3QpIHsKICB0cnkgewogICAgY29uc3Qgb3JpZ2luID0gcmVxLmhlYWRlcnMuZ2V0KCJvcmlnaW4iKSB8fCAiaHR0cHM6Ly9hZ2VudHJpZGVyLnZlcmNlbC5hcHAiOwogICAgbGV0IGVtYWlsOiBzdHJpbmcgfCB1bmRlZmluZWQ7CiAgICB0cnkgewogICAgICBjb25zdCBib2R5ID0gYXdhaXQgcmVxLmpzb24oKTsKICAgICAgZW1haWwgPSBib2R5Py5lbWFpbDsKICAgIH0gY2F0Y2ggewogICAgICAvLyBubyBib2R5IHNlbnQg4oCUIGZpbmUsIGVtYWlsIGlzIG9wdGlvbmFsCiAgICB9CgogICAgY29uc3Qgc2Vzc2lvbiA9IGF3YWl0IGNyZWF0ZUNoZWNrb3V0U2Vzc2lvbih7CiAgICAgIHByaWNlSWQ6IE1FUkNIQU5UX0dBVEVfUFJJQ0VfSUQsCiAgICAgIHN1Y2Nlc3NVcmw6IGAke29yaWdpbn0vc3VjY2Vzcz9zZXNzaW9uX2lkPXtDSEVDS09VVF9TRVNTSU9OX0lEfWAsCiAgICAgIGNhbmNlbFVybDogYCR7b3JpZ2lufS9gLAogICAgICBjdXN0b21lckVtYWlsOiBlbWFpbCwKICAgIH0pOwoKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IHVybDogc2Vzc2lvbi51cmwgfSk7CiAgfSBjYXRjaCAoZXJyOiBhbnkpIHsKICAgIGNvbnNvbGUuZXJyb3IoImNoZWNrb3V0IGVycm9yIiwgZXJyKTsKICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbigKICAgICAgeyBlcnJvcjogZXJyPy5tZXNzYWdlIHx8ICJDaGVja291dCBmYWlsZWQiIH0sCiAgICAgIHsgc3RhdHVzOiA1MDAgfQogICAgKTsKICB9Cn0K
+import { NextRequest, NextResponse } from "next/server";
+import { createCheckoutSession } from "@/lib/stripe";
+
+const MERCHANT_GATE_PRICE_ID = "price_1Tr996K8JsmXFzvIAq42Jw9E";
+
+export async function POST(req: NextRequest) {
+  try {
+    const origin = req.headers.get("origin") || "https://agentrider.vercel.app";
+    let email: string | undefined;
+    try {
+      const body = await req.json();
+      email = body?.email;
+    } catch {
+      // no body sent — fine, email is optional
+    }
+
+    const session = await createCheckoutSession({
+      priceId: MERCHANT_GATE_PRICE_ID,
+      successUrl: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${origin}/`,
+      customerEmail: email,
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (err: any) {
+    console.error("checkout error", err);
+    return NextResponse.json(
+      { error: err?.message || "Checkout failed" },
+      { status: 500 }
+    );
+  }
+}

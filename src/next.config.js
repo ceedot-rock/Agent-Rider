@@ -1,1 +1,7 @@
-LyoqIEB0eXBlIHtpbXBvcnQoJ25leHQnKS5OZXh0Q29uZmlnfSAqLwpjb25zdCBuZXh0Q29uZmlnID0gewogIGVzbGludDogeyBpZ25vcmVEdXJpbmdCdWlsZHM6IHRydWUgfSwKICB0eXBlc2NyaXB0OiB7IGlnbm9yZUJ1aWxkRXJyb3JzOiB0cnVlIH0sCn07Cgptb2R1bGUuZXhwb3J0cyA9IG5leHRDb25maWc7Cg==
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
+};
+
+module.exports = nextConfig;
