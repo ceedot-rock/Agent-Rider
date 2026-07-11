@@ -47,8 +47,8 @@ function CheckList({ title, items, tone }: { title: string; items: string[]; ton
   return (
     <div
       style={{
-        background: "var(--panel)",
-        border: "1px solid var(--panel-line)",
+        background: "linear-gradient(180deg, rgba(201, 162, 74, 0.07), var(--panel))",
+        border: "1px solid rgba(201, 162, 74, 0.35)",
         borderRadius: 12,
         padding: 26,
       }}
@@ -145,7 +145,7 @@ export default function DemoPage() {
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               color: "var(--gold)",
-              border: "1px solid var(--panel-line)",
+              border: "1px solid rgba(201, 162, 74, 0.35)",
               padding: "5px 10px",
               borderRadius: 3,
               marginBottom: 24,
@@ -173,7 +173,7 @@ export default function DemoPage() {
         <div
           style={{
             background: "linear-gradient(135deg, rgba(214, 27, 28, 0.18), rgba(201, 162, 74, 0.12))",
-            border: "1px solid var(--panel-line)",
+            border: "1px solid rgba(201, 162, 74, 0.35)",
             borderRadius: 16,
             padding: 28,
           }}
@@ -209,7 +209,7 @@ export default function DemoPage() {
             key={benefit.label}
             style={{
               background: "var(--panel)",
-              border: "1px solid var(--panel-line)",
+              border: "1px solid rgba(201, 162, 74, 0.35)",
               borderRadius: 12,
               padding: 24,
             }}
@@ -239,7 +239,8 @@ export default function DemoPage() {
           style={{
             display: "inline-block",
             padding: "13px 26px",
-            background: "var(--crimson)",
+            background: "linear-gradient(135deg, var(--crimson), var(--gold))",
+            boxShadow: "0 12px 30px rgba(201, 162, 74, 0.18)",
             borderRadius: 4,
             fontWeight: 600,
             fontSize: 15,
