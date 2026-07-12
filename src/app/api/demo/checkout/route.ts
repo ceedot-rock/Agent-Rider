@@ -3,7 +3,9 @@ import { checkGate, isGateOk } from "@/lib/rider";
 
 export async function POST(req: NextRequest) {
   const gate = await checkGate(req, "L2", "purchase:*");
-  if (!isGateOk(gate)) return NextResponse.json(gate.body, { status: gate.status });
+  if (!isGateOk(gate)) {
+    return NextResponse.json(gate.body, { status: gate.status, headers: gate.headers });
+  }
 
   return NextResponse.json({
     ok: true,
