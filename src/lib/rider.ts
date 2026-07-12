@@ -94,7 +94,7 @@ export function revoke(jti: string) {
 // --- shared gate check, used by every demo route -------------------------
 export type GateResult =
   | { ok: true; rider: RiderPayload }
-  | { ok: false; status: number; body: any };
+  | { ok: false; status: number; body: any; headers?: Record<string, string> };
 
 // tsconfig here runs with strict: false, which disables TypeScript's control-flow
 // narrowing on awaited discriminated unions (`if (!gate.ok)` doesn't narrow the
@@ -103,17 +103,35 @@ export function isGateOk(result: GateResult): result is { ok: true; rider: Rider
   return result.ok === true;
 }
 
+const ISSUE_URL = "https://agentrider.vercel.app/api/rider/issue";
+const DOCS_URL = "https://agentrider.vercel.app/docs";
+
+// A 401 for a missing/invalid rider is self-describing, the same way OAuth's
+// `WWW-Authenticate: Bearer` challenge works — any agent (or agent framework)
+// that hits this wall can discover where to get a rider without prior
+// knowledge, from the response itself.
+function missingRiderChallenge(reason: "missing_rider" | "invalid_rider", extra?: object): GateResult {
+  return {
+    ok: false,
+    status: 401,
+    body: { error: reason, issue_url: ISSUE_URL, docs_url: DOCS_URL, ...extra },
+    headers: {
+      "WWW-Authenticate": `Rider realm="agentrider.dev", issue_uri="${ISSUE_URL}", docs_uri="${DOCS_URL}"`,
+    },
+  };
+}
+
 export async function checkGate(
   request: Request,
   minLevel: ClearanceLevel,
   scope?: string
 ): Promise<GateResult> {
   const token = request.headers.get("x-agent-rider");
-  if (!token) return { ok: false, status: 401, body: { error: "missing_rider" } };
+  if (!token) return missingRiderChallenge("missing_rider");
 
   const result = await verifyRider(token);
   if (!result.valid || !result.rider) {
-    return { ok: false, status: 401, body: { error: "invalid_rider", reason: result.reason } };
+    return missingRiderChallenge("invalid_rider", { reason: result.reason });
   }
 
   const rider = result.rider;

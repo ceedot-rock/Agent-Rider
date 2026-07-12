@@ -197,6 +197,37 @@ Content-Type: application/json
         </p>
       </Section>
 
+      <Section title="Letting agents discover a rider is required">
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          An agent shouldn't need out-of-band knowledge to know it needs a
+          rider — the 401 it gets back should tell it. When our own gated
+          demo routes (<InlineCode>/api/demo/*</InlineCode>) reject a request
+          for a missing or invalid rider, the response is self-describing,
+          the same way OAuth's <InlineCode>WWW-Authenticate: Bearer</InlineCode>{" "}
+          challenge works:
+        </p>
+        <CodeBlock>{`HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Rider realm="agentrider.dev",
+  issue_uri="https://agentrider.vercel.app/api/rider/issue",
+  docs_uri="https://agentrider.vercel.app/docs"
+Content-Type: application/json
+
+{
+  "error": "missing_rider",
+  "issue_url": "https://agentrider.vercel.app/api/rider/issue",
+  "docs_url": "https://agentrider.vercel.app/docs"
+}`}</CodeBlock>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
+          Both the header (for clients that parse challenge headers) and the
+          body (for anything that just reads JSON) carry the same
+          information. If you're building your own gate on top of{" "}
+          <InlineCode>checkGate</InlineCode>-equivalent logic, return the same
+          shape — it's what turns "access denied" into "here's how to fix
+          that," without the agent's operator needing to have read these docs
+          in advance.
+        </p>
+      </Section>
+
       <Section title="Check your merchant key's status">
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
           Separate from rider verification — this checks whether a merchant
