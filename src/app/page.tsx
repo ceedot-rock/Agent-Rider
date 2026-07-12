@@ -80,6 +80,9 @@ export default function Home() {
           >
             How it works
           </a>
+          <a href="/demo" style={{ fontSize: 14, color: "var(--muted)" }}>
+            Demo
+          </a>
           <a href="#pricing" style={{ fontSize: 14, color: "var(--muted)" }}>
             Pricing
           </a>
