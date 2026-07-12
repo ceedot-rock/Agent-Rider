@@ -1,0 +1,19 @@
+# Agent^Rider
+
+> One verification, carried everywhere. Agent^Rider issues a signed credential ("rider") that AI agents present at every merchant gate — checkout, catalog, account systems — instead of re-verifying identity at each one.
+
+Agent^Rider sells a Merchant Gate subscription ($11.99/month, billed via Stripe) that provisions a merchant API key tied to that subscription. A merchant's own backend calls the verify API below to check whether a given key is currently backed by an active subscription — there is no separate signup or auth step for the calling agent or system beyond having the key.
+
+## Docs
+
+- [Integration guide](https://agentrider.vercel.app/docs): how to call the verify API from gate middleware, request/response shapes, error handling
+- [Benefits demo](https://agentrider.vercel.app/demo): before/after walkthrough of what the rider replaces
+- [Pricing & signup](https://agentrider.vercel.app/#pricing): start a Merchant Gate subscription
+
+## API
+
+- Verify a rider: `POST https://agentrider.vercel.app/api/verify`
+  - Body: `{"merchantKey": "rider_live_..."}`
+  - Response: `{"valid": true|false, "status": "active"|"trialing"|"canceled"|null}`
+  - CORS-enabled (`Access-Control-Allow-Origin: *`) — callable directly from any origin, browser or server
+  - No API key or auth header required to call verify itself; the merchant key in the body is what's being checked

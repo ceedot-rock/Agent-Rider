@@ -111,6 +111,9 @@ export default function DemoPage() {
           <a href="/" style={{ fontSize: 14, color: "var(--muted)" }}>
             Home
           </a>
+          <a href="/docs" style={{ fontSize: 14, color: "var(--muted)" }}>
+            Docs
+          </a>
           <a href="/#pricing" style={{ fontSize: 14, color: "var(--gold)" }}>
             Get Merchant Gate
           </a>
