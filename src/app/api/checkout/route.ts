@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckoutSession } from "@/lib/stripe";
+import { SITE_URL } from "@/lib/site";
 
 const MERCHANT_GATE_PRICE_ID = "price_1TsQAOK8JsmXFzvIKmUsVDoK";
 
 export async function POST(req: NextRequest) {
   try {
-    const origin = req.headers.get("origin") || "https://agentrider.vercel.app";
+    const origin = req.headers.get("origin") || SITE_URL;
     let email: string | undefined;
     try {
       const body = await req.json();
