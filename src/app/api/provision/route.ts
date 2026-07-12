@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { retrieveSession } from "@/lib/stripe";
-
-function generateMerchantKey(): string {
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-  return `rider_live_${hex}`;
-}
+import { retrieveSession, updateSubscriptionMetadata } from "@/lib/stripe";
+import { generateMerchantKey } from "@/lib/merchant-key";
 
 export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get("session_id");
@@ -20,12 +14,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Session not completed" }, { status: 402 });
     }
 
-    const merchantKey = generateMerchantKey();
+    const subscription = session.subscription;
+    if (!subscription || typeof subscription === "string") {
+      return NextResponse.json({ error: "No subscription on session" }, { status: 500 });
+    }
+
+    // The webhook may have already provisioned a key; reuse it instead of
+    // handing out a second, disconnected one that Stripe has no record of.
+    let merchantKey = subscription.metadata?.merchant_key;
+    if (!merchantKey) {
+      merchantKey = generateMerchantKey();
+      await updateSubscriptionMetadata(subscription.id, { merchant_key: merchantKey });
+    }
 
     return NextResponse.json({
       merchantKey,
       customerEmail: session.customer_details?.email ?? null,
-      subscriptionId: session.subscription?.id ?? session.subscription ?? null,
+      subscriptionId: subscription.id,
     });
   } catch (err: any) {
     console.error("provision error", err);
