@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata = {
-  metadataBase: new URL("https://agentrider.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: "Agent^Rider — Portable trust for AI agents",
   description:
     "One verification, carried everywhere. Agent^Rider issues a signed credential your agents present at every gate — no re-checking identity at every network they touch.",
