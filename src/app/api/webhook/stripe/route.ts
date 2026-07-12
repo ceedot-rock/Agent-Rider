@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyStripeSignature } from "@/lib/stripe";
+import Stripe from "stripe";
+import {
+  stripe,
+  retrieveSubscription,
+  updateSubscriptionMetadata,
+} from "@/lib/stripe";
+import { generateMerchantKey } from "@/lib/merchant-key";
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
@@ -11,16 +17,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
   }
 
-  const valid = await verifyStripeSignature(rawBody, signature, webhookSecret);
-  if (!valid) {
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+  } catch (err) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const event = JSON.parse(rawBody);
-
   switch (event.type) {
     case "checkout.session.completed": {
-      const session = event.data.object;
+      const session = event.data.object as Stripe.Checkout.Session;
+      const subscriptionId =
+        typeof session.subscription === "string"
+          ? session.subscription
+          : session.subscription?.id;
+      if (subscriptionId) {
+        const subscription = await retrieveSubscription(subscriptionId);
+        if (!subscription.metadata?.merchant_key) {
+          await updateSubscriptionMetadata(subscriptionId, {
+            merchant_key: generateMerchantKey(),
+          });
+        }
+      }
       console.log("checkout completed", session.id, session.customer);
       break;
     }
