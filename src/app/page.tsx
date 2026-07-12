@@ -187,7 +187,7 @@ export default function Home() {
                 fontSize: 15,
               }}
             >
-              Start at $49/mo
+              Start at $11.99/mo
             </a>
             <a
               href="#pipeline"
@@ -392,7 +392,7 @@ export default function Home() {
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 18 }}>
             <span style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 700 }}>
-              $49
+              $11.99
             </span>
             <span style={{ color: "var(--muted)", fontSize: 15 }}>/month</span>
           </div>
