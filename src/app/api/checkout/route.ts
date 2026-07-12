@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckoutSession } from "@/lib/stripe";
 
-const MERCHANT_GATE_PRICE_ID = "price_1Tr996K8JsmXFzvIAq42Jw9E";
+const MERCHANT_GATE_PRICE_ID = "price_1TsQAOK8JsmXFzvIKmUsVDoK";
 
 export async function POST(req: NextRequest) {
   try {
