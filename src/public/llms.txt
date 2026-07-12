@@ -2,18 +2,26 @@
 
 > One verification, carried everywhere. Agent^Rider issues a signed credential ("rider") that AI agents present at every merchant gate — checkout, catalog, account systems — instead of re-verifying identity at each one.
 
-Agent^Rider sells a Merchant Gate subscription ($11.99/month, billed via Stripe) that provisions a merchant API key tied to that subscription. A merchant's own backend calls the verify API below to check whether a given key is currently backed by an active subscription — there is no separate signup or auth step for the calling agent or system beyond having the key.
+Agent^Rider sells a Merchant Gate subscription ($11.99/month, billed via Stripe) that provisions a merchant key. That key authorizes minting riders — short-lived, signed (ES256) JWTs carrying an agent's identity, operator, clearance level (L0-L4), and scopes. Any gate can verify a rider locally against Agent^Rider's public key with no network round trip and no auth required — verification is free and unmetered; issuance is what the subscription pays for.
 
 ## Docs
 
-- [Integration guide](https://agentrider.vercel.app/docs): how to call the verify API from gate middleware, request/response shapes, error handling
+- [Integration guide](https://agentrider.vercel.app/docs): getting a merchant key, issuing riders, verifying riders locally, clearance levels, error handling
 - [Benefits demo](https://agentrider.vercel.app/demo): before/after walkthrough of what the rider replaces
 - [Pricing & signup](https://agentrider.vercel.app/#pricing): start a Merchant Gate subscription
 
 ## API
 
-- Verify a rider: `POST https://agentrider.vercel.app/api/verify`
-  - Body: `{"merchantKey": "rider_live_..."}`
+- Issue a rider: `POST https://agentrider.vercel.app/api/rider/issue`
+  - Header: `X-Merchant-Key: merchant_live_...` (required — must be an active subscription)
+  - Body: `{"agent_id": "...", "operator_id": "...", "level": "L0"-"L4", "scopes": ["read:catalog", ...]}`
+  - Response: `{"rider": "<JWT>", "jti": "...", "expires_in": 900, "header_to_send": "X-Agent-Rider"}`
+
+- Verify a rider: `POST https://agentrider.vercel.app/api/rider/verify`
+  - Body: `{"rider": "<JWT>"}` (or send the token as an `X-Agent-Rider` header instead)
+  - Response: `{"valid": true|false, "rider"?: {...decoded payload...}, "reason"?: "..."}`
+  - No auth required, CORS-enabled, pure local signature check — safe to call on every gated request
+
+- Check a merchant key's own subscription status (not for gating agent requests): `POST https://agentrider.vercel.app/api/verify`
+  - Body: `{"merchantKey": "merchant_live_..."}`
   - Response: `{"valid": true|false, "status": "active"|"trialing"|"canceled"|null}`
-  - CORS-enabled (`Access-Control-Allow-Origin: *`) — callable directly from any origin, browser or server
-  - No API key or auth header required to call verify itself; the merchant key in the body is what's being checked

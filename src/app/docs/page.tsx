@@ -22,6 +22,10 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
+function InlineCode({ children }: { children: ReactNode }) {
+  return <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>{children}</code>;
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section style={{ padding: "0 0 56px" }}>
@@ -90,9 +94,10 @@ export default function DocsPage() {
           Integrating the gate
         </h1>
         <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--muted)", maxWidth: 620 }}>
-          Everything a merchant's backend needs to check whether a rider
-          presented by an agent is backed by an active Agent^Rider
-          subscription.
+          There are two credentials in play: your <strong>merchant key</strong>{" "}
+          (proves your subscription is active, used to mint riders) and a{" "}
+          <strong>rider</strong> (a signed JWT you hand to an agent, and that
+          any gate can verify locally — no call back to us required).
         </p>
       </div>
 
@@ -103,108 +108,130 @@ export default function DocsPage() {
             the pricing section
           </a>
           . After checkout, the success page calls{" "}
-          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-            GET /api/provision?session_id=...
-          </code>{" "}
-          and shows your merchant key once. Store it somewhere safe — it
-          isn't shown again, and it's the credential every verify call below
-          is checked against.
+          <InlineCode>GET /api/provision?session_id=...</InlineCode> and shows
+          your merchant key once (format: <InlineCode>merchant_live_...</InlineCode>). Store
+          it somewhere safe — it isn't shown again, and it's what authorizes
+          rider issuance below.
         </p>
       </Section>
 
-      <Section title="2. Verify a rider from your gate">
+      <Section title="2. Issue a rider for an agent">
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
-          Whenever an agent presents a rider at checkout, catalog, or account
-          endpoints, have your backend confirm it's still valid before
-          proceeding:
+          Mint a signed rider for an agent you've cleared. Requires your
+          merchant key in the{" "}
+          <InlineCode>X-Merchant-Key</InlineCode> header — issuance is metered
+          against your subscription, verification (next section) is not.
         </p>
-        <CodeBlock>{`POST /api/verify
+        <CodeBlock>{`POST /api/rider/issue
+X-Merchant-Key: merchant_live_...
 Content-Type: application/json
 
 {
-  "merchantKey": "rider_live_..."
+  "agent_id": "a7f2-rider-9c14",
+  "operator_id": "network.acme-fleet",
+  "level": "L2",
+  "scopes": ["read:catalog", "purchase:<100"]
+}`}</CodeBlock>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Response:</p>
+        <CodeBlock>{`{
+  "rider": "eyJhbGciOiJFUzI1NiIs...",
+  "jti": "3f9c...",
+  "expires_in": 900,
+  "header_to_send": "X-Agent-Rider"
+}`}</CodeBlock>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
+          Riders expire in 15 minutes by default. Hand the{" "}
+          <InlineCode>rider</InlineCode> token to the agent; it presents it as{" "}
+          <InlineCode>X-Agent-Rider</InlineCode> at every gate it crosses.
+        </p>
+      </Section>
+
+      <Section title="3. Verify a rider at your gate">
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          This is a local signature check against our public key — free, no
+          merchant key required, no round trip to us:
+        </p>
+        <CodeBlock>{`POST /api/rider/verify
+Content-Type: application/json
+
+{
+  "rider": "eyJhbGciOiJFUzI1NiIs..."
 }`}</CodeBlock>
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Response:</p>
         <CodeBlock>{`{
   "valid": true,
-  "status": "active"
+  "rider": {
+    "agent_id": "a7f2-rider-9c14",
+    "operator_id": "network.acme-fleet",
+    "level": "L2",
+    "scopes": ["read:catalog", "purchase:<100"],
+    "jti": "3f9c..."
+  }
 }`}</CodeBlock>
         <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
-          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>status</code>{" "}
-          mirrors the underlying Stripe subscription status —{" "}
-          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-            "active"
-          </code>{" "}
-          or{" "}
-          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-            "trialing"
-          </code>{" "}
-          are the only values that make{" "}
-          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-            valid
-          </code>{" "}
-          true. A cancelled or unrecognized key returns{" "}
-          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-            {`{"valid": false, "status": null | "canceled" | ...}`}
-          </code>{" "}
-          — this is a live check, so cancelling a subscription revokes access
-          automatically without any extra step on your side.
+          An expired, tampered, or malformed rider returns{" "}
+          <InlineCode>{`{"valid": false, "reason": "..."}`}</InlineCode>.
+          You can also send the token as an <InlineCode>X-Agent-Rider</InlineCode>{" "}
+          header instead of a body field.
         </p>
       </Section>
 
-      <Section title="Example: curl">
-        <CodeBlock>{`curl -X POST https://agentrider.vercel.app/api/verify \\
-  -H "Content-Type: application/json" \\
-  -d '{"merchantKey": "rider_live_..."}'`}</CodeBlock>
+      <Section title="Clearance levels">
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          Riders carry a level, <InlineCode>L0</InlineCode>–<InlineCode>L4</InlineCode>,
+          low to high stakes. Check it against the minimum your endpoint
+          requires:
+        </p>
+        <ul style={{ color: "var(--muted)", lineHeight: 1.9, paddingLeft: 20, margin: "0 0 16px" }}>
+          <li><InlineCode>L0</InlineCode> — unauthenticated browsing</li>
+          <li><InlineCode>L1</InlineCode> — catalog / read access</li>
+          <li><InlineCode>L2</InlineCode> — checkout / purchases</li>
+          <li><InlineCode>L3</InlineCode>–<InlineCode>L4</InlineCode> — account actions; also checked against revocation</li>
+        </ul>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
+          Pair a level with a scope check (e.g. <InlineCode>purchase:*</InlineCode>)
+          for finer-grained gates. See <InlineCode>/api/demo/catalog</InlineCode>,{" "}
+          <InlineCode>/api/demo/checkout</InlineCode>, and{" "}
+          <InlineCode>/api/demo/account-action</InlineCode> for worked examples
+          at L1, L2, and L3.
+        </p>
       </Section>
 
-      <Section title="Example: fetch (Node or browser)">
-        <CodeBlock>{`const res = await fetch("https://agentrider.vercel.app/api/verify", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ merchantKey }),
-});
-const { valid, status } = await res.json();
-
-if (!valid) {
-  // reject the request — key is missing, unknown, or subscription is
-  // not active/trialing
-}`}</CodeBlock>
+      <Section title="Check your merchant key's status">
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          Separate from rider verification — this checks whether a merchant
+          key itself is currently backed by an active subscription (useful
+          for your own dashboard, not for gating agent requests):
+        </p>
+        <CodeBlock>{`curl -X POST https://agentrider.vercel.app/api/verify \\
+  -H "Content-Type: application/json" \\
+  -d '{"merchantKey": "merchant_live_..."}'
+# => {"valid": true, "status": "active"}`}</CodeBlock>
       </Section>
 
       <Section title="Errors and edge cases">
         <ul style={{ color: "var(--muted)", lineHeight: 1.9, paddingLeft: 20, margin: 0 }}>
           <li>
-            <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-              400
-            </code>{" "}
-            — request body missing{" "}
-            <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-              merchantKey
-            </code>
-            .
+            <InlineCode>/api/rider/issue</InlineCode> returns{" "}
+            <InlineCode>401</InlineCode> for a missing key,{" "}
+            <InlineCode>402</InlineCode> for an unknown or inactive one.
           </li>
           <li>
-            <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-              500
-            </code>{" "}
-            — verification failed on our end; treat as unverified and retry,
-            don't treat as a valid rider.
+            <InlineCode>/api/rider/verify</InlineCode> never calls out to
+            Stripe or anything else — it's a pure signature check, so it's
+            safe to call on every single gated request without worrying about
+            rate limits or latency.
           </li>
           <li>
-            The endpoint is CORS-enabled (
-            <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-              Access-Control-Allow-Origin: *
-            </code>
-            ), so it's safe to call directly from a browser as well as
+            A merchant key issued moments ago by the checkout webhook can
+            occasionally take a few seconds to become visible to{" "}
+            <InlineCode>/api/rider/issue</InlineCode> (Stripe's search API is
+            eventually consistent). Retry briefly right after checkout before
+            treating a fresh key as invalid.
+          </li>
+          <li>
+            Both endpoints are CORS-enabled — safe to call from a browser or
             server-side.
-          </li>
-          <li>
-            A key issued moments ago by the checkout webhook can occasionally
-            take a few seconds to become visible to verify (Stripe's search
-            API is eventually consistent). If you're testing immediately
-            after checkout, retry briefly before treating a fresh key as
-            invalid.
           </li>
         </ul>
       </Section>
