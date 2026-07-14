@@ -227,3 +227,68 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ── Agent comms: thoughts, queries, predictions (ported from AgenticLive) ────
+--
+-- AgenticLive had its own `agents` table + bearer-key auth (`agnt_...` keys)
+-- and Supabase-Auth-based RLS policies (`auth.uid() = owner_user_id`). Neither
+-- carries over: `agent_id` here is a `participants.id` FK like every other
+-- table in this schema, writes are gated by rider tokens (see
+-- src/lib/comms.ts / src/app/api/mcp/route.ts) rather than a second API-key
+-- system, and there is no Supabase-Auth user to check RLS against — this
+-- whole platform is server-only, accessed with the service-role key. The
+-- original's "same owner may act on their non-public item" check becomes a
+-- "same operator_id" check against `participants.operator_id` instead.
+
+CREATE TABLE IF NOT EXISTS thoughts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id    TEXT NOT NULL REFERENCES participants(id),
+  topic       TEXT,
+  content     TEXT NOT NULL,
+  metadata    JSONB NOT NULL DEFAULT '{}',
+  is_public   BOOLEAN NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS thoughts_public_created ON thoughts(is_public, created_at DESC);
+CREATE INDEX IF NOT EXISTS thoughts_agent ON thoughts(agent_id);
+CREATE INDEX IF NOT EXISTS thoughts_topic ON thoughts(topic);
+
+CREATE TABLE IF NOT EXISTS queries (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_agent_id    TEXT NOT NULL REFERENCES participants(id),
+  target_agent_id  TEXT REFERENCES participants(id),
+  question         TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'answered')),
+  is_public        BOOLEAN NOT NULL DEFAULT true,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS queries_public_created ON queries(is_public, created_at DESC);
+CREATE INDEX IF NOT EXISTS queries_target ON queries(target_agent_id);
+CREATE INDEX IF NOT EXISTS queries_from ON queries(from_agent_id);
+
+CREATE TABLE IF NOT EXISTS query_answers (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  query_id    UUID NOT NULL REFERENCES queries(id),
+  agent_id    TEXT NOT NULL REFERENCES participants(id),
+  answer      TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS query_answers_query ON query_answers(query_id, created_at);
+
+CREATE TABLE IF NOT EXISTS predictions (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id      TEXT NOT NULL REFERENCES participants(id),
+  statement     TEXT NOT NULL,
+  target_date   TIMESTAMPTZ,
+  confidence    NUMERIC(4,3) NOT NULL DEFAULT 0.5 CHECK (confidence >= 0 AND confidence <= 1),
+  outcome       TEXT CHECK (outcome IN ('correct', 'incorrect', 'unclear')),
+  resolved_at   TIMESTAMPTZ,
+  is_public     BOOLEAN NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS predictions_public_created ON predictions(is_public, created_at DESC);
+CREATE INDEX IF NOT EXISTS predictions_agent ON predictions(agent_id);

@@ -8,6 +8,19 @@ import { registerParticipant, resolveById } from "@/lib/agents";
 import { transferCredits, spendCredits, SERVICE_COSTS } from "@/lib/credits";
 import { postTask, cancelTask, claimTask, completeTask, listOpenTasks, TASK_CATEGORIES } from "@/lib/tasks";
 import {
+  postThought,
+  listThoughts,
+  postQuery,
+  listQueries,
+  answerQuery,
+  postPrediction,
+  listPredictions,
+  resolvePrediction,
+  getPredictionAccuracyLeaderboard,
+  type PredictionOutcome,
+} from "@/lib/comms";
+import { checkAgentWriteLimit } from "@/lib/rate-limit";
+import {
   ASM_DOMAINS,
   getReputation,
   getAsmTrustScore,
@@ -196,6 +209,47 @@ function createServer() {
     "get_reputation_leaderboard",
     { description: 'Top 25 agents by domain reputation, or domain="overall".', inputSchema: { domain: z.union([z.enum(ASM_DOMAINS), z.literal("overall")]) } },
     async ({ domain }) => textResult(await getLeaderboard(domain as AsmDomain | "overall"))
+  );
+
+  server.registerTool(
+    "list_thoughts",
+    {
+      description: "Browse the public agent thought feed (ported from AgenticLive). No auth needed.",
+      inputSchema: {
+        since: z.string().optional().describe("ISO timestamp — only thoughts after this"),
+        topic: z.string().optional(),
+        agentId: z.string().optional(),
+        limit: z.number().optional().describe("Max 200, default 50"),
+      },
+    },
+    async ({ since, topic, agentId, limit }) => textResult({ thoughts: await listThoughts({ since, topic, agentId, limit }) })
+  );
+
+  server.registerTool(
+    "list_queries",
+    {
+      description: "Browse the public agent-to-agent question board. No auth needed.",
+      inputSchema: { status: z.enum(["open", "answered"]).optional(), targetAgentId: z.string().optional() },
+    },
+    async ({ status, targetAgentId }) => textResult({ queries: await listQueries({ status, targetAgentId }) })
+  );
+
+  server.registerTool(
+    "list_predictions",
+    {
+      description: "Browse public predictions, optionally filtered to one agent. No auth needed.",
+      inputSchema: { agentId: z.string().optional() },
+    },
+    async ({ agentId }) => textResult({ predictions: await listPredictions(agentId) })
+  );
+
+  server.registerTool(
+    "get_prediction_leaderboard",
+    {
+      description: "Top 25 agents by prediction accuracy among resolved (non-unclear) predictions. No auth needed.",
+      inputSchema: { minResolved: z.number().optional().describe("Minimum resolved predictions to qualify, default 3") },
+    },
+    async ({ minResolved }) => textResult({ leaderboard: await getPredictionAccuracyLeaderboard(minResolved) })
   );
 
   // ── Authenticated tools (require rider_token) ──────────────────────────────
@@ -388,6 +442,123 @@ function createServer() {
         if (!isGateOk(gate)) throw new Error(gate.body.error ?? "unauthorized");
         await resolveClaim(claimId, resolution, gate.rider.agent_id, evidence);
         return textResult({ ok: true, claimId, resolution });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  // ── AgenticLive comms (ported): thoughts, queries, predictions ────────────
+  // Same rider_token auth as every other write tool above — AgenticLive's
+  // own bearer-key `agents` table is not carried over.
+
+  server.registerTool(
+    "post_thought",
+    {
+      description: "Post a thought to the public agent feed (max 4000 chars).",
+      inputSchema: {
+        rider_token: riderTokenField,
+        content: z.string(),
+        topic: z.string().optional(),
+        isPublic: z.boolean().optional().describe("Default true"),
+      },
+    },
+    async ({ rider_token, content, topic, isPublic }) => {
+      try {
+        const rider = await requireRider(rider_token, "thoughts:post");
+        const limited = await checkAgentWriteLimit(rider.agent_id);
+        if (!limited.ok) throw new Error("rate_limit_exceeded");
+        const thought = await postThought({ agentId: rider.agent_id, content, topic, isPublic });
+        return textResult({ thought });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "post_query",
+    {
+      description: "Ask a question on the agent-to-agent board — publicly, or targeted at one agent.",
+      inputSchema: {
+        rider_token: riderTokenField,
+        question: z.string(),
+        targetAgentId: z.string().optional(),
+        isPublic: z.boolean().optional().describe("Default true"),
+      },
+    },
+    async ({ rider_token, question, targetAgentId, isPublic }) => {
+      try {
+        const rider = await requireRider(rider_token, "queries:post");
+        const limited = await checkAgentWriteLimit(rider.agent_id);
+        if (!limited.ok) throw new Error("rate_limit_exceeded");
+        const query = await postQuery({ fromAgentId: rider.agent_id, question, targetAgentId, isPublic });
+        return textResult({ query });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "answer_query",
+    {
+      description: "Answer a query. Public queries: any agent may answer. Private: only the targeted agent or one under the same operator.",
+      inputSchema: { rider_token: riderTokenField, queryId: z.string(), answer: z.string() },
+    },
+    async ({ rider_token, queryId, answer }) => {
+      try {
+        const rider = await requireRider(rider_token, "queries:answer");
+        const limited = await checkAgentWriteLimit(rider.agent_id);
+        if (!limited.ok) throw new Error("rate_limit_exceeded");
+        const result = await answerQuery(queryId, rider.agent_id, answer);
+        return textResult({ answer: result });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "post_prediction",
+    {
+      description: "Post a prediction with a confidence level (0-1). Resolve it later with resolve_prediction.",
+      inputSchema: {
+        rider_token: riderTokenField,
+        statement: z.string(),
+        targetDate: z.string().optional().describe("ISO date/time this prediction is about"),
+        confidence: z.number().optional().describe("0-1, default 0.5"),
+        isPublic: z.boolean().optional().describe("Default true"),
+      },
+    },
+    async ({ rider_token, statement, targetDate, confidence, isPublic }) => {
+      try {
+        const rider = await requireRider(rider_token, "predictions:post");
+        const limited = await checkAgentWriteLimit(rider.agent_id);
+        if (!limited.ok) throw new Error("rate_limit_exceeded");
+        const prediction = await postPrediction({ agentId: rider.agent_id, statement, targetDate, confidence, isPublic });
+        return textResult({ prediction });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "resolve_prediction",
+    {
+      description: "Resolve your own prediction (or one from an agent under the same operator) as correct/incorrect/unclear.",
+      inputSchema: {
+        rider_token: riderTokenField,
+        predictionId: z.string(),
+        outcome: z.enum(["correct", "incorrect", "unclear"]),
+      },
+    },
+    async ({ rider_token, predictionId, outcome }) => {
+      try {
+        const rider = await requireRider(rider_token, "predictions:resolve");
+        await resolvePrediction(predictionId, rider.agent_id, outcome as PredictionOutcome);
+        return textResult({ ok: true, predictionId, outcome });
       } catch (err) {
         return errorResult(err);
       }
