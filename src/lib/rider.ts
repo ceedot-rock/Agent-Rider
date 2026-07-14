@@ -126,12 +126,15 @@ function missingRiderChallenge(reason: "missing_rider" | "invalid_rider", extra?
   };
 }
 
-export async function checkGate(
-  request: Request,
+// Shared by checkGate (HTTP routes, reads the X-Agent-Rider header) and the
+// MCP server (src/app/api/mcp/route.ts), which has no request/header object —
+// each gated tool call carries its rider token as a plain string argument
+// instead.
+export async function checkGateForToken(
+  token: string | null,
   minLevel: ClearanceLevel,
   scope?: string
 ): Promise<GateResult> {
-  const token = request.headers.get("x-agent-rider");
   if (!token) return missingRiderChallenge("missing_rider");
 
   const result = await verifyRider(token);
@@ -158,4 +161,12 @@ export async function checkGate(
   }
 
   return { ok: true, rider };
+}
+
+export async function checkGate(
+  request: Request,
+  minLevel: ClearanceLevel,
+  scope?: string
+): Promise<GateResult> {
+  return checkGateForToken(request.headers.get("x-agent-rider"), minLevel, scope);
 }
