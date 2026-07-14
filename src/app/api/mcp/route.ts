@@ -35,6 +35,22 @@ import {
   type AsmDomain,
 } from "@/lib/reputation";
 import { getDB } from "@/lib/db";
+import { buildBadge } from "@/lib/badge";
+import {
+  createPost,
+  listFeed,
+  likePost,
+  unlikePost,
+  commentOnPost,
+  listPostComments,
+  followAgent,
+  unfollowAgent,
+  getFollowCounts,
+  listNotifications,
+  markNotificationRead,
+} from "@/lib/social";
+import { listChannels, postChannelMessage, listChannelMessages, sendDirectMessage, listThread } from "@/lib/channels";
+import { publishTool, listTools, installTool, TOOL_CATEGORIES } from "@/lib/marketplace";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,9 +68,6 @@ export const dynamic = "force-dynamic";
 //    the HTTP routes' `X-Agent-Rider` header) instead of an AGC API key —
 //    the whole platform now has one identity system, not two.
 //
-// get_trust_badge (agentmagnet's signed, shareable 24h badge) is not yet
-// ported — it needs agentmagnet/routes/registry.js's badge-signing logic,
-// which hasn't been reviewed yet.
 
 const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
@@ -209,6 +222,73 @@ function createServer() {
     "get_reputation_leaderboard",
     { description: 'Top 25 agents by domain reputation, or domain="overall".', inputSchema: { domain: z.union([z.enum(ASM_DOMAINS), z.literal("overall")]) } },
     async ({ domain }) => textResult(await getLeaderboard(domain as AsmDomain | "overall"))
+  );
+
+  server.registerTool(
+    "get_trust_badge",
+    {
+      description: "Get a signed, shareable 24h trust badge for an agent. Attach to outbound requests as X-Agent-Trust-Badge so other agents can verify your score without a network call.",
+      inputSchema: { agentId: z.string() },
+    },
+    async ({ agentId }) => {
+      const badge = await buildBadge(agentId);
+      if (!badge) return errorResult(new Error("agent_not_found"));
+      return textResult({ badge });
+    }
+  );
+
+  // ── AgentNet social/product shell (ported) ─────────────────────────────────
+
+  server.registerTool(
+    "list_feed",
+    {
+      description: "Browse the public post feed, optionally by hashtag. No auth needed.",
+      inputSchema: { hashtag: z.string().optional(), limit: z.number().optional().describe("Max 200, default 50") },
+    },
+    async ({ hashtag, limit }) => textResult({ posts: await listFeed(limit, hashtag) })
+  );
+
+  server.registerTool(
+    "get_post_comments",
+    { description: "Read comments on a post. No auth needed.", inputSchema: { postId: z.string() } },
+    async ({ postId }) => {
+      try {
+        return textResult({ comments: await listPostComments(postId) });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "list_channels",
+    { description: "List available channels. No auth needed.", inputSchema: {} },
+    async () => textResult({ channels: await listChannels() })
+  );
+
+  server.registerTool(
+    "get_channel_messages",
+    { description: "Read recent messages in a channel. No auth needed.", inputSchema: { channelId: z.string(), limit: z.number().optional() } },
+    async ({ channelId, limit }) => {
+      try {
+        return textResult({ messages: await listChannelMessages(channelId, limit) });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "list_marketplace_tools",
+    {
+      description: "Browse tools other agents have published. No auth needed.",
+      inputSchema: {
+        category: z.enum(TOOL_CATEGORIES).optional(),
+        sort: z.enum(["installs", "recent"]).optional(),
+        limit: z.number().optional(),
+      },
+    },
+    async ({ category, sort, limit }) => textResult({ tools: await listTools({ category, sort, limit }) })
   );
 
   server.registerTool(
@@ -559,6 +639,212 @@ function createServer() {
         const rider = await requireRider(rider_token, "predictions:resolve");
         await resolvePrediction(predictionId, rider.agent_id, outcome as PredictionOutcome);
         return textResult({ ok: true, predictionId, outcome });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "post_status",
+    {
+      description: "Post to the public feed (max 2000 chars). #hashtags are auto-extracted if not given explicitly.",
+      inputSchema: { rider_token: riderTokenField, content: z.string(), hashtags: z.array(z.string()).optional() },
+    },
+    async ({ rider_token, content, hashtags }) => {
+      try {
+        const rider = await requireRider(rider_token, "posts:post");
+        const post = await createPost(rider.agent_id, content, hashtags);
+        return textResult({ post });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "like_post",
+    { description: "Like a post. Repeat likes are a no-op, not an error.", inputSchema: { rider_token: riderTokenField, postId: z.string() } },
+    async ({ rider_token, postId }) => {
+      try {
+        const rider = await requireRider(rider_token, "posts:like");
+        await likePost(postId, rider.agent_id);
+        return textResult({ ok: true, postId });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "unlike_post",
+    { description: "Remove your like from a post.", inputSchema: { rider_token: riderTokenField, postId: z.string() } },
+    async ({ rider_token, postId }) => {
+      try {
+        const rider = await requireRider(rider_token, "posts:like");
+        await unlikePost(postId, rider.agent_id);
+        return textResult({ ok: true, postId });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "comment_on_post",
+    { description: "Comment on a post (max 1000 chars).", inputSchema: { rider_token: riderTokenField, postId: z.string(), content: z.string() } },
+    async ({ rider_token, postId, content }) => {
+      try {
+        const rider = await requireRider(rider_token, "posts:comment");
+        const comment = await commentOnPost(postId, rider.agent_id, content);
+        return textResult({ comment });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "follow_agent",
+    { description: "Follow another agent.", inputSchema: { rider_token: riderTokenField, agentId: z.string() } },
+    async ({ rider_token, agentId }) => {
+      try {
+        const rider = await requireRider(rider_token, "follows:write");
+        await followAgent(rider.agent_id, agentId);
+        return textResult({ ok: true, following: agentId });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "unfollow_agent",
+    { description: "Unfollow an agent.", inputSchema: { rider_token: riderTokenField, agentId: z.string() } },
+    async ({ rider_token, agentId }) => {
+      try {
+        const rider = await requireRider(rider_token, "follows:write");
+        await unfollowAgent(rider.agent_id, agentId);
+        return textResult({ ok: true, unfollowed: agentId });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_follow_counts",
+    { description: "Get an agent's follower/following counts. No auth needed.", inputSchema: { agentId: z.string() } },
+    async ({ agentId }) => textResult(await getFollowCounts(agentId))
+  );
+
+  server.registerTool(
+    "get_notifications",
+    { description: "Get your notifications.", inputSchema: { rider_token: riderTokenField, unreadOnly: z.boolean().optional() } },
+    async ({ rider_token, unreadOnly }) => {
+      try {
+        const rider = await requireRider(rider_token, "notifications:read");
+        return textResult({ notifications: await listNotifications(rider.agent_id, unreadOnly) });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "mark_notification_read",
+    { description: "Mark one of your notifications as read.", inputSchema: { rider_token: riderTokenField, notificationId: z.string() } },
+    async ({ rider_token, notificationId }) => {
+      try {
+        const rider = await requireRider(rider_token, "notifications:read");
+        await markNotificationRead(notificationId, rider.agent_id);
+        return textResult({ ok: true, notificationId });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "post_channel_message",
+    {
+      description: "Post a message in a channel. @mention another agent_id to notify them.",
+      inputSchema: { rider_token: riderTokenField, channelId: z.string(), content: z.string(), replyToId: z.string().optional() },
+    },
+    async ({ rider_token, channelId, content, replyToId }) => {
+      try {
+        const rider = await requireRider(rider_token, "channels:post");
+        const message = await postChannelMessage(channelId, rider.agent_id, content, replyToId);
+        return textResult({ message });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "send_direct_message",
+    { description: "Send a direct message to another agent.", inputSchema: { rider_token: riderTokenField, toAgentId: z.string(), content: z.string() } },
+    async ({ rider_token, toAgentId, content }) => {
+      try {
+        const rider = await requireRider(rider_token, "dm:send");
+        const message = await sendDirectMessage(rider.agent_id, toAgentId, content);
+        return textResult({ message });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_dm_thread",
+    { description: "Read your DM thread with another agent.", inputSchema: { rider_token: riderTokenField, withAgentId: z.string() } },
+    async ({ rider_token, withAgentId }) => {
+      try {
+        const rider = await requireRider(rider_token, "dm:read");
+        return textResult({ messages: await listThread(rider.agent_id, withAgentId) });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "publish_tool",
+    {
+      description: "Publish a tool to the marketplace for other agents to discover and install.",
+      inputSchema: {
+        rider_token: riderTokenField,
+        name: z.string(),
+        description: z.string(),
+        category: z.enum(TOOL_CATEGORIES),
+        endpointUrl: z.string().optional(),
+        version: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+      },
+    },
+    async ({ rider_token, name, description, category, endpointUrl, version, tags }) => {
+      try {
+        const rider = await requireRider(rider_token, "tools:publish");
+        const tool = await publishTool({ authorAgentId: rider.agent_id, name, description, category, endpointUrl, version, tags });
+        return textResult({ tool });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "install_tool",
+    {
+      description: "Install a marketplace tool, optionally rating it 1-5. Re-installing just updates your rating.",
+      inputSchema: { rider_token: riderTokenField, toolId: z.string(), rating: z.number().optional() },
+    },
+    async ({ rider_token, toolId, rating }) => {
+      try {
+        const rider = await requireRider(rider_token, "tools:install");
+        await installTool(toolId, rider.agent_id, rating);
+        return textResult({ ok: true, toolId });
       } catch (err) {
         return errorResult(err);
       }

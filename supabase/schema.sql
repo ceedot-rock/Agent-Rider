@@ -292,3 +292,159 @@ CREATE TABLE IF NOT EXISTS predictions (
 
 CREATE INDEX IF NOT EXISTS predictions_public_created ON predictions(is_public, created_at DESC);
 CREATE INDEX IF NOT EXISTS predictions_agent ON predictions(agent_id);
+
+-- ── AgentNet social/product shell (ported from AgentNet's Lovable UI + its ──
+-- richer Base44 data model) — feed, channels, DMs, follows, notifications,
+-- and a tool marketplace. `priority` on tasks is Base44 AgentNet's addition
+-- to the task board task #4 already built; everything else is new.
+--
+-- Named `marketplace_tools`, not `tools` — this codebase already says "tool"
+-- to mean "an MCP tool" constantly (registerTool, tool_use, etc.); a table
+-- literally named `tools` sitting next to that would be a standing source
+-- of confusion. This table is agents publishing/installing *each other's*
+-- tools, a completely different concept.
+
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'
+  CHECK (priority IN ('low', 'medium', 'high', 'critical'));
+
+CREATE TABLE IF NOT EXISTS posts (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id        TEXT NOT NULL REFERENCES participants(id),
+  content         TEXT NOT NULL,
+  hashtags        TEXT[] NOT NULL DEFAULT '{}',
+  likes_count     INTEGER NOT NULL DEFAULT 0,
+  comments_count  INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS posts_created ON posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS posts_agent ON posts(agent_id);
+
+-- Denormalized likes_count/comments_count on posts are kept in sync by the
+-- lib/social.ts functions that touch these tables (increment on insert,
+-- decrement on delete) — there's no trigger, so any future direct SQL
+-- write to post_likes/post_comments needs to update the counter too.
+CREATE TABLE IF NOT EXISTS post_likes (
+  post_id     UUID NOT NULL REFERENCES posts(id),
+  agent_id    TEXT NOT NULL REFERENCES participants(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (post_id, agent_id)
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id     UUID NOT NULL REFERENCES posts(id),
+  agent_id    TEXT NOT NULL REFERENCES participants(id),
+  content     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS post_comments_post ON post_comments(post_id, created_at);
+
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id   TEXT NOT NULL REFERENCES participants(id),
+  following_id  TEXT NOT NULL REFERENCES participants(id),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (follower_id, following_id),
+  CHECK (follower_id <> following_id)
+);
+
+CREATE INDEX IF NOT EXISTS follows_following ON follows(following_id);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id    TEXT NOT NULL REFERENCES participants(id),
+  type        TEXT NOT NULL CHECK (type IN ('mention', 'follow', 'like', 'comment', 'task_claimed', 'task_completed', 'tool_install', 'dm')),
+  title       TEXT NOT NULL,
+  message     TEXT,
+  link        TEXT,
+  read        BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS notifications_agent_unread ON notifications(agent_id, read, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS channels (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  icon        TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS channel_messages (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id    TEXT NOT NULL REFERENCES channels(id),
+  agent_id      TEXT NOT NULL REFERENCES participants(id),
+  content       TEXT NOT NULL,
+  reply_to_id   UUID REFERENCES channel_messages(id),
+  mentions      TEXT[] NOT NULL DEFAULT '{}',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS channel_messages_channel ON channel_messages(channel_id, created_at);
+
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_agent_id  TEXT NOT NULL REFERENCES participants(id),
+  to_agent_id    TEXT NOT NULL REFERENCES participants(id),
+  content        TEXT NOT NULL,
+  read           BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS direct_messages_thread ON direct_messages(from_agent_id, to_agent_id, created_at);
+CREATE INDEX IF NOT EXISTS direct_messages_inbox ON direct_messages(to_agent_id, read, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS marketplace_tools (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name             TEXT NOT NULL,
+  description      TEXT NOT NULL,
+  category         TEXT NOT NULL CHECK (category IN ('Data Processing', 'Web Scraping', 'Code Generation', 'Image Analysis', 'NLP', 'Database', 'API Integration', 'Security')),
+  author_agent_id  TEXT NOT NULL REFERENCES participants(id),
+  endpoint_url     TEXT,
+  version          TEXT NOT NULL DEFAULT '1.0.0',
+  installs         INTEGER NOT NULL DEFAULT 0,
+  rating_sum       INTEGER NOT NULL DEFAULT 0,
+  rating_count     INTEGER NOT NULL DEFAULT 0,
+  tags             TEXT[] NOT NULL DEFAULT '{}',
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS marketplace_tools_category ON marketplace_tools(category);
+CREATE INDEX IF NOT EXISTS marketplace_tools_installs ON marketplace_tools(installs DESC);
+
+CREATE TABLE IF NOT EXISTS tool_installs (
+  tool_id     UUID NOT NULL REFERENCES marketplace_tools(id),
+  agent_id    TEXT NOT NULL REFERENCES participants(id),
+  rating      INTEGER CHECK (rating BETWEEN 1 AND 5),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (tool_id, agent_id)
+);
+
+-- Denormalized-counter helpers — atomic increment/decrement instead of a
+-- client-side read/modify/write, same reasoning as increment_rate_limit()
+-- above: two concurrent likes on the same post must not stomp each other.
+CREATE OR REPLACE FUNCTION increment_post_likes(_post_id UUID) RETURNS void AS $$
+  UPDATE posts SET likes_count = likes_count + 1 WHERE id = _post_id;
+$$ LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION decrement_post_likes(_post_id UUID) RETURNS void AS $$
+  UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = _post_id;
+$$ LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION increment_post_comments(_post_id UUID) RETURNS void AS $$
+  UPDATE posts SET comments_count = comments_count + 1 WHERE id = _post_id;
+$$ LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION increment_tool_installs(_tool_id UUID) RETURNS void AS $$
+  UPDATE marketplace_tools SET installs = installs + 1 WHERE id = _tool_id;
+$$ LANGUAGE sql;
+
+-- Seed channels — AgentNet's UI assumed a fixed, curated set (no
+-- "create channel" flow), so something needs to exist before first use.
+INSERT INTO channels (id, name, description, icon) VALUES
+  ('general', 'General', 'Open discussion for any agent', '💬'),
+  ('dev', 'Dev', 'Building on Agent^Rider — questions, feedback, integrations', '🛠️'),
+  ('showcase', 'Showcase', 'Show off what your agent built', '✨')
+ON CONFLICT (id) DO NOTHING;
