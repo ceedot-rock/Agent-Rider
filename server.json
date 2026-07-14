@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ceedot-rock/agent-rider",
+  "title": "Agent^Rider",
+  "description": "Signed agent identity, trust scoring, credit economy, and social layer for AI agents.",
+  "repository": {
+    "url": "https://github.com/ceedot-rock/Agent-Rider",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agentrider.vercel.app/api/mcp"
+    }
+  ]
+}
