@@ -76,19 +76,26 @@ export async function verifyPoWChain(participantId: string): Promise<{ valid: bo
   return { valid: true, length: chain.length };
 }
 
-// Front-loaded scoring (first 10 links worth more) — cheap Sybil resistance
-// without real proof-of-work compute: a chain only pays out well once it has
-// sustained history, not on a single burst of activity.
-function powChainScore(length: number): number {
-  const first = Math.min(length, 10) * 7;
-  const second = Math.min(Math.max(length - 10, 0), 10) * 2;
-  const rest = Math.max(length - 20, 0) * 0.5;
-  return Math.min(100, first + second + rest);
+// Ported verbatim from agentmagnet/routes/agent.js `GET /pow/:id` — 10 points
+// per verified chain link plus a flat 20-point bonus for an intact
+// (unbroken-hash) chain, capped at 100. A chain of length 8+ that verifies
+// already maxes out; the score exists to distinguish "no history" /
+// "some history" / "sustained, unbroken history" rather than to reward
+// raw volume indefinitely.
+function powChainScore(length: number, valid: boolean): number {
+  return Math.min(100, length * 10 + (valid ? 20 : 0));
 }
 
 export async function getPowScore(participantId: string): Promise<number> {
-  const { length } = await verifyPoWChain(participantId);
-  return powChainScore(length);
+  const { length, valid } = await verifyPoWChain(participantId);
+  return powChainScore(length, valid);
+}
+
+// Credits earned per task completion for extending an agent's PoW chain —
+// a separate concept from the trust-score formula above. Ported verbatim
+// from agentmagnet/routes/agent.js `POST /tasks/complete`.
+export function powChainCreditBonus(chainLengthAfterThisTask: number): number {
+  return Math.min((chainLengthAfterThisTask - 1) * 2, 20);
 }
 
 // ── ASM domain reputation ────────────────────────────────────────────────────
