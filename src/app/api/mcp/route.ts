@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { checkGateForToken, isGateOk } from "@/lib/rider";
 import { registerParticipant, resolveById } from "@/lib/agents";
@@ -56,7 +56,7 @@ export const dynamic = "force-dynamic";
 // ported — it needs agentmagnet/routes/registry.js's badge-signing logic,
 // which hasn't been reviewed yet.
 
-const transports: Record<string, StreamableHTTPServerTransport> = {};
+const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
 async function requireRider(riderToken: string | undefined, scope: string) {
   const gate = await checkGateForToken(riderToken ?? null, "L1", scope);
@@ -578,30 +578,48 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
-export async function POST(req: Request) {
+// createServer() + a session's transport are only wired up once, on the
+// initialize request; every subsequent request for that session reuses the
+// same transport instance from this module-level map (mirrors agentmagnet's
+// original design — sessions persist for the life of a warm Vercel instance,
+// clients re-initialize on cold starts).
+async function getOrCreateTransport(
+  req: Request,
+  body: unknown
+): Promise<{ transport: WebStandardStreamableHTTPServerTransport } | { errorResponse: Response }> {
   const sessionId = req.headers.get("mcp-session-id") ?? undefined;
-  const body = await req.json().catch(() => ({}));
+  const existing = sessionId ? transports[sessionId] : undefined;
+  if (existing) return { transport: existing };
 
-  let transport = sessionId ? transports[sessionId] : undefined;
-
-  if (!transport) {
-    if (sessionId || !isInitializeRequest(body)) {
-      return Response.json(
+  if (sessionId || !isInitializeRequest(body)) {
+    return {
+      errorResponse: Response.json(
         { jsonrpc: "2.0", error: { code: -32000, message: "Bad Request: send an initialize request first" }, id: null },
         { status: 400, headers: CORS_HEADERS }
-      );
-    }
-    transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      enableJsonResponse: true,
-      onsessioninitialized: (sid) => {
-        transports[sid] = transport!;
-      },
-    });
-    await createServer().connect(transport);
+      ),
+    };
   }
 
-  return toWebResponse(transport, body, sessionId);
+  let transport: WebStandardStreamableHTTPServerTransport;
+  transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    enableJsonResponse: true,
+    onsessioninitialized: (sid) => {
+      transports[sid] = transport;
+    },
+  });
+  await createServer().connect(transport);
+  return { transport };
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const result = await getOrCreateTransport(req, body);
+  if ("errorResponse" in result) return result.errorResponse;
+
+  const response = await result.transport.handleRequest(req, { parsedBody: body });
+  for (const [key, value] of Object.entries(CORS_HEADERS)) response.headers.set(key, value);
+  return response;
 }
 
 export async function DELETE(req: Request) {
@@ -617,48 +635,4 @@ export async function DELETE(req: Request) {
 
 export async function GET() {
   return new Response("Method Not Allowed", { status: 405, headers: { ...CORS_HEADERS, Allow: "POST, DELETE, OPTIONS" } });
-}
-
-// The SDK transport is written against Node's (req, res) http API; Next.js
-// route handlers speak the Web Request/Response API. This adapts one call
-// to the other rather than pulling in a second HTTP layer.
-async function toWebResponse(transport: StreamableHTTPServerTransport, body: unknown, existingSessionId?: string) {
-  const chunks: Buffer[] = [];
-  let statusCode = 200;
-  const headers = new Headers(CORS_HEADERS);
-
-  const fakeRes = {
-    statusCode: 200,
-    headersSent: false,
-    setHeader(name: string, value: string) {
-      headers.set(name, value);
-      return this;
-    },
-    getHeader(name: string) {
-      return headers.get(name) ?? undefined;
-    },
-    writeHead(code: number, hdrs?: Record<string, string>) {
-      statusCode = code;
-      this.headersSent = true;
-      if (hdrs) for (const [k, v] of Object.entries(hdrs)) headers.set(k, v);
-      return this;
-    },
-    write(chunk: string | Buffer) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-      return true;
-    },
-    end(chunk?: string | Buffer) {
-      if (chunk) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    },
-    on() {
-      return this;
-    },
-  };
-
-  const fakeReq = { headers: { "mcp-session-id": existingSessionId } };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await transport.handleRequest(fakeReq as any, fakeRes as any, body);
-
-  return new Response(Buffer.concat(chunks), { status: statusCode, headers });
 }
