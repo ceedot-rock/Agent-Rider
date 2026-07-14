@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify, importPKCS8, importSPKI, type CryptoKey } from "jose";
+import { getDB } from "@/lib/db";
 
 export type ClearanceLevel = "L0" | "L1" | "L2" | "L3" | "L4";
 
@@ -81,14 +82,18 @@ export function hasScope(rider: RiderPayload, required: string): boolean {
   );
 }
 
-// --- revocation (in-memory demo stub — swap for Upstash/KV before real use;
-// resets on every cold start and isn't shared across serverless instances) --
-const revoked = new Set<string>();
-export function isRevoked(jti: string): boolean {
-  return revoked.has(jti);
+// --- revocation (Postgres-backed — see supabase/schema.sql `revoked_tokens`;
+// durable and shared across serverless instances, unlike the in-memory Set
+// this replaced) ------------------------------------------------------------
+export async function isRevoked(jti: string): Promise<boolean> {
+  const { data } = await getDB().from("revoked_tokens").select("jti").eq("jti", jti).single();
+  return data !== null;
 }
-export function revoke(jti: string) {
-  revoked.add(jti);
+
+export async function revoke(jti: string, agentId?: string, reason?: string): Promise<void> {
+  await getDB()
+    .from("revoked_tokens")
+    .upsert({ jti, agent_id: agentId ?? null, reason: reason ?? null });
 }
 
 // --- shared gate check, used by every demo route -------------------------
@@ -121,12 +126,15 @@ function missingRiderChallenge(reason: "missing_rider" | "invalid_rider", extra?
   };
 }
 
-export async function checkGate(
-  request: Request,
+// Shared by checkGate (HTTP routes, reads the X-Agent-Rider header) and the
+// MCP server (src/app/api/mcp/route.ts), which has no request/header object —
+// each gated tool call carries its rider token as a plain string argument
+// instead.
+export async function checkGateForToken(
+  token: string | null,
   minLevel: ClearanceLevel,
   scope?: string
 ): Promise<GateResult> {
-  const token = request.headers.get("x-agent-rider");
   if (!token) return missingRiderChallenge("missing_rider");
 
   const result = await verifyRider(token);
@@ -136,7 +144,7 @@ export async function checkGate(
 
   const rider = result.rider;
 
-  if ((minLevel === "L3" || minLevel === "L4") && isRevoked(rider.jti)) {
+  if ((minLevel === "L3" || minLevel === "L4") && (await isRevoked(rider.jti))) {
     return { ok: false, status: 403, body: { error: "revoked" } };
   }
 
@@ -153,4 +161,12 @@ export async function checkGate(
   }
 
   return { ok: true, rider };
+}
+
+export async function checkGate(
+  request: Request,
+  minLevel: ClearanceLevel,
+  scope?: string
+): Promise<GateResult> {
+  return checkGateForToken(request.headers.get("x-agent-rider"), minLevel, scope);
 }

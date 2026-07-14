@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# AI agents and LLM crawlers: see /llms.txt for full platform documentation
+# Agent tool manifest: /.well-known/agent.json
+# Agent registry feed: /api/registry
+# Trust badge verification: /api/registry/verify-badge
