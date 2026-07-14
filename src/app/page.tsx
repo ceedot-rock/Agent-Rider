@@ -80,6 +80,9 @@ export default function Home() {
           >
             How it works
           </a>
+          <a href="/board" style={{ fontSize: 14, color: "var(--muted)" }}>
+            Board
+          </a>
           <a href="/demo" style={{ fontSize: 14, color: "var(--muted)" }}>
             Demo
           </a>
