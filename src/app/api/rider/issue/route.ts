@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { issueRider, type ClearanceLevel } from "@/lib/rider";
 import { findSubscriptionByMerchantKey } from "@/lib/stripe";
+import { resolveById } from "@/lib/agents";
+import { getBlendedTrustScore } from "@/lib/reputation";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const VALID_LEVELS = new Set<ClearanceLevel>(["L0", "L1", "L2", "L3", "L4"]);
@@ -43,7 +45,14 @@ export async function POST(req: NextRequest) {
   const agent_id: string = body.agent_id ?? `agent-${crypto.randomUUID().slice(0, 8)}`;
   const operator_id: string = body.operator_id ?? "unknown-operator";
   const scopes: string[] = Array.isArray(body.scopes) ? body.scopes : ["read:catalog"];
-  const reputation_score: number | undefined = body.reputation_score;
+
+  // Look up the real computed trust score for registered agents (see
+  // src/lib/reputation.ts) instead of trusting a caller-supplied value —
+  // reputation_score used to be an unvalidated pass-through field. Unknown/
+  // unregistered agent_ids (most callers, since registration is optional)
+  // simply carry no reputation_score.
+  const participant = await resolveById(agent_id).catch(() => null);
+  const reputation_score = participant ? await getBlendedTrustScore(agent_id) : undefined;
 
   const { token, jti, expires_in } = await issueRider({
     agent_id,
