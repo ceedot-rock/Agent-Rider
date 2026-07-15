@@ -1,8 +1,6 @@
-import { randomUUID } from "crypto";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { checkGateForToken, isGateOk } from "@/lib/rider";
 import { registerParticipant, resolveById } from "@/lib/agents";
 import { transferCredits, spendCredits, SERVICE_COSTS } from "@/lib/credits";
@@ -68,8 +66,20 @@ export const dynamic = "force-dynamic";
 //    the HTTP routes' `X-Agent-Rider` header) instead of an AGC API key —
 //    the whole platform now has one identity system, not two.
 //
-
-const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
+// 3. Stateless transport (sessionIdGenerator: undefined), not the SDK's
+//    stateful default. The original design kept live transports in a
+//    module-level `transports` map keyed by mcp-session-id — that only
+//    survives if every request in a session lands on the same warm
+//    Vercel instance, which serverless does not guarantee (no sticky
+//    routing between separate invocations). A session created on one
+//    instance is invisible to another, so any follow-up request that
+//    landed elsewhere got a false "send an initialize request first" 400,
+//    silently killing real tool calls after a successful handshake. None
+//    of the tool handlers below actually need session continuity — every
+//    one re-authenticates from its own `rider_token` argument rather than
+//    session-stored state — so there's nothing stateful to lose. This is
+//    the SDK's own documented pattern for exactly this deployment shape
+//    (see examples/server/simpleStatelessStreamableHttp.ts).
 
 async function requireRider(riderToken: string | undefined, scope: string) {
   const gate = await checkGateForToken(riderToken ?? null, "L1", scope);
@@ -864,59 +874,53 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
-// createServer() + a session's transport are only wired up once, on the
-// initialize request; every subsequent request for that session reuses the
-// same transport instance from this module-level map (mirrors agentmagnet's
-// original design — sessions persist for the life of a warm Vercel instance,
-// clients re-initialize on cold starts).
-async function getOrCreateTransport(
-  req: Request,
-  body: unknown
-): Promise<{ transport: WebStandardStreamableHTTPServerTransport } | { errorResponse: Response }> {
-  const sessionId = req.headers.get("mcp-session-id") ?? undefined;
-  const existing = sessionId ? transports[sessionId] : undefined;
-  if (existing) return { transport: existing };
-
-  if (sessionId || !isInitializeRequest(body)) {
-    return {
-      errorResponse: Response.json(
-        { jsonrpc: "2.0", error: { code: -32000, message: "Bad Request: send an initialize request first" }, id: null },
-        { status: 400, headers: CORS_HEADERS }
-      ),
-    };
+// Logs which JSON-RPC method (and, for tool calls, which tool) each request
+// carries — the traffic breakdown by HTTP path alone can't distinguish a
+// crawler doing initialize+tools/list from an agent actually calling
+// register_agent or claim_task, since every one of those hits this same
+// route. Deliberately logs only the method/tool name, never `params` — tool
+// arguments include rider_token and other values that shouldn't end up in
+// logs.
+function logMcpRequest(body: unknown): void {
+  const messages = Array.isArray(body) ? body : [body];
+  for (const message of messages) {
+    if (!message || typeof message !== "object" || !("method" in message)) continue;
+    const method = (message as { method: unknown }).method;
+    if (typeof method !== "string") continue;
+    if (method === "tools/call") {
+      const params = (message as { params?: { name?: unknown } }).params;
+      const toolName = typeof params?.name === "string" ? params.name : "unknown";
+      console.log("mcp request", method, toolName);
+    } else {
+      console.log("mcp request", method);
+    }
   }
-
-  let transport: WebStandardStreamableHTTPServerTransport;
-  transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-    enableJsonResponse: true,
-    onsessioninitialized: (sid) => {
-      transports[sid] = transport;
-    },
-  });
-  await createServer().connect(transport);
-  return { transport };
 }
 
+// Every request gets its own fresh server + transport pair, handles exactly
+// one request/response, then both are discarded — no cross-request state,
+// so nothing to lose when a request lands on a different serverless
+// instance than the last one. mcp-session-id is neither expected nor
+// produced; a client's own session bookkeeping (if it has any) is just
+// ignored server-side rather than validated.
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  const result = await getOrCreateTransport(req, body);
-  if ("errorResponse" in result) return result.errorResponse;
+  logMcpRequest(body);
 
-  const response = await result.transport.handleRequest(req, { parsedBody: body });
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+  await createServer().connect(transport);
+
+  const response = await transport.handleRequest(req, { parsedBody: body });
   for (const [key, value] of Object.entries(CORS_HEADERS)) response.headers.set(key, value);
   return response;
 }
 
-export async function DELETE(req: Request) {
-  const sessionId = req.headers.get("mcp-session-id") ?? undefined;
-  const transport = sessionId ? transports[sessionId] : undefined;
-  if (!transport) {
-    return Response.json({ error: "session_not_found" }, { status: 404, headers: CORS_HEADERS });
-  }
-  await transport.close();
-  if (sessionId) delete transports[sessionId];
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
+// No sessions exist in stateless mode, so there's never anything to close.
+export async function DELETE() {
+  return Response.json({ error: "session_not_found" }, { status: 404, headers: CORS_HEADERS });
 }
 
 export async function GET() {
