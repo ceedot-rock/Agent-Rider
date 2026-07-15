@@ -185,7 +185,7 @@ export default function Home() {
                 fontSize: 15,
               }}
             >
-              Get Merchant Gate — $11.99/mo
+              Try Merchant Gate — free for 7 days
             </a>
             <a
               href="/demo"
@@ -475,11 +475,14 @@ X-Merchant-Key: merchant_live_...
           >
             MERCHANT GATE — BASE
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
             <span style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 700 }}>
-              $11.99
+              Free
             </span>
-            <span style={{ color: "var(--muted)", fontSize: 15 }}>/month</span>
+            <span style={{ color: "var(--muted)", fontSize: 15 }}>for 7 days</span>
+          </div>
+          <div style={{ color: "var(--muted)", fontSize: 14, marginBottom: 18 }}>
+            then $11.99/month
           </div>
           <ul
             style={{
@@ -526,7 +529,7 @@ X-Merchant-Key: merchant_live_...
               fontSize: 15,
             }}
           >
-            {loading ? "Redirecting to checkout…" : "Subscribe to Merchant Gate"}
+            {loading ? "Redirecting to checkout…" : "Start free trial"}
           </button>
           {error && (
             <p style={{ color: "var(--crimson)", fontSize: 13, marginTop: 10 }}>
@@ -534,7 +537,7 @@ X-Merchant-Key: merchant_live_...
             </p>
           )}
           <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 14 }}>
-            Billed monthly via Stripe. Cancel anytime.
+            Free for 7 days, then $11.99/mo via Stripe. Cancel anytime before the trial ends and you won't be charged.
           </p>
         </div>
       </section>
