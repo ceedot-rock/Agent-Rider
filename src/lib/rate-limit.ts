@@ -34,3 +34,31 @@ export async function checkRateLimit(
 export function checkAgentWriteLimit(agentId: string) {
   return checkRateLimit(`comms_write:${agentId}`, 30, 60);
 }
+
+// POST /api/checkout has no rider gate — it's meant to be callable by an
+// anonymous visitor before they have any credential, so it's keyed by IP
+// instead of agent_id. Without this, anyone could script unlimited real
+// Stripe Checkout Session creations for free. 5/hour is generous for a
+// real visitor (checkout is a rare, deliberate action — nobody legitimately
+// needs more than a couple of attempts) while shutting down scripted abuse.
+export function checkCheckoutLimit(ip: string) {
+  return checkRateLimit(`checkout:${ip}`, 5, 3600);
+}
+
+// GET /api/provision is also unauthenticated (the success page calls it
+// with only a session_id) and makes a real Stripe API call per request.
+// Session IDs are long, random, and Stripe-generated, so this isn't a
+// guessable-secret risk — the point of rate limiting it is to stop someone
+// from flooding it with garbage IDs to burn Stripe API quota. More
+// permissive than checkout itself since the docs' own eventual-consistency
+// note ("retry briefly right after checkout") means a few legitimate
+// retries in quick succession are expected.
+export function checkProvisionLimit(ip: string) {
+  return checkRateLimit(`provision:${ip}`, 20, 600);
+}
+
+export function getClientIp(req: Request): string {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}

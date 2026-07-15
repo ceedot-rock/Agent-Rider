@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveSession, updateSubscriptionMetadata } from "@/lib/stripe";
 import { generateMerchantKey } from "@/lib/merchant-key";
+import { checkProvisionLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  const rl = await checkProvisionLimit(getClientIp(req));
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "rate_limit_exceeded" },
+      { status: 429, headers: { "retry-after": String(rl.retryAfter) } }
+    );
+  }
+
   const sessionId = req.nextUrl.searchParams.get("session_id");
   if (!sessionId) {
     return NextResponse.json({ error: "session_id required" }, { status: 400 });
