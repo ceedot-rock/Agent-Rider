@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify, importPKCS8, importSPKI, type CryptoKey } from "jose";
+import { SignJWT, jwtVerify, importPKCS8, importSPKI, exportJWK, calculateJwkThumbprint, type CryptoKey, type JWK } from "jose";
 import { getDB } from "@/lib/db";
 
 export type ClearanceLevel = "L0" | "L1" | "L2" | "L3" | "L4";
@@ -28,6 +28,7 @@ if (!privatePem || !publicPem) {
 
 let signingKeyPromise: Promise<CryptoKey> | null = null;
 let verifyKeyPromise: Promise<CryptoKey> | null = null;
+let publicJwkPromise: Promise<JWK & { kid: string }> | null = null;
 
 function getSigningKey(): Promise<CryptoKey> {
   if (!signingKeyPromise) signingKeyPromise = importPKCS8(privatePem!, "ES256");
@@ -39,14 +40,36 @@ function getVerifyKey(): Promise<CryptoKey> {
   return verifyKeyPromise;
 }
 
+// The public half of the signing key, as a JWK — this is what makes "any
+// gate verifies locally, no round trip to us" actually true for a third
+// party instead of just for our own /api/rider/verify. `kid` is an RFC 7638
+// thumbprint of the key itself, so it stays stable across deploys and lets
+// a future key rotation publish both old and new keys without breaking
+// tokens already in flight.
+async function getPublicJwk(): Promise<JWK & { kid: string }> {
+  if (!publicJwkPromise) {
+    publicJwkPromise = (async () => {
+      const key = await getVerifyKey();
+      const jwk = await exportJWK(key);
+      const kid = await calculateJwkThumbprint(jwk);
+      return { ...jwk, kid, alg: "ES256", use: "sig" };
+    })();
+  }
+  return publicJwkPromise;
+}
+
+export async function getJwks(): Promise<{ keys: (JWK & { kid: string })[] }> {
+  return { keys: [await getPublicJwk()] };
+}
+
 export async function issueRider(
   payload: Omit<RiderPayload, "jti">,
   ttlSeconds: number = DEFAULT_TTL_SECONDS
 ): Promise<{ token: string; jti: string; expires_in: number }> {
   const jti = crypto.randomUUID();
-  const key = await getSigningKey();
+  const [key, jwk] = await Promise.all([getSigningKey(), getPublicJwk()]);
   const token = await new SignJWT({ ...payload, jti })
-    .setProtectedHeader({ alg: "ES256", typ: "JWT" })
+    .setProtectedHeader({ alg: "ES256", typ: "JWT", kid: jwk.kid })
     .setIssuer(ISSUER)
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + ttlSeconds)

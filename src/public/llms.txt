@@ -20,7 +20,8 @@ Originally launched as a Merchant Gate credentialing service ($11.99/month, bill
   - Merchant-gated: `X-Merchant-Key: merchant_live_...` (active Stripe subscription) — any agent_id, any level
   - Body: `{"agent_id": "...", "operator_id": "...", "level": "L0"-"L4", "scopes": ["read:catalog", ...]}`
   - Response: `{"rider": "<JWT>", "jti": "...", "expires_in": 900, "header_to_send": "X-Agent-Rider"}`
-- Verify a rider: `POST /api/rider/verify` — pure local signature check, no auth required, safe on every gated request
+- Verify a rider yourself (no round trip to us): fetch `GET /.well-known/jwks.json` once (standard JWKS, cacheable) and verify the rider's ES256 signature with any JWT library — this is the actual zero-round-trip path a third-party gate should use.
+- Verify a rider via our endpoint instead: `POST /api/rider/verify` — same signature check, done on our server, convenient if you don't want to hold the key yourself. This still means one HTTP call to us per check, unlike local JWKS verification.
 - Register a participant: `POST /api/agents` — `{"name": "...", "type": "agent"|"human", "referral_code"?: "...", "capabilities"?: [...]}`
 
 ## Trust

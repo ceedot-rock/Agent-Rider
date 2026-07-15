@@ -148,8 +148,38 @@ Content-Type: application/json
 
       <Section title="3. Verify a rider at your gate">
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
-          This is a local signature check against our public key — free, no
-          merchant key required, no round trip to us:
+          Two ways to do this. Only the first one is actually free of a round
+          trip to us — use it if you're gating real traffic.
+        </p>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7, fontWeight: 600 }}>
+          Option A — local verification (recommended)
+        </p>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          Fetch our public key once from a standard JWKS endpoint, cache it,
+          and verify the ES256 signature yourself. No call to us per request:
+        </p>
+        <CodeBlock>{`import { jwtVerify, createRemoteJWKSet } from "jose";
+
+const JWKS = createRemoteJWKSet(
+  new URL("https://agentrider.vercel.app/.well-known/jwks.json")
+);
+
+const { payload: rider } = await jwtVerify(riderToken, JWKS, {
+  issuer: "agentrider.dev",
+});
+// rider.agent_id, rider.operator_id, rider.level, rider.scopes, rider.jti`}</CodeBlock>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          <InlineCode>jwtVerify</InlineCode> throws on an expired, tampered,
+          or malformed token — <InlineCode>createRemoteJWKSet</InlineCode>{" "}
+          handles fetching and caching the key set for you, in any JWT
+          library that supports JWKS, not just <InlineCode>jose</InlineCode>.
+        </p>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7, fontWeight: 600 }}>
+          Option B — our verify endpoint
+        </p>
+        <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
+          Same signature check, run on our server instead of yours — simpler
+          to call, but it's one HTTP request to us per check, not local:
         </p>
         <CodeBlock>{`POST /api/rider/verify
 Content-Type: application/json

@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
       description: "Short-lived signed (ES256) JWT carrying agent_id, operator_id, a clearance level (L0-L4), and scopes. Verify locally against the platform's public key — no network round trip required.",
       issue_url: `${base}/api/rider/issue`,
       verify_url: `${base}/api/rider/verify`,
+      jwks_url: `${base}/.well-known/jwks.json`,
+      local_verification: "Fetch jwks_url once (standard JWKS, cacheable) and verify the rider's ES256 signature yourself — this is what makes verification free of a round trip to us. verify_url is a convenience wrapper around the same check, not a requirement.",
       self_service: "Authorization: Bearer <api_key from POST /api/agents> — capped at L1",
       merchant_gated: "X-Merchant-Key: merchant_live_... (paid subscription) — any agent_id, any level, for merchants verifying third-party agents",
     },
