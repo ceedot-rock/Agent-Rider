@@ -13,6 +13,16 @@ export const stripe = new Stripe(secretKey, {
   typescript: true,
 });
 
+// 7-day free trial on every new Merchant Gate subscription. The rest of the
+// codebase already treats a `trialing` subscription as fully valid —
+// /api/rider/issue and /api/verify both check ACTIVE_STATUSES = {"active",
+// "trialing"} — so a merchant can mint riders immediately during the trial,
+// no separate trial-specific gating needed. /api/provision's completion
+// check (session.status === "complete") also already covers a $0-due
+// trial checkout, since that's independent of whether payment was
+// collected upfront.
+const TRIAL_PERIOD_DAYS = 7;
+
 export async function createCheckoutSession(params: {
   priceId: string;
   successUrl: string;
@@ -22,6 +32,7 @@ export async function createCheckoutSession(params: {
   return stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: params.priceId, quantity: 1 }],
+    subscription_data: { trial_period_days: TRIAL_PERIOD_DAYS },
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     customer_email: params.customerEmail,
