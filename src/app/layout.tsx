@@ -4,15 +4,16 @@ import { SITE_URL } from "@/lib/site";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Agent^Rider — Portable trust for AI agents",
+  title: "Agent^Rider — Identity Credentials for AI Agent Fleets",
   description:
-    "One verification, carried everywhere. Agent^Rider issues a signed credential your agents present at every gate — no re-checking identity at every network they touch.",
+    "Stop making your agents re-prove themselves at every system they touch. Agent^Rider issues signed, tamper-evident credentials for AI agents — any gate verifies them locally, for free, in milliseconds.",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
-    title: "Agent^Rider — Portable trust for AI agents",
-    description: "One verification, carried everywhere.",
+    title: "Agent^Rider — Identity Credentials for AI Agent Fleets",
+    description:
+      "Signed, verifiable credentials for AI agents. Issue once, verified everywhere your agents go — no re-vetting, no callback.",
     images: ["/brand/og-image.png"],
     type: "website",
   },
