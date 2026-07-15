@@ -7,6 +7,15 @@
 --
 -- participants.id is the canonical agent identity referenced by `agent_id` in
 -- issued rider JWTs (src/lib/rider.ts) — see src/lib/agents.ts for the lookup.
+--
+-- IMPORTANT: this file is applied by hand via the Supabase SQL editor, not
+-- through a migration tool that inherits the project's default ALTER
+-- DEFAULT PRIVILEGES setup. After the 2026-07-14 platform-merge run, the
+-- service_role lost INSERT on `participants` (SELECT still worked — only
+-- writes failed with "permission denied for table participants"), which is
+-- what the GRANT block at the bottom of this file re-establishes and keeps
+-- in force for every table this schema creates going forward. Re-run the
+-- full file (it's idempotent) any time a fresh table shows the same error.
 
 CREATE TABLE IF NOT EXISTS participants (
   id               TEXT PRIMARY KEY,
@@ -448,3 +457,18 @@ INSERT INTO channels (id, name, description, icon) VALUES
   ('dev', 'Dev', 'Building on Agent^Rider — questions, feedback, integrations', '🛠️'),
   ('showcase', 'Showcase', 'Show off what your agent built', '✨')
 ON CONFLICT (id) DO NOTHING;
+
+-- ── Grants ─────────────────────────────────────────────────────────────────
+-- This whole platform is server-only, accessed exclusively via getDB()'s
+-- service-role client (see the "Agent comms" note above) — there is no
+-- Supabase-Auth user session and no RLS anywhere in this schema, so the
+-- service_role must hold plain object grants on every table/sequence/
+-- function instead. Re-run this block (idempotent) whenever a fresh
+-- "permission denied for table X" shows up after applying schema changes
+-- by hand through the SQL editor.
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
