@@ -7,22 +7,22 @@ const STEPS = [
   {
     n: "01",
     label: "Request",
-    body: "An agent asks Agent^Rider for a credential before it ever touches your systems.",
+    body: "Before your agent touches a new system, you ask Agent^Rider for a credential on its behalf.",
   },
   {
     n: "02",
     label: "Verify",
-    body: "We run the identity and clearance checks once — origin network, operator, scope.",
+    body: "We run the identity and clearance checks once — origin network, operator, scope. You don't build that pipeline yourself.",
   },
   {
     n: "03",
     label: "Issue",
-    body: "A signed rider is handed back: a compact, tamper-evident proof of who's asking and what they're cleared for.",
+    body: "A signed rider comes back: a compact, tamper-evident proof of who's asking and what they're cleared for. Expires automatically.",
   },
   {
     n: "04",
     label: "Present",
-    body: "Your gate reads the rider, not the agent's whole history. No re-verification, no round trip.",
+    body: "Every gate your agent crosses reads the rider directly, for free, in milliseconds. No re-vetting, no call back to you.",
   },
 ];
 
@@ -143,7 +143,7 @@ export default function Home() {
                 display: "inline-block",
               }}
             />
-            LIVE — MERCHANT GATE ACCEPTING RIDERS
+            FOR TEAMS RUNNING AI AGENTS IN PRODUCTION
           </div>
           <h1
             style={{
@@ -155,9 +155,9 @@ export default function Home() {
               margin: "0 0 22px",
             }}
           >
-            One verification.
+            Stop making your agents
             <br />
-            Carried <span style={{ color: "var(--crimson)" }}>everywhere</span>.
+            re-prove themselves <span style={{ color: "var(--crimson)" }}>every time</span>.
           </h1>
           <p
             style={{
@@ -168,9 +168,11 @@ export default function Home() {
               margin: "0 0 32px",
             }}
           >
-            Agent^Rider issues a signed credential your AI agents present at
-            every gate they cross — checkout, catalog, account systems. Verify
-            once. Stop re-checking identity at every network they touch.
+            Every new API your agents touch means rebuilding trust from
+            zero — or you building your own identity system to avoid it.
+            Agent^Rider issues a signed, tamper-evident credential for each
+            agent your fleet runs. Any gate verifies it locally, for free,
+            in milliseconds — no callback, no re-vetting.
           </p>
           <div style={{ display: "flex", gap: 12 }}>
             <a
@@ -183,10 +185,10 @@ export default function Home() {
                 fontSize: 15,
               }}
             >
-              Start at $11.99/mo
+              Get Merchant Gate — $11.99/mo
             </a>
             <a
-              href="#pipeline"
+              href="/demo"
               style={{
                 padding: "13px 26px",
                 border: "1px solid var(--panel-line)",
@@ -195,7 +197,7 @@ export default function Home() {
                 color: "var(--white)",
               }}
             >
-              See how the gate works
+              See a live gate check
             </a>
           </div>
         </div>
@@ -310,7 +312,7 @@ export default function Home() {
             marginBottom: 8,
           }}
         >
-          The gate, in four steps
+          How your agents get (and prove) trust
         </h2>
         <p style={{ color: "var(--muted)", marginBottom: 40, maxWidth: 560 }}>
           This is the actual order a request moves through — not a marketing
@@ -355,6 +357,93 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Proof: real request/response, not a mockup */}
+      <section style={{ padding: "0 0 88px" }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 28,
+            fontWeight: 700,
+            marginBottom: 8,
+          }}
+        >
+          The actual API, not a mockup
+        </h2>
+        <p style={{ color: "var(--muted)", marginBottom: 32, maxWidth: 560 }}>
+          Two calls. Issuing a rider needs your merchant key; verifying one
+          doesn't — any system your agent talks to can check it for free.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 20,
+          }}
+          className="proof-grid"
+        >
+          <pre
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--panel-line)",
+              borderRadius: 8,
+              padding: "16px 18px",
+              overflowX: "auto",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12.5,
+              lineHeight: 1.6,
+              color: "var(--white)",
+              margin: 0,
+            }}
+          >
+            <code>{`POST /api/rider/issue
+X-Merchant-Key: merchant_live_...
+
+{
+  "agent_id": "a7f2-rider-9c14",
+  "operator_id": "network.acme-fleet",
+  "level": "L2"
+}
+
+→ { "rider": "eyJhbGciOiJFUzI1NiIs...",
+    "expires_in": 900 }`}</code>
+          </pre>
+          <pre
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--panel-line)",
+              borderRadius: 8,
+              padding: "16px 18px",
+              overflowX: "auto",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12.5,
+              lineHeight: 1.6,
+              color: "var(--white)",
+              margin: 0,
+            }}
+          >
+            <code>{`POST /api/rider/verify
+(no auth required — free, local check)
+
+{ "rider": "eyJhbGciOiJFUzI1NiIs..." }
+
+→ { "valid": true,
+    "rider": { "agent_id": "a7f2-rider-9c14",
+               "level": "L2" } }`}</code>
+          </pre>
+        </div>
+        <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 20 }}>
+          Full contract, error codes, and clearance levels in{" "}
+          <a href="/docs" style={{ color: "var(--gold)" }}>
+            the docs
+          </a>
+          , or run it live in{" "}
+          <a href="/demo" style={{ color: "var(--gold)" }}>
+            the demo
+          </a>
+          .
+        </p>
       </section>
 
       {/* Pricing / Checkout */}
@@ -402,10 +491,10 @@ export default function Home() {
               lineHeight: 2,
             }}
           >
-            <li>Drop-in gate middleware</li>
-            <li>Rider issuance API</li>
-            <li>Unlimited verification checks</li>
-            <li>Webhook-based provisioning</li>
+            <li>Rider issuance API for your agents</li>
+            <li>L0–L4 clearance levels + scopes</li>
+            <li>Unlimited free verification, for any gate</li>
+            <li>Self-describing 401s agents can follow</li>
           </ul>
           <input
             type="email"
@@ -471,6 +560,9 @@ export default function Home() {
           }
           .pipeline-grid {
             grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .proof-grid {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>
