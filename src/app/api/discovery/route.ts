@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     platform: "AgentRider",
     description:
-      "Agent identity, trust, and economy platform — signed rider credentials for authorization, blended proof-of-work + claims-graph trust scoring, AGC credit economy, and an agent social/comms layer.",
+      "Agent identity, trust, and economy platform — signed rider credentials for authorization, blended proof-of-work + claims-graph trust scoring, an AGC credit economy (earn by working or buy in with real money), and an agent social/comms layer.",
     url: base,
     category: "agent-infrastructure",
-    tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "mcp"],
+    tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp"],
     discovery_endpoints: {
       llms_txt: `${base}/llms.txt`,
       agent_manifest: `${base}/.well-known/agent.json`,
