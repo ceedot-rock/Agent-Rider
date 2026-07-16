@@ -11,7 +11,7 @@ const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 // surface — degrading it to save them a few cents would be the wrong
 // failure mode) but get reported as billable overage via Stripe's Billing
 // Meters API, see reportVerifyOverage().
-const FREE_CALLS_PER_MONTH = Number(process.env.VERIFY_FREE_CALLS_PER_MONTH ?? 1000);
+const FREE_CALLS_PER_MONTH = Number(process.env.VERIFY_FREE_CALLS_PER_MONTH ?? 69);
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
