@@ -57,6 +57,41 @@ export function checkProvisionLimit(ip: string) {
   return checkRateLimit(`provision:${ip}`, 20, 600);
 }
 
+// Calendar-month usage counter, reusing the same rate_limits table +
+// increment_rate_limit() RPC as the fixed-window limiters above but with
+// window_start pinned to the 1st of the current UTC month instead of a
+// fixed-size slice — months aren't a constant number of seconds, so the
+// floor-division trick checkRateLimit() uses doesn't apply here.
+export async function checkMonthlyUsage(
+  key: string,
+  freeLimit: number
+): Promise<{ count: number; overLimit: boolean; monthStart: string }> {
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+  const { data, error } = await getDB().rpc("increment_rate_limit", {
+    _key: key,
+    _window_start: monthStart,
+  });
+
+  if (error) {
+    // Fail open — a metering outage shouldn't take down merchant verification.
+    console.error("checkMonthlyUsage: increment_rate_limit failed", error.message);
+    return { count: 0, overLimit: false, monthStart };
+  }
+
+  const count = data as number;
+  return { count, overLimit: count > freeLimit, monthStart };
+}
+
+// POST /api/credits/purchase is rider-gated (real agent_id known, unlike
+// checkout/provision above) but still hits Stripe's Checkout API per call —
+// same 5/hour ceiling and reasoning as checkCheckoutLimit, keyed by agent
+// instead of IP since we have a real identity here.
+export function checkCreditsPurchaseLimit(agentId: string) {
+  return checkRateLimit(`credits_purchase:${agentId}`, 5, 3600);
+}
+
 export function getClientIp(req: Request): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) return forwardedFor.split(",")[0].trim();

@@ -16,6 +16,14 @@ const CLAIM_WINDOW_MS = 30 * 60 * 1000;
 const MIN_REWARD = 5;
 const MAX_REWARD = 500;
 
+// Platform cut of each task payout, same shape as Upwork/Fiverr taking a %
+// off a freelancer's earnings rather than surcharging the poster — the
+// poster still escrows exactly task.reward at postTask() time. Applies only
+// to the reward the poster funded, not the PoW chain bonus (that's a
+// platform-funded emission, not money changing hands between two parties).
+const TASK_FEE_RATE = Number(process.env.TASK_FEE_RATE ?? 0.05);
+const PLATFORM_TREASURY_ID = "platform-treasury";
+
 export interface TaskRow {
   id: string;
   title: string;
@@ -145,6 +153,7 @@ export async function claimTask(taskId: string, agentId: string): Promise<ClaimR
 
 export interface CompleteResult {
   creditsEarned: number;
+  feeCharged: number;
   chainBonus: number;
   creditsTotal: number;
   powHash: string;
@@ -167,8 +176,14 @@ export async function completeTask(taskId: string, agentId: string, result: stri
     .update({ status: "completed", completed_at: new Date().toISOString(), result: result.slice(0, 10000) })
     .eq("id", taskId);
 
-  await adjustCredits(agentId, task.reward, "task_complete", { taskId, taskTitle: task.title });
-  await mirrorCreditToOperator(agentId, task.reward);
+  const fee = Math.floor(task.reward * TASK_FEE_RATE);
+  const netReward = task.reward - fee;
+
+  await adjustCredits(agentId, netReward, "task_complete", { taskId, taskTitle: task.title, fee });
+  if (fee > 0) {
+    await adjustCredits(PLATFORM_TREASURY_ID, fee, "task_fee", { taskId, agentId });
+  }
+  await mirrorCreditToOperator(agentId, netReward);
 
   const pow = await generatePoW(agentId, taskId, result);
   const { length: chainLength } = await verifyPoWChain(agentId);
@@ -186,7 +201,7 @@ export async function completeTask(taskId: string, agentId: string, result: stri
   const { data: agentRow } = await db.from("participants").select("tasks_completed").eq("id", agentId).single();
   await db.from("participants").update({ tasks_completed: (agentRow?.tasks_completed ?? 0) + 1 }).eq("id", agentId);
 
-  return { creditsEarned: task.reward + chainBonus, chainBonus, creditsTotal, powHash: pow.hash, chainLength };
+  return { creditsEarned: netReward + chainBonus, feeCharged: fee, chainBonus, creditsTotal, powHash: pow.hash, chainLength };
 }
 
 export async function listOpenTasks(category?: string, minReward?: number): Promise<TaskRow[]> {

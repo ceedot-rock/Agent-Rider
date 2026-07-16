@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       creditsEarned: result.creditsEarned,
+      feeCharged: result.feeCharged,
       chainBonus: result.chainBonus,
       creditsTotal: result.creditsTotal,
       pow: {
