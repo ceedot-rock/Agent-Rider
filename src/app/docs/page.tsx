@@ -117,10 +117,11 @@ export default function DocsPage() {
 
       <Section title="2. Issue a rider for an agent">
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
-          Mint a signed rider for an agent you've cleared. Requires your
-          merchant key in the{" "}
-          <InlineCode>X-Merchant-Key</InlineCode> header — issuance is metered
-          against your subscription, verification (next section) is not.
+          Mint a signed rider for an agent you've cleared — issuance itself
+          is free. Requires your merchant key in the{" "}
+          <InlineCode>X-Merchant-Key</InlineCode> header, gated on your
+          subscription being active; local rider verification (next section)
+          needs no key at all.
         </p>
         <CodeBlock>{`POST /api/rider/issue
 X-Merchant-Key: merchant_live_...
@@ -262,12 +263,20 @@ Content-Type: application/json
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
           Separate from rider verification — this checks whether a merchant
           key itself is currently backed by an active subscription (useful
-          for your own dashboard, not for gating agent requests):
+          for your own dashboard, not for gating agent requests). Rider
+          issuance is free; this is what's metered — the first{" "}
+          <InlineCode>VERIFY_FREE_CALLS_PER_MONTH</InlineCode> (1,000 by
+          default) calls each calendar month are included in Merchant Gate,
+          calls above that keep succeeding but report as billable overage:
         </p>
         <CodeBlock>{`curl -X POST https://agentrider.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"merchantKey": "merchant_live_..."}'
-# => {"valid": true, "status": "active"}`}</CodeBlock>
+# => {
+#   "valid": true,
+#   "status": "active",
+#   "usage": { "callsThisMonth": 41, "freeLimit": 1000, "overage": false }
+# }`}</CodeBlock>
       </Section>
 
       <Section title="Errors and edge cases">

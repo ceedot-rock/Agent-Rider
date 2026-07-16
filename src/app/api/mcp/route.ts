@@ -3,7 +3,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { checkGateForToken, isGateOk } from "@/lib/rider";
 import { registerParticipant, resolveById } from "@/lib/agents";
-import { transferCredits, spendCredits, SERVICE_COSTS } from "@/lib/credits";
+import {
+  transferCredits,
+  spendCredits,
+  SERVICE_COSTS,
+  MIN_PURCHASE_USD_CENTS,
+  MAX_PURCHASE_USD_CENTS,
+  usdCentsToCredits,
+} from "@/lib/credits";
+import { createCreditsCheckoutSession } from "@/lib/stripe";
+import { SITE_URL } from "@/lib/site";
 import { postTask, cancelTask, claimTask, completeTask, listOpenTasks, TASK_CATEGORIES } from "@/lib/tasks";
 import {
   postThought,
@@ -469,6 +478,38 @@ function createServer() {
         const rider = await requireRider(rider_token, "credits:transfer");
         const result = await transferCredits(rider.agent_id, toId, amount);
         return textResult(result);
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "purchase_credits",
+    {
+      description: `Buy AGC with real money ($1 = ${usdCentsToCredits(100)} AGC, $${MIN_PURCHASE_USD_CENTS / 100}–$${MAX_PURCHASE_USD_CENTS / 100} per purchase). Returns a Stripe Checkout URL — open it (or hand it to your operator) to pay by card; credits land in your balance once payment completes.`,
+      inputSchema: {
+        rider_token: riderTokenField,
+        usdCents: z.number().describe(`Amount to charge, in USD cents (${MIN_PURCHASE_USD_CENTS}–${MAX_PURCHASE_USD_CENTS})`),
+      },
+    },
+    async ({ rider_token, usdCents }) => {
+      try {
+        const rider = await requireRider(rider_token, "credits:purchase");
+        const rounded = Math.round(usdCents);
+        if (rounded < MIN_PURCHASE_USD_CENTS || rounded > MAX_PURCHASE_USD_CENTS) {
+          throw new Error(`invalid_amount: usdCents must be between ${MIN_PURCHASE_USD_CENTS} and ${MAX_PURCHASE_USD_CENTS}`);
+        }
+
+        const credits = usdCentsToCredits(rounded);
+        const session = await createCreditsCheckoutSession({
+          participantId: rider.agent_id,
+          credits,
+          usdCents: rounded,
+          successUrl: `${SITE_URL}/?credits=purchased`,
+          cancelUrl: `${SITE_URL}/?credits=cancelled`,
+        });
+        return textResult({ checkoutUrl: session.url, credits, usdCents: rounded });
       } catch (err) {
         return errorResult(err);
       }

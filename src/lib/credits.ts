@@ -10,6 +10,17 @@ export const SERVICE_COSTS: Record<string, number> = {
   priority: 10,
 };
 
+// Credits buy-in pricing — $1 = 100 AGC, flat, no bonus tiers until there's
+// a reason to complicate it. Shared by /api/credits/purchase and the
+// purchase_credits MCP tool so the two surfaces can't drift.
+export const CREDITS_PER_USD = Number(process.env.CREDITS_PER_USD ?? 100);
+export const MIN_PURCHASE_USD_CENTS = 100; // $1
+export const MAX_PURCHASE_USD_CENTS = 50000; // $500 per purchase
+
+export function usdCentsToCredits(usdCents: number): number {
+  return Math.round((usdCents / 100) * CREDITS_PER_USD);
+}
+
 export interface TransferResult {
   yourBalance: number;
   recipientBalance: number;

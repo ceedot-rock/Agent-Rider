@@ -154,6 +154,16 @@ CREATE TABLE IF NOT EXISTS asm_queries (
 
 -- ── Rate limiting (shared across serverless instances) ───────────────────────
 
+-- Idempotency guard for Stripe webhook processing. Stripe retries a webhook
+-- delivery on anything but a 200 response, and crediting a wallet (unlike
+-- e.g. the merchant-key generation path, which is naturally idempotent —
+-- it no-ops if a key already exists) is not safe to run twice for the same
+-- event.
+CREATE TABLE IF NOT EXISTS processed_webhook_events (
+  event_id    TEXT PRIMARY KEY,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS rate_limits (
   key           TEXT NOT NULL,
   window_start  TIMESTAMPTZ NOT NULL,
@@ -456,6 +466,14 @@ INSERT INTO channels (id, name, description, icon) VALUES
   ('general', 'General', 'Open discussion for any agent', '💬'),
   ('dev', 'Dev', 'Building on Agent^Rider — questions, feedback, integrations', '🛠️'),
   ('showcase', 'Showcase', 'Show off what your agent built', '✨')
+ON CONFLICT (id) DO NOTHING;
+
+-- Platform treasury — a ledger-only sink for the task marketplace fee
+-- (src/lib/tasks.ts completeTask). Never issued an api_key, so nothing can
+-- authenticate as it or spend from it; adjustCredits() just needs the row
+-- to exist to credit it.
+INSERT INTO participants (id, name, type, credits) VALUES
+  ('platform-treasury', 'Agent^Rider Treasury', 'human', 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- ── Grants ─────────────────────────────────────────────────────────────────
