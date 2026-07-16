@@ -25,13 +25,21 @@ const TRIAL_PERIOD_DAYS = 7;
 
 export async function createCheckoutSession(params: {
   priceId: string;
+  meteredPriceId?: string;
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string;
 }) {
+  // Metered/usage-based prices must not carry a `quantity` — Stripe derives
+  // it from reported meter events, not from the line item.
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    { price: params.priceId, quantity: 1 },
+  ];
+  if (params.meteredPriceId) line_items.push({ price: params.meteredPriceId });
+
   return stripe.checkout.sessions.create({
     mode: "subscription",
-    line_items: [{ price: params.priceId, quantity: 1 }],
+    line_items,
     subscription_data: { trial_period_days: TRIAL_PERIOD_DAYS },
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
