@@ -265,7 +265,7 @@ Content-Type: application/json
           key itself is currently backed by an active subscription (useful
           for your own dashboard, not for gating agent requests). Rider
           issuance is free; this is what's metered — the first{" "}
-          <InlineCode>VERIFY_FREE_CALLS_PER_MONTH</InlineCode> (1,000 by
+          <InlineCode>VERIFY_FREE_CALLS_PER_MONTH</InlineCode> (69 by
           default) calls each calendar month are included in Merchant Gate,
           calls above that keep succeeding but report as billable overage:
         </p>
@@ -275,7 +275,7 @@ Content-Type: application/json
 # => {
 #   "valid": true,
 #   "status": "active",
-#   "usage": { "callsThisMonth": 41, "freeLimit": 1000, "overage": false }
+#   "usage": { "callsThisMonth": 41, "freeLimit": 69, "overage": false }
 # }`}</CodeBlock>
       </Section>
 

@@ -498,6 +498,7 @@ X-Merchant-Key: merchant_live_...
             <li>L0–L4 clearance levels + scopes</li>
             <li>Unlimited free verification, for any gate</li>
             <li>Self-describing 401s agents can follow</li>
+            <li>69 merchant-key status checks/month included, then $0.15 each</li>
           </ul>
           <input
             type="email"
@@ -537,7 +538,9 @@ X-Merchant-Key: merchant_live_...
             </p>
           )}
           <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 14 }}>
-            Free for 7 days, then $11.99/mo via Stripe. Cancel anytime before the trial ends and you won't be charged.
+            Free for 7 days, then $11.99/mo via Stripe, plus $0.15 per
+            merchant-key status check beyond 69/month. Cancel anytime before
+            the trial ends and you won't be charged.
           </p>
         </div>
       </section>
