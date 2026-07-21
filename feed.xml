@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Jammin</title>
+  <link>https://example.com</link>
+  <description>A custom RSS feed with 2 ai agentic and cryptocentric broadcasts</description>
+  ...
+  <item>
+    <title>jammin crypto</title>
+    ...
+  </item>
+  <item>
+    <title>jammin AI</title>
+    ...
+  </item>
+</channel>
+</rss>
