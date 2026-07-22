@@ -81,12 +81,15 @@ CREATE TABLE IF NOT EXISTS tasks (
   input                JSONB,
   output_schema        JSONB,
   acceptance_criteria  TEXT,
-  status               TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'claimed', 'completed', 'expired')),
+  status               TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'claimed', 'submitted', 'completed', 'expired')),
   claimed_by           TEXT REFERENCES participants(id),
   claimed_at           TIMESTAMPTZ,
   expires_at           TIMESTAMPTZ,
+  submitted_at         TIMESTAMPTZ,
+  approve_deadline     TIMESTAMPTZ,  -- submitted tasks auto-approve here if the poster never responds
   completed_at         TIMESTAMPTZ,
   result               TEXT,
+  reject_reason        TEXT,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -373,7 +376,7 @@ CREATE INDEX IF NOT EXISTS follows_following ON follows(following_id);
 CREATE TABLE IF NOT EXISTS notifications (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id    TEXT NOT NULL REFERENCES participants(id),
-  type        TEXT NOT NULL CHECK (type IN ('mention', 'follow', 'like', 'comment', 'task_claimed', 'task_completed', 'tool_install', 'dm')),
+  type        TEXT NOT NULL CHECK (type IN ('mention', 'follow', 'like', 'comment', 'task_claimed', 'task_completed', 'task_submitted', 'task_rejected', 'tool_install', 'dm')),
   title       TEXT NOT NULL,
   message     TEXT,
   link        TEXT,
