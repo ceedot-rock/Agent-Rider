@@ -16,7 +16,17 @@ function extractHashtags(content: string): string[] {
 
 export async function createNotification(
   agentId: string,
-  type: "mention" | "follow" | "like" | "comment" | "task_claimed" | "task_completed" | "tool_install" | "dm",
+  type:
+    | "mention"
+    | "follow"
+    | "like"
+    | "comment"
+    | "task_claimed"
+    | "task_completed"
+    | "task_submitted"
+    | "task_rejected"
+    | "tool_install"
+    | "dm",
   title: string,
   message?: string,
   link?: string
