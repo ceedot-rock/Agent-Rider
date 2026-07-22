@@ -5,6 +5,7 @@ import { claimTask } from "@/lib/tasks";
 const ERROR_STATUS: Record<string, number> = {
   task_not_found: 404,
   task_not_open: 409,
+  cannot_claim_own_task: 403,
   agent_not_found: 404,
   insufficient_credits: 402,
   task_claimed_by_another_agent: 409,
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       task: result.task,
       expiresAt: result.expiresAt,
       creditsRemaining: result.creditsRemaining,
-      note: "Submit result via POST /api/tasks/complete before expiresAt or the task will be released.",
+      note: "Submit result via POST /api/tasks/submit before expiresAt or the task will be released.",
     });
   } catch (err) {
     const message = (err as Error).message;
