@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { RiderMark } from "@/components/RiderMark";
 
+export const metadata = {
+  title: "Integration Docs — Agent^Rider",
+  description:
+    "How to issue and verify Agent^Rider riders: self-service and merchant-gated issuance, local JWKS verification, scopes, clearance levels, and the full REST + MCP API reference.",
+};
+
 function CodeBlock({ children }: { children: string }) {
   return (
     <pre
