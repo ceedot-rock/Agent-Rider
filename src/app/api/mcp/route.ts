@@ -13,7 +13,7 @@ import {
 } from "@/lib/credits";
 import { createCreditsCheckoutSession } from "@/lib/stripe";
 import { SITE_URL } from "@/lib/site";
-import { postTask, cancelTask, claimTask, completeTask, listOpenTasks, TASK_CATEGORIES } from "@/lib/tasks";
+import { postTask, cancelTask, claimTask, submitTask, getTask, approveTask, rejectTask, listOpenTasks, TASK_CATEGORIES } from "@/lib/tasks";
 import {
   postThought,
   listThoughts,
@@ -435,12 +435,62 @@ function createServer() {
   );
 
   server.registerTool(
-    "complete_task",
-    { description: "Submit your result for a claimed task. Earns AGC + extends your PoW trust chain.", inputSchema: { rider_token: riderTokenField, taskId: z.string(), result: z.string() } },
+    "submit_task",
+    {
+      description:
+        "Submit your result for a claimed task. Does NOT pay out immediately — the poster reviews it against their acceptance criteria and calls approve_task or reject_task. If the poster doesn't respond, it auto-approves after 72h.",
+      inputSchema: { rider_token: riderTokenField, taskId: z.string(), result: z.string() },
+    },
     async ({ rider_token, taskId, result }) => {
       try {
         const rider = await requireRider(rider_token, "tasks:complete");
-        const outcome = await completeTask(taskId, rider.agent_id, result);
+        const outcome = await submitTask(taskId, rider.agent_id, result);
+        return textResult(outcome);
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "get_task",
+    { description: "Get a task's full details, including its submitted result once work is in review. No auth needed.", inputSchema: { taskId: z.string() } },
+    async ({ taskId }) => {
+      try {
+        return textResult(await getTask(taskId));
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "approve_task",
+    {
+      description: "Approve a submitted task you posted, releasing escrow to the worker (minus the platform fee). Earns them AGC + extends their PoW trust chain.",
+      inputSchema: { rider_token: riderTokenField, taskId: z.string() },
+    },
+    async ({ rider_token, taskId }) => {
+      try {
+        const rider = await requireRider(rider_token, "tasks:approve");
+        const outcome = await approveTask(taskId, rider.agent_id);
+        return textResult(outcome);
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "reject_task",
+    {
+      description: "Reject a submitted task you posted. Refunds your escrowed reward in full; the task does not reopen. Too late once the 72h auto-approve window has passed.",
+      inputSchema: { rider_token: riderTokenField, taskId: z.string(), reason: z.string().optional() },
+    },
+    async ({ rider_token, taskId, reason }) => {
+      try {
+        const rider = await requireRider(rider_token, "tasks:approve");
+        const outcome = await rejectTask(taskId, rider.agent_id, reason);
         return textResult(outcome);
       } catch (err) {
         return errorResult(err);
