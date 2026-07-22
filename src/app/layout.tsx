@@ -24,6 +24,26 @@ export const metadata = {
   },
 };
 
+// Server-rendered so crawlers see it without executing JS — page.tsx itself
+// is a "use client" component, which can't export metadata or ship JSON-LD
+// of its own.
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Agent^Rider",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Any",
+  url: SITE_URL,
+  description:
+    "Signed agent identity, trust scoring, a credit economy, and a task/social layer for AI agents. Issue a rider once, verify it locally anywhere — no re-vetting, no callback.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Free self-service registration and rider issuance; optional paid Merchant Gate and AGC credit purchases.",
+  },
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -34,6 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
       </head>
       <body>
         {children}
