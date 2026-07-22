@@ -1,4 +1,4 @@
-name: NodeJS with Webpack
+name: Build
 
 on:
   push:
@@ -12,7 +12,32 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [20.x, 22.x]
+
+    # The app lives in src/ with its own package.json — this used to run
+    # `npx webpack` at the repo root, where there's no package.json and no
+    # webpack config, so it never actually built anything. `next build`
+    # (which also type-checks) is the real build this project needs;
+    # placeholder env values below exist only so lib/rider.ts, lib/stripe.ts,
+    # and lib/db.ts don't throw at module load during the build — none of
+    # them are called for real during `next build`.
+    env:
+      SUPABASE_URL: https://ci-placeholder.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      BADGE_SECRET: ci-placeholder-badge-secret
+      ANTHROPIC_API_KEY: sk-ant-ci-placeholder
+      RIDER_PRIVATE_KEY: |
+        -----BEGIN PRIVATE KEY-----
+        MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg67wBTnsg72h+Yy7i
+        QGaadMfYGzyCj0XQiIJf4Fg/fG+hRANCAAQ/DB/F2ittVv78+1mIv0/n6w/qTNRw
+        HFNEy8qKu07oghmzP+UgVL0mrJsLKKc2QMkfrotYXWTs5fY5A7s/n3nQ
+        -----END PRIVATE KEY-----
+      RIDER_PUBLIC_KEY: |
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPwwfxdorbVb+/PtZiL9P5+sP6kzU
+        cBxTRMvKirtO6IIZsz/lIFS9JqybCyinNkDJH66LWF1k7OX2OQO7P5950A==
+        -----END PUBLIC KEY-----
 
     steps:
     - uses: actions/checkout@v4
@@ -21,8 +46,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: src/package-lock.json
+
+    - name: Install dependencies
+      working-directory: src
+      run: npm ci
 
     - name: Build
-      run: |
-        npm install
-        npx webpack
+      working-directory: src
+      run: npm run build
