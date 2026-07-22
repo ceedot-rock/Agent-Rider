@@ -3,16 +3,28 @@ import { getDB } from "@/lib/db";
 import { resolveById, adjustCredits } from "@/lib/agents";
 import { generatePoW, verifyPoWChain, powChainCreditBonus } from "@/lib/reputation";
 import { mirrorCreditToOperator } from "@/lib/credits";
+import { createNotification } from "@/lib/social";
 
 // Task board with credit escrow — ported from agentmagnet/routes/agent.js.
 // AgentNet's richer task/marketplace model (task #6) builds on top of this
 // table rather than replacing it.
+//
+// Payout is gated on poster approval (submitted -> completed), not on
+// submission (claimed -> submitted) — a claimed task used to pay out on ANY
+// string the worker submitted, with output_schema/acceptance_criteria
+// captured but never checked against it. submit_task now only moves the
+// task to 'submitted' and holds the escrow; the poster reviews `result`
+// against their own acceptance_criteria and calls approve_task (pays out)
+// or reject_task (refunds the poster, task ends). If the poster never
+// responds, autoApproveIfExpired pays out after APPROVE_TIMEOUT_MS so a
+// worker isn't stuck waiting forever on an unresponsive poster.
 
 export const TASK_CATEGORIES = ["nlp", "classification", "dev", "general"] as const;
 export type TaskCategory = (typeof TASK_CATEGORIES)[number];
 
 const CLAIM_COST = 1;
 const CLAIM_WINDOW_MS = 30 * 60 * 1000;
+const APPROVE_TIMEOUT_MS = 72 * 60 * 60 * 1000;
 const MIN_REWARD = 5;
 const MAX_REWARD = 500;
 
@@ -34,12 +46,15 @@ export interface TaskRow {
   input: unknown;
   output_schema: unknown;
   acceptance_criteria: string | null;
-  status: "open" | "claimed" | "completed" | "expired";
+  status: "open" | "claimed" | "submitted" | "completed" | "expired";
   claimed_by: string | null;
   claimed_at: string | null;
   expires_at: string | null;
+  submitted_at: string | null;
+  approve_deadline: string | null;
   completed_at: string | null;
   result: string | null;
+  reject_reason: string | null;
   created_at: string;
 }
 
@@ -54,6 +69,67 @@ async function releaseIfExpired(task: TaskRow): Promise<TaskRow> {
     .eq("id", task.id);
 
   return { ...task, status: "open", claimed_by: null, claimed_at: null, expires_at: null };
+}
+
+export interface CompleteResult {
+  creditsEarned: number;
+  feeCharged: number;
+  chainBonus: number;
+  creditsTotal: number;
+  powHash: string;
+  chainLength: number;
+}
+
+// Moves money and extends trust state for a 'submitted' task. The one place
+// that pays out a task — called from approveTask directly, and from
+// autoApproveIfExpired when a poster never responds in time.
+async function payoutSubmittedTask(task: TaskRow): Promise<CompleteResult> {
+  const db = getDB();
+  const agentId = task.claimed_by!;
+
+  const fee = Math.floor(task.reward * TASK_FEE_RATE);
+  const netReward = task.reward - fee;
+
+  await db.from("tasks").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", task.id);
+
+  await adjustCredits(agentId, netReward, "task_complete", { taskId: task.id, taskTitle: task.title, fee });
+  if (fee > 0) {
+    await adjustCredits(PLATFORM_TREASURY_ID, fee, "task_fee", { taskId: task.id, agentId });
+  }
+  await mirrorCreditToOperator(agentId, netReward);
+
+  const pow = await generatePoW(agentId, task.id, task.result ?? "");
+  const { length: chainLength } = await verifyPoWChain(agentId);
+  const chainBonus = powChainCreditBonus(chainLength);
+
+  let creditsTotal: number;
+  if (chainBonus > 0) {
+    creditsTotal = await adjustCredits(agentId, chainBonus, "chain_bonus", { taskId: task.id, chainLength });
+    await mirrorCreditToOperator(agentId, chainBonus);
+  } else {
+    const agent = await resolveById(agentId);
+    creditsTotal = agent?.credits ?? 0;
+  }
+
+  const { data: agentRow } = await db.from("participants").select("tasks_completed").eq("id", agentId).single();
+  await db.from("participants").update({ tasks_completed: (agentRow?.tasks_completed ?? 0) + 1 }).eq("id", agentId);
+
+  await createNotification(agentId, "task_completed", "Task payout released", task.title, "/board");
+
+  return { creditsEarned: netReward + chainBonus, feeCharged: fee, chainBonus, creditsTotal, powHash: pow.hash, chainLength };
+}
+
+// Lazy timeout check, same pattern as releaseIfExpired — no cron in this
+// serverless deployment, so an overdue 'submitted' task only actually pays
+// out the next time something touches it (get_task, approve_task, or
+// reject_task). Returns the payout if this call is the one that triggered
+// it, so callers can tell "I just paid this out" apart from "already open".
+async function autoApproveIfExpired(task: TaskRow): Promise<{ task: TaskRow; payout: CompleteResult | null }> {
+  if (task.status !== "submitted" || !task.approve_deadline) return { task, payout: null };
+  if (new Date(task.approve_deadline).getTime() >= Date.now()) return { task, payout: null };
+
+  const payout = await payoutSubmittedTask(task);
+  return { task: { ...task, status: "completed", completed_at: new Date().toISOString() }, payout };
 }
 
 export interface PostTaskInput {
@@ -109,6 +185,7 @@ export async function cancelTask(taskId: string, requesterId: string): Promise<{
   if (!task.poster_id) throw new Error("cannot_cancel_seed_task");
   if (task.poster_id !== requesterId) throw new Error("not_your_task");
   if (task.status === "completed") throw new Error("already_completed");
+  if (task.status === "submitted") throw new Error("task_awaiting_review: approve_task or reject_task instead");
   if (task.status === "claimed") throw new Error("task_claimed");
 
   await db.from("tasks").update({ status: "expired" }).eq("id", taskId);
@@ -152,16 +229,14 @@ export async function claimTask(taskId: string, agentId: string): Promise<ClaimR
   return { task: updated as TaskRow, expiresAt, creditsRemaining };
 }
 
-export interface CompleteResult {
-  creditsEarned: number;
-  feeCharged: number;
-  chainBonus: number;
-  creditsTotal: number;
-  powHash: string;
-  chainLength: number;
-}
-
-export async function completeTask(taskId: string, agentId: string, result: string): Promise<CompleteResult> {
+// Submits work for a claimed task. Holds escrow — does NOT pay out. Moves
+// the task to 'submitted' for the poster to review with approve_task or
+// reject_task (or let it auto-approve after APPROVE_TIMEOUT_MS).
+export async function submitTask(
+  taskId: string,
+  agentId: string,
+  result: string
+): Promise<{ status: "submitted"; approveDeadline: string }> {
   const db = getDB();
   const { data: task } = await db.from("tasks").select("*").eq("id", taskId).single();
   if (!task) throw new Error("task_not_found");
@@ -172,37 +247,78 @@ export async function completeTask(taskId: string, agentId: string, result: stri
     throw new Error("task_expired");
   }
 
+  const approveDeadline = new Date(Date.now() + APPROVE_TIMEOUT_MS).toISOString();
   await db
     .from("tasks")
-    .update({ status: "completed", completed_at: new Date().toISOString(), result: result.slice(0, 10000) })
+    .update({
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+      approve_deadline: approveDeadline,
+      result: result.slice(0, 10000),
+    })
     .eq("id", taskId);
 
-  const fee = Math.floor(task.reward * TASK_FEE_RATE);
-  const netReward = task.reward - fee;
-
-  await adjustCredits(agentId, netReward, "task_complete", { taskId, taskTitle: task.title, fee });
-  if (fee > 0) {
-    await adjustCredits(PLATFORM_TREASURY_ID, fee, "task_fee", { taskId, agentId });
-  }
-  await mirrorCreditToOperator(agentId, netReward);
-
-  const pow = await generatePoW(agentId, taskId, result);
-  const { length: chainLength } = await verifyPoWChain(agentId);
-  const chainBonus = powChainCreditBonus(chainLength);
-
-  let creditsTotal: number;
-  if (chainBonus > 0) {
-    creditsTotal = await adjustCredits(agentId, chainBonus, "chain_bonus", { taskId, chainLength });
-    await mirrorCreditToOperator(agentId, chainBonus);
-  } else {
-    const agent = await resolveById(agentId);
-    creditsTotal = agent?.credits ?? 0;
+  if (task.poster_id) {
+    await createNotification(task.poster_id, "task_submitted", "Task submitted for review", task.title, "/board");
   }
 
-  const { data: agentRow } = await db.from("participants").select("tasks_completed").eq("id", agentId).single();
-  await db.from("participants").update({ tasks_completed: (agentRow?.tasks_completed ?? 0) + 1 }).eq("id", agentId);
+  return { status: "submitted", approveDeadline };
+}
 
-  return { creditsEarned: netReward + chainBonus, feeCharged: fee, chainBonus, creditsTotal, powHash: pow.hash, chainLength };
+// Fetches a task, resolving any overdue claim-expiry or approve-timeout
+// first — so a poster or worker checking status always sees the current
+// state rather than a stale 'claimed'/'submitted' that should've moved on.
+export async function getTask(taskId: string): Promise<TaskRow> {
+  const db = getDB();
+  const { data } = await db.from("tasks").select("*").eq("id", taskId).single();
+  if (!data) throw new Error("task_not_found");
+  const released = await releaseIfExpired(data as TaskRow);
+  const { task } = await autoApproveIfExpired(released);
+  return task;
+}
+
+// Poster approves a submitted task, releasing escrow to the worker. If the
+// approve_deadline already passed, this just confirms the auto-approval
+// that already happened rather than erroring — the poster's intent
+// ("release the payout") was already satisfied.
+export async function approveTask(taskId: string, posterId: string): Promise<CompleteResult> {
+  const db = getDB();
+  const { data } = await db.from("tasks").select("*").eq("id", taskId).single();
+  if (!data) throw new Error("task_not_found");
+  if (data.poster_id !== posterId) throw new Error("not_your_task");
+
+  const { task, payout } = await autoApproveIfExpired(data as TaskRow);
+  if (payout) return payout;
+  if (task.status !== "submitted") throw new Error("task_not_submitted");
+
+  return payoutSubmittedTask(task);
+}
+
+// Poster rejects a submitted task: full refund back to the poster, task
+// ends (does not reopen — the poster can post a fresh task if they still
+// want the work done). Too late once the approve_deadline has passed and
+// the worker was already auto-paid.
+export async function rejectTask(taskId: string, posterId: string, reason?: string): Promise<{ refunded: number }> {
+  const db = getDB();
+  const { data } = await db.from("tasks").select("*").eq("id", taskId).single();
+  if (!data) throw new Error("task_not_found");
+  if (data.poster_id !== posterId) throw new Error("not_your_task");
+
+  const { task, payout } = await autoApproveIfExpired(data as TaskRow);
+  if (payout) throw new Error("already_auto_approved: approve_deadline passed before this rejection");
+  if (task.status !== "submitted") throw new Error("task_not_submitted");
+
+  await db
+    .from("tasks")
+    .update({ status: "expired", reject_reason: reason?.slice(0, 1000) ?? null })
+    .eq("id", taskId);
+  await adjustCredits(posterId, task.reward, "task_reject_refund", { taskId, reason });
+
+  if (task.claimed_by) {
+    await createNotification(task.claimed_by, "task_rejected", "Task submission rejected", reason ?? task.title, "/board");
+  }
+
+  return { refunded: task.reward };
 }
 
 export async function listOpenTasks(category?: string, minReward?: number): Promise<TaskRow[]> {
