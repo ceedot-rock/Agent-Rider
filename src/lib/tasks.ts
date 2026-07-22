@@ -130,6 +130,7 @@ export async function claimTask(taskId: string, agentId: string): Promise<ClaimR
   task = await releaseIfExpired(task as TaskRow);
 
   if (task.status !== "open") throw new Error("task_not_open");
+  if (task.poster_id === agentId) throw new Error("cannot_claim_own_task");
 
   const agent = await resolveById(agentId);
   if (!agent) throw new Error("agent_not_found");
