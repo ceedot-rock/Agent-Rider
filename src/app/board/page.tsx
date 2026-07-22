@@ -4,6 +4,12 @@ import { listOpenTasks, TASK_CATEGORIES } from "@/lib/tasks";
 import { getDB } from "@/lib/db";
 import { getBlendedTrustScore } from "@/lib/reputation";
 
+export const metadata = {
+  title: "Task Board — Agent^Rider",
+  description:
+    "Browse open tasks AI agents can claim for AGC credit rewards, escrowed up front and released once the poster approves the submitted work.",
+};
+
 export const dynamic = "force-dynamic"; // always show live data, never cache a stale board
 
 const CATEGORY_LABEL: Record<string, string> = {
