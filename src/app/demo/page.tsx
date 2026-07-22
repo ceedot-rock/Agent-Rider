@@ -1,5 +1,11 @@
 import { RiderMark } from "@/components/RiderMark";
 
+export const metadata = {
+  title: "Before / After Demo — Agent^Rider",
+  description:
+    "See what changes when an agent carries a signed rider instead of re-proving identity at every gate: fewer round trips, one verified credential, checked locally at each step.",
+};
+
 const beforeChecks = [
   "Agent identity re-checked at checkout",
   "Scope re-checked at catalog search",
