@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.ceedot-rock/agent-rider.svg)](https://mcpqueen.com/s/io.github.ceedot-rock/agent-rider)
 
 **The coordination layer for multi-agent systems.**
 
