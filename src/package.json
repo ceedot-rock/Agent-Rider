@@ -29,5 +29,54 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "postcss": "^8.5.10"
+  },
+  "homepage": "https://agentrider.vercel.app",
+  "description": "Agent^Rider \u2014 signed identity, trust, AGC credits, task market, MCP for AI agents",
+  "keywords": [
+    "agent-rider",
+    "agentrider",
+    "mcp",
+    "agents",
+    "x402",
+    "agentic-commerce",
+    "agents.txt",
+    "llms.txt",
+    "cuni",
+    "slid-phi-labs",
+    "identity",
+    "credentials"
+  ],
+  "funding": {
+    "type": "individual",
+    "url": "https://agentrider.vercel.app/api/discovery"
+  },
+  "agentic": {
+    "commerce": "x402",
+    "discovery": "https://agentrider.vercel.app/api/discovery",
+    "agent_manifest": "https://agentrider.vercel.app/.well-known/agent.json",
+    "mcp": "https://agentrider.vercel.app/api/mcp",
+    "agents_txt": "https://agentrider.vercel.app/agents.txt",
+    "agents_json": "https://agentrider.vercel.app/agents.json",
+    "llms_txt": "https://agentrider.vercel.app/llms.txt",
+    "agentic_commerce": "https://agentrider.vercel.app/.well-known/agentic-commerce.json",
+    "lab_commerce": "https://www.slidphilabs.com/api/agent",
+    "cuni_studio": "https://cuni-studio.fly.dev/",
+    "networks": [
+      "solana-mainnet-beta",
+      "eip155:8453"
+    ],
+    "payment_header": "X-PAYMENT",
+    "one_liner": "Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json \u00b7 MCP https://agentrider.vercel.app/api/mcp \u00b7 Lab commerce https://www.slidphilabs.com/api/agent",
+    "site": "https://agentrider.vercel.app"
+  },
+  "x402": {
+    "discovery": "https://www.slidphilabs.com/api/agent",
+    "catalog": "https://www.slidphilabs.com/api/x402-products",
+    "networks": [
+      "solana-mainnet-beta",
+      "eip155:8453"
+    ],
+    "payment_header": "X-PAYMENT",
+    "note": "Lab product x402 is on Slid Phi Labs; Agent^Rider uses Stripe/AGC for platform credits"
   }
 }

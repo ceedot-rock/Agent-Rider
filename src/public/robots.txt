@@ -1,7 +1,16 @@
 User-agent: *
 Allow: /
 
-# AI agents and LLM crawlers: see /llms.txt for full platform documentation
+# Agent-readiness stack
+Allow: /llms.txt
+Allow: /agents.txt
+Allow: /agents.json
+Allow: /.well-known/
+Allow: /api/discovery
+Allow: /api/mcp
+Allow: /api/registry
+Allow: /api/spec
+
+# AI agents and LLM crawlers: see /llms.txt
 # Agent tool manifest: /.well-known/agent.json
-# Agent registry feed: /api/registry
-# Trust badge verification: /api/registry/verify-badge
+# Lab commerce (ecosystem): https://www.slidphilabs.com/api/agent

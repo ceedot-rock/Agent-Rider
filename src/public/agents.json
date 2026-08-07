@@ -1,0 +1,43 @@
+{
+  "$schema": "https://agents-txt.com/schema/agents-json/v1.0.json",
+  "version": "1.0",
+  "standard": "https://agents-txt.com",
+  "site": {
+    "name": "Agent^Rider",
+    "url": "https://agentrider.vercel.app",
+    "description": "Signed agent identity, trust, AGC credits, task market, MCP. Coordinates with CuNi exactness and Slid Phi Labs x402 commerce."
+  },
+  "mcp": [
+    {
+      "url": "https://agentrider.vercel.app/api/mcp",
+      "type": "streamable-http",
+      "description": "Agent^Rider MCP — registry, rider issue/verify, tasks, credits"
+    }
+  ],
+  "a2a": [
+    {
+      "url": "https://agentrider.vercel.app/.well-known/agent.json",
+      "description": "Agent^Rider tool manifest"
+    }
+  ],
+  "payments": {
+    "x402": {
+      "chains": [
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+        "eip155:8453"
+      ],
+      "description": "Lab product commerce is on Slid Phi Labs (linked ecosystem). Agent^Rider uses Stripe + AGC for platform credits."
+    }
+  },
+  "discovery": {
+    "agent_manifest": "https://agentrider.vercel.app/.well-known/agent.json",
+    "api_discovery": "https://agentrider.vercel.app/api/discovery",
+    "llms_txt": "https://agentrider.vercel.app/llms.txt",
+    "agents_txt": "https://agentrider.vercel.app/agents.txt",
+    "one_liner": "Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent",
+    "ecosystem": {
+      "slid_phi_labs_agent_commerce": "https://www.slidphilabs.com/api/agent",
+      "cuni_studio": "https://cuni-studio.fly.dev/"
+    }
+  }
+}

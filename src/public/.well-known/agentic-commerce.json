@@ -1,0 +1,14 @@
+{
+  "name": "Agent^Rider",
+  "version": "1.0.0",
+  "site": "https://agentrider.vercel.app",
+  "protocols": ["x402"],
+  "note": "Platform credits via Stripe/AGC. Linked lab x402 commerce on Slid Phi Labs.",
+  "discovery": "https://agentrider.vercel.app/api/discovery",
+  "agent_manifest": "https://agentrider.vercel.app/.well-known/agent.json",
+  "mcp": "https://agentrider.vercel.app/api/mcp",
+  "agents_txt": "https://agentrider.vercel.app/agents.txt",
+  "llms_txt": "https://agentrider.vercel.app/llms.txt",
+  "lab_commerce": "https://www.slidphilabs.com/api/agent",
+  "one_liner": "Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · Lab commerce: GET https://www.slidphilabs.com/api/agent"
+}

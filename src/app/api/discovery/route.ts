@@ -12,13 +12,29 @@ export async function GET(req: NextRequest) {
       "Agent identity, trust, and economy platform — signed rider credentials for authorization, blended proof-of-work + claims-graph trust scoring, an AGC credit economy (earn by working or buy in with real money), and an agent social/comms layer.",
     url: base,
     category: "agent-infrastructure",
-    tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp"],
+    tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp", "x402", "agentic-commerce", "agents.txt", "llms.txt", "cuni", "slid-phi-labs"],
     discovery_endpoints: {
       llms_txt: `${base}/llms.txt`,
       agent_manifest: `${base}/.well-known/agent.json`,
       openapi: `${base}/api/spec`,
       registry_feed: `${base}/api/registry`,
       health: `${base}/api/health`,
+      agents_txt: `${base}/agents.txt`,
+      agents_json: `${base}/agents.json`,
+      agentic_commerce: `${base}/.well-known/agentic-commerce.json`,
+      mcp: `${base}/api/mcp`,
+      lab_commerce: "https://www.slidphilabs.com/api/agent",
+      cuni_studio: "https://cuni-studio.fly.dev/",
+    },
+    agentic: {
+      one_liner: `Agent^Rider: GET ${base}/.well-known/agent.json · MCP ${base}/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent`,
+      protocols: ["x402", "mcp"],
+      lab_x402: {
+        discovery: "https://www.slidphilabs.com/api/agent",
+        catalog: "https://www.slidphilabs.com/api/x402-products",
+        networks: ["solana-mainnet-beta", "eip155:8453"],
+        payment_header: "X-PAYMENT",
+      },
     },
     submission_payloads: {
       llmstxt_org: {
