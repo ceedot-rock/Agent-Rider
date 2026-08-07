@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
 
   if (!result.ok) {
     return NextResponse.json(
-      { ok: false, error: result.error },
-      { status: result.status, headers: CORS }
+      { ok: false, error: "error" in result ? result.error : "register_failed" },
+      { status: "status" in result ? result.status : 400, headers: CORS }
     );
   }
 

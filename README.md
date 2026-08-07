@@ -64,3 +64,20 @@ See CuNi docs for `link` contracts and exactness.
 ## License
 
 MIT
+
+## Agentic discovery
+
+```
+Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent
+```
+
+| Surface | URL |
+|---------|-----|
+| Agent manifest | https://agentrider.vercel.app/.well-known/agent.json |
+| Discovery API | https://agentrider.vercel.app/api/discovery |
+| agents.txt | https://agentrider.vercel.app/agents.txt |
+| agents.json | https://agentrider.vercel.app/agents.json |
+| llms.txt | https://agentrider.vercel.app/llms.txt |
+| MCP | https://agentrider.vercel.app/api/mcp |
+| Lab x402 commerce | https://www.slidphilabs.com/api/agent |
+| CuNi Studio | https://cuni-studio.fly.dev/ |
