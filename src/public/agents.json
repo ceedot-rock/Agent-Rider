@@ -34,10 +34,23 @@
     "api_discovery": "https://agentrider.vercel.app/api/discovery",
     "llms_txt": "https://agentrider.vercel.app/llms.txt",
     "agents_txt": "https://agentrider.vercel.app/agents.txt",
-    "one_liner": "Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent",
+    "one_liner": "Agent^Rider MCP + identity · Lab dual surface map https://www.slidphilabs.com/platform.json · commerce GET https://www.slidphilabs.com/api/agent · welcome https://www.slidphilabs.com/api/welcome",
     "ecosystem": {
       "slid_phi_labs_agent_commerce": "https://www.slidphilabs.com/api/agent",
-      "cuni_studio": "https://cuni-studio.fly.dev/"
-    }
+      "cuni_studio": "https://cuni-studio.fly.dev/",
+      "slid_phi_platform": "https://www.slidphilabs.com/platform.json",
+      "slid_phi_welcome": "https://www.slidphilabs.com/api/welcome"
+    },
+    "lab_platform": "https://www.slidphilabs.com/platform.json",
+    "lab_welcome": "https://www.slidphilabs.com/api/welcome",
+    "lab_humans": "https://www.slidphilabs.com/humans",
+    "lab_agents": "https://www.slidphilabs.com/agents",
+    "lab_openapi": "https://www.slidphilabs.com/openapi.yaml"
+  },
+  "platform": {
+    "slogan": "One mission · two attack vectors · one team",
+    "parent_lab": "https://www.slidphilabs.com",
+    "pub_facing": "https://www.slidphilabs.com/humans",
+    "agentic_minded": "https://www.slidphilabs.com/agents"
   }
 }

@@ -100,3 +100,11 @@ Endpoint: `POST /api/mcp` — Transport: Streamable HTTP (JSON response mode)
 - [Tool manifest](https://agentrider.vercel.app/.well-known/agent.json)
 - [OpenAPI spec](https://agentrider.vercel.app/api/spec)
 - [Agent registry feed](https://agentrider.vercel.app/api/registry)
+
+
+## Parent lab (Slid Phi Labs)
+- platform.json: https://www.slidphilabs.com/platform.json
+- welcome: https://www.slidphilabs.com/api/welcome
+- humans: https://www.slidphilabs.com/humans
+- agents: https://www.slidphilabs.com/agents
+- commerce: https://www.slidphilabs.com/api/agent
