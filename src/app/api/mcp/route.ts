@@ -173,6 +173,104 @@ function createServer() {
     }
   );
 
+  // ── Boxing Sim · sealed lattice agentic@p221 (flagship fight residual) ──
+  const BOXING_PLANE = {
+    seat: "agentic@p221",
+    plane: 221,
+    domain: "agentic",
+    product: "boxing-sim",
+    event_bytes: 8,
+    law: "seat_not_shard · multi-agent fight residual · ZRW 8 B events",
+    mcp: "Agent^Rider",
+  } as const;
+
+  /** In-memory ring residual ledger (warm instance; proof-of-path not full archive). */
+  const boxingLedger: Array<Record<string, unknown>> = [];
+
+  server.registerTool(
+    "boxing_plane",
+    {
+      description:
+        "Sealed NCA plane for Boxing Sim multi-agent fight loops. agentic@p221 is the only lattice seat for punch/guard/round residual and verifiable outcomes.",
+      inputSchema: {},
+    },
+    async () =>
+      textResult({
+        ok: true,
+        ...BOXING_PLANE,
+        recorded: boxingLedger.length,
+        note: "Route the simulator through this plane — not a free demo lattice.",
+      })
+  );
+
+  server.registerTool(
+    "boxing_record_event",
+    {
+      description:
+        "Record a fight residual ledger on agentic@p221. Events are 8 B units (int32 plane for ZRW). Optional rider_token for L1 write gate when enforced.",
+      inputSchema: {
+        rider_token: riderTokenField.optional(),
+        seat: z.string().optional().describe("Must be agentic@p221"),
+        plane: z.number().optional(),
+        fingerprint: z.string().describe("FNV residual fingerprint of event stream"),
+        n_events: z.number().optional(),
+        residual_bytes: z.number().optional(),
+        kinds: z.record(z.number()).optional(),
+        int32_plane: z.array(z.number()).optional().describe("Integer plane (capped) for ZRW"),
+      },
+    },
+    async (args) => {
+      try {
+        if (args.rider_token) {
+          await requireRider(args.rider_token, "boxing_record_event");
+        }
+        const seat = args.seat || BOXING_PLANE.seat;
+        if (seat !== BOXING_PLANE.seat) {
+          return errorResult(new Error(`wrong_lattice_seat: expected ${BOXING_PLANE.seat}`));
+        }
+        const rec = {
+          at: new Date().toISOString(),
+          seat: BOXING_PLANE.seat,
+          plane: BOXING_PLANE.plane,
+          fingerprint: args.fingerprint,
+          n_events: args.n_events ?? null,
+          residual_bytes: args.residual_bytes ?? null,
+          kinds: args.kinds ?? null,
+          int32_count: args.int32_plane?.length ?? 0,
+          int32_head: (args.int32_plane || []).slice(0, 8),
+        };
+        boxingLedger.unshift(rec);
+        if (boxingLedger.length > 200) boxingLedger.length = 200;
+        return textResult({
+          ok: true,
+          recorded: true,
+          ...rec,
+          total_on_plane: boxingLedger.length,
+          zrw_hint: "compress int32_plane with ZRW free path (structured residual)",
+        });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "boxing_list_events",
+    {
+      description: "List recent fight residual records on agentic@p221 (warm instance buffer).",
+      inputSchema: {
+        limit: z.number().optional().describe("Max records, default 20"),
+      },
+    },
+    async ({ limit }) =>
+      textResult({
+        seat: BOXING_PLANE.seat,
+        plane: BOXING_PLANE.plane,
+        events: boxingLedger.slice(0, Math.min(50, limit ?? 20)),
+        total: boxingLedger.length,
+      })
+  );
+
   server.registerTool(
     "get_leaderboard",
     { description: "Top 25 participants by credits and tasks completed.", inputSchema: {} },
