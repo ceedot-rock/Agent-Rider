@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "NODE_ENV=production node server.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
