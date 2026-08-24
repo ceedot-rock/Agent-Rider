@@ -48,8 +48,10 @@ export interface SpendResult {
   generated?: string;
 }
 
-// The `generate` service calls Anthropic directly and refunds on failure —
+// The `generate` service calls Grok (xAI) and does not debit on failure —
 // every other service is a flat metered credit debit.
+const GROK_MODEL = process.env.GROK_MODEL || "grok-4.6";
+
 export async function spendCredits(
   participantId: string,
   service: string,
@@ -67,19 +69,28 @@ export async function spendCredits(
 
   if (service === "generate") {
     if (!prompt) throw new Error("prompt_required");
-
-    const Anthropic = (await import("@anthropic-ai/sdk")).default;
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const apiKey = process.env.XAI_API_KEY;
+    if (!apiKey) throw new Error("missing_xai_api_key");
 
     let generated: string;
     try {
-      const message = await client.messages.create({
-        model: "claude-opus-4-8",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
+      const res = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: GROK_MODEL,
+          max_tokens: 1024,
+          messages: [{ role: "user", content: prompt }],
+        }),
       });
-      const block = message.content[0];
-      generated = block.type === "text" ? block.text : "";
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof body.error === "string" ? body.error : body.error?.message || res.statusText);
+      }
+      generated = body.choices?.[0]?.message?.content ?? "";
     } catch (err) {
       throw new Error(`generation_failed: ${(err as Error).message}`);
     }
