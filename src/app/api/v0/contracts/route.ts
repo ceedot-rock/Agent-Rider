@@ -56,6 +56,12 @@ export async function POST(req: NextRequest) {
  * List recent contracts, or fetch one by ?id= / ?hash=
  */
 export async function GET(req: NextRequest) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      { ok: false, error: "missing_supabase_service_role", hint: "fly secrets set SUPABASE_SERVICE_ROLE_KEY=... -a agentrider" },
+      { status: 503, headers: CORS }
+    );
+  }
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id") ?? searchParams.get("hash");
 
