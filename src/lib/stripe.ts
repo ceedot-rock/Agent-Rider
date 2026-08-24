@@ -1,16 +1,24 @@
 import Stripe from "stripe";
 
-const secretKey = process.env.STRIPE_SECRET_KEY;
-
-if (!secretKey) {
-  throw new Error(
-    "Missing STRIPE_SECRET_KEY environment variable. Set it in Vercel project settings (Production/Preview) or your local .env file."
-  );
+function getStripe(): Stripe {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error(
+      "Missing STRIPE_SECRET_KEY environment variable. Set it in Vercel project settings (Production/Preview) or your local .env file."
+    );
+  }
+  return new Stripe(secretKey, {
+    apiVersion: "2026-06-24.dahlia",
+    typescript: true,
+  });
 }
 
-export const stripe = new Stripe(secretKey, {
-  apiVersion: "2026-06-24.dahlia",
-  typescript: true,
+export const stripe = new Proxy({} as Stripe, {
+  get(_t, prop, recv) {
+    const s = getStripe() as unknown as Record<PropertyKey, unknown>;
+    const v = s[prop];
+    return typeof v === "function" ? v.bind(s) : v;
+  },
 });
 
 // 7-day free trial on every new Merchant Gate subscription. The rest of the
