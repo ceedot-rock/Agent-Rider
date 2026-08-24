@@ -17,13 +17,15 @@ export interface RiderPayload {
 const ISSUER = "agentrider.dev";
 const DEFAULT_TTL_SECONDS = 15 * 60;
 
-const privatePem = process.env.RIDER_PRIVATE_KEY;
-const publicPem = process.env.RIDER_PUBLIC_KEY;
-
-if (!privatePem || !publicPem) {
-  throw new Error(
-    "Missing RIDER_PRIVATE_KEY / RIDER_PUBLIC_KEY environment variables. Generate an ES256 keypair and set both in Vercel project settings (Production) or your local .env file."
-  );
+function riderPems(): { privatePem: string; publicPem: string } {
+  const privatePem = process.env.RIDER_PRIVATE_KEY;
+  const publicPem = process.env.RIDER_PUBLIC_KEY;
+  if (!privatePem || !publicPem) {
+    throw new Error(
+      "Missing RIDER_PRIVATE_KEY / RIDER_PUBLIC_KEY environment variables. Generate an ES256 keypair and set both in Vercel project settings (Production) or your local .env file."
+    );
+  }
+  return { privatePem, publicPem };
 }
 
 let signingKeyPromise: Promise<CryptoKey> | null = null;
@@ -31,12 +33,12 @@ let verifyKeyPromise: Promise<CryptoKey> | null = null;
 let publicJwkPromise: Promise<JWK & { kid: string }> | null = null;
 
 function getSigningKey(): Promise<CryptoKey> {
-  if (!signingKeyPromise) signingKeyPromise = importPKCS8(privatePem!, "ES256");
+  if (!signingKeyPromise) signingKeyPromise = importPKCS8(riderPems().privatePem, "ES256");
   return signingKeyPromise;
 }
 
 function getVerifyKey(): Promise<CryptoKey> {
-  if (!verifyKeyPromise) verifyKeyPromise = importSPKI(publicPem!, "ES256");
+  if (!verifyKeyPromise) verifyKeyPromise = importSPKI(riderPems().publicPem, "ES256");
   return verifyKeyPromise;
 }
 
