@@ -24,8 +24,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.js ./
-# server.mjs may or may not exist depending on custom server setup
-COPY --from=builder /app/server.mjs ./server.mjs
+COPY --from=builder /app/server.mjs ./
+COPY --from=builder /app/lib ./lib
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "server.mjs"]
