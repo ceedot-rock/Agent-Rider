@@ -2,11 +2,11 @@
  * CDDG Residual Fabric — public MCP surface for Agent-Rider
  * Smart Frame Certified · SFv1 · Level SF-1 · L/C/D
  * Core Compute Doctrine: start at 3 · stay small · stay simple · near-100% efficiency
- * Identity: Spid Phi Labs · Core · Cr3aToR
+ * Identity: Slid Phi Labs · Core · Cr3aToR
  *
  * Public surface only: residual energy, dual exactness (ΔE+ΔC=0),
  * Doctrine-of-3 Smart Swarms, hierarchical frames, contract binding,
- * Cont-1088 public measurable proxies (PHI / phason / density / gap).
+ * Cont-1088 public proxies (PHI, phason, density, gap, bin label).
  * No private coefficients or production residual engines.
  */
 
@@ -15,15 +15,15 @@ export const DOCTRINE_AGENTS = ["Observer", "Builder", "Reflector"] as const;
 export const MU = 0.45;
 export const ALPHA = 0.15;
 
-/** Golden ratio — public Cont-1088 quasi-crystal constant */
+/** Golden ratio — public Cont-1088 / quasi-crystal constant */
 export const PHI = (1 + Math.sqrt(5)) / 2; // ≈ 1.618033988749895
 
-/** Public phason proxy: phase flip on fractional plane */
+/** Public phason proxy (Cont-1088 plane flip measure) */
 export function phason(theta: number): number {
   return 0.5 * (1 - Math.cos((2 * Math.PI * (theta % 1)) / PHI));
 }
 
-/** Public gap proxy: clearance PHI^{-k} (k=4|5) */
+/** Public gap proxy (quasi-crystal clearance) */
 export function gapProxy(k: number = 4): number {
   return Math.pow(PHI, -k);
 }
@@ -86,9 +86,8 @@ export type ResidualSummary = {
   }>;
   swarms: number;
   bindings: number;
-  stamp: string;
-  phi?: number;
   gap?: number;
+  stamp: string;
 };
 
 class CDDGSystem {
@@ -236,9 +235,8 @@ class CDDGSystem {
       topPlanes: active.slice(0, 5),
       swarms: this.swarms.length,
       bindings: this.bindings.length,
-      stamp: "Smart Frame Certified · SFv1 · Level SF-1 · L/C/D · Cont-1088 public proxies",
-      phi: PHI,
-      gap: round6(gapProxy()),
+      gap: round6(gapProxy(4)),
+      stamp: "Smart Frame Certified · SFv1 · Level SF-1 · L/C/D · Cont-1088 public",
     };
   }
 
@@ -253,7 +251,7 @@ class CDDGSystem {
       interval: [plane.n, plane.n + 1],
       phason: round6(phason(plane.theta)),
       density: round4(densityProxy(plane.residual)),
-      gap: round6(gapProxy()),
+      gap: round6(gapProxy(4)),
       cont1088: cont1088Bin(plane.residual),
     };
   }
@@ -307,8 +305,7 @@ export function residualEnergy() {
     mirroredCost: s.mirroredCost,
     dualError: s.dualError,
     activeCount: s.activeCount,
-    stamp: s.stamp,
-    phi: s.phi,
     gap: s.gap,
+    stamp: s.stamp,
   };
 }
