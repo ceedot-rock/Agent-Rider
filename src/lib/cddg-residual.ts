@@ -2,10 +2,11 @@
  * CDDG Residual Fabric — public MCP surface for Agent-Rider
  * Smart Frame Certified · SFv1 · Level SF-1 · L/C/D
  * Core Compute Doctrine: start at 3 · stay small · stay simple · near-100% efficiency
- * Identity: Slid Phi Labs · Core · Cr3aToR
+ * Identity: Spid Phi Labs · Core · Cr3aToR
  *
  * Public surface only: residual energy, dual exactness (ΔE+ΔC=0),
- * Doctrine-of-3 Smart Swarms, hierarchical frames, contract binding.
+ * Doctrine-of-3 Smart Swarms, hierarchical frames, contract binding,
+ * Cont-1088 public measurable proxies (PHI / phason / density / gap).
  * No private coefficients or production residual engines.
  */
 
@@ -13,6 +14,29 @@ export const N_PLANES = 360;
 export const DOCTRINE_AGENTS = ["Observer", "Builder", "Reflector"] as const;
 export const MU = 0.45;
 export const ALPHA = 0.15;
+
+/** Golden ratio — public Cont-1088 quasi-crystal constant */
+export const PHI = (1 + Math.sqrt(5)) / 2; // ≈ 1.618033988749895
+
+/** Public phason proxy: phase flip on fractional plane */
+export function phason(theta: number): number {
+  return 0.5 * (1 - Math.cos((2 * Math.PI * (theta % 1)) / PHI));
+}
+
+/** Public gap proxy: clearance PHI^{-k} (k=4|5) */
+export function gapProxy(k: number = 4): number {
+  return Math.pow(PHI, -k);
+}
+
+/** Public density proxy from measurable residual energy E */
+export function densityProxy(E: number): number {
+  return Math.min(2.5, Math.abs(E) * 0.6 + 0.3);
+}
+
+/** Public Cont-1088 bin label (fingerprint only, no private tables) */
+export function cont1088Bin(residual: number): number {
+  return Math.floor(Math.abs(residual) * 1088) % 1088;
+}
 
 function fnv1a32(data: string): string {
   let h = 2166136261;
@@ -52,10 +76,19 @@ export type ResidualSummary = {
   globalEnergy: number;
   mirroredCost: number;
   dualError: number;
-  topPlanes: Array<{ n: number; residual: number; swarmCount: number }>;
+  topPlanes: Array<{
+    n: number;
+    residual: number;
+    swarmCount: number;
+    phason?: number;
+    density?: number;
+    cont1088?: number;
+  }>;
   swarms: number;
   bindings: number;
   stamp: string;
+  phi?: number;
+  gap?: number;
 };
 
 class CDDGSystem {
@@ -186,7 +219,14 @@ class CDDGSystem {
   residualSummary(): ResidualSummary {
     const active = this.planes
       .filter((p) => Math.abs(p.residual) > 1e-6 || p.swarmCount > 0)
-      .map((p) => ({ n: p.n, residual: round4(p.residual), swarmCount: p.swarmCount }));
+      .map((p) => ({
+        n: p.n,
+        residual: round4(p.residual),
+        swarmCount: p.swarmCount,
+        phason: round6(phason(p.theta)),
+        density: round4(densityProxy(p.residual)),
+        cont1088: cont1088Bin(p.residual),
+      }));
     active.sort((a, b) => Math.abs(b.residual) - Math.abs(a.residual));
     return {
       activeCount: active.length,
@@ -196,7 +236,9 @@ class CDDGSystem {
       topPlanes: active.slice(0, 5),
       swarms: this.swarms.length,
       bindings: this.bindings.length,
-      stamp: "Smart Frame Certified · SFv1 · Level SF-1 · L/C/D",
+      stamp: "Smart Frame Certified · SFv1 · Level SF-1 · L/C/D · Cont-1088 public proxies",
+      phi: PHI,
+      gap: round6(gapProxy()),
     };
   }
 
@@ -209,6 +251,10 @@ class CDDGSystem {
       swarmCount: plane.swarmCount,
       fingerprints: plane.fingerprints.slice(-8),
       interval: [plane.n, plane.n + 1],
+      phason: round6(phason(plane.theta)),
+      density: round4(densityProxy(plane.residual)),
+      gap: round6(gapProxy()),
+      cont1088: cont1088Bin(plane.residual),
     };
   }
 
@@ -262,5 +308,7 @@ export function residualEnergy() {
     dualError: s.dualError,
     activeCount: s.activeCount,
     stamp: s.stamp,
+    phi: s.phi,
+    gap: s.gap,
   };
 }
