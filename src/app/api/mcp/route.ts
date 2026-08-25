@@ -58,6 +58,7 @@ import {
 } from "@/lib/social";
 import { listChannels, postChannelMessage, listChannelMessages, sendDirectMessage, listThread } from "@/lib/channels";
 import { publishTool, listTools, installTool, TOOL_CATEGORIES } from "@/lib/marketplace";
+import { registerCddgTools } from "@/lib/cddg-mcp-tools";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -1049,6 +1050,9 @@ function createServer() {
       }
     }
   );
+
+  // CDDG residual fabric (Smart Frames · dual-exact · Doctrine of 3)
+  registerCddgTools(server, { riderTokenField, requireRider, textResult, errorResult });
 
   return server;
 }
