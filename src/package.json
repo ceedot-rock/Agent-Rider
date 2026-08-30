@@ -30,7 +30,8 @@
     "@types/react-dom": "19.2.3",
     "postcss": "^8.5.10"
   },
-  "homepage": "https://agentrider.vercel.app",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://agentrider.fly.dev",
   "description": "Agent^Rider \u2014 signed identity, trust, AGC credits, task market, MCP for AI agents",
   "keywords": [
     "agent-rider",
