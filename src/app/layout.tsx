@@ -97,6 +97,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         {children}
         <Analytics />
+        <script src="https://www.slidphilabs.com/assets/lab-auth.js" defer></script>
       </body>
     </html>
   );
