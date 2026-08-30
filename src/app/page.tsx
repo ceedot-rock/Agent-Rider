@@ -93,6 +93,13 @@ export default function Home() {
             Pricing
           </a>
           <a
+            href="https://www.slidphilabs.com/signup?next=https://agentrider.fly.dev/"
+            style={{ fontSize: 14, color: "var(--gold)" }}
+            data-spl-auth=""
+          >
+            Sign up
+          </a>
+          <a
             href="#pricing"
             style={{
               fontSize: 14,
