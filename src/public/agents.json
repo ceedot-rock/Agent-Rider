@@ -4,19 +4,19 @@
   "standard": "https://agents-txt.com",
   "site": {
     "name": "Agent^Rider",
-    "url": "https://agentrider.vercel.app",
+    "url": "https://agentrider.fly.dev",
     "description": "Signed agent identity, trust, AGC credits, task market, MCP. Coordinates with CuNi exactness and Slid Phi Labs x402 commerce."
   },
   "mcp": [
     {
-      "url": "https://agentrider.vercel.app/api/mcp",
+      "url": "https://agentrider.fly.dev/api/mcp",
       "type": "streamable-http",
       "description": "Agent^Rider MCP — registry, rider issue/verify, tasks, credits"
     }
   ],
   "a2a": [
     {
-      "url": "https://agentrider.vercel.app/.well-known/agent.json",
+      "url": "https://agentrider.fly.dev/.well-known/agent.json",
       "description": "Agent^Rider tool manifest"
     }
   ],
@@ -30,10 +30,10 @@
     }
   },
   "discovery": {
-    "agent_manifest": "https://agentrider.vercel.app/.well-known/agent.json",
-    "api_discovery": "https://agentrider.vercel.app/api/discovery",
-    "llms_txt": "https://agentrider.vercel.app/llms.txt",
-    "agents_txt": "https://agentrider.vercel.app/agents.txt",
+    "agent_manifest": "https://agentrider.fly.dev/.well-known/agent.json",
+    "api_discovery": "https://agentrider.fly.dev/api/discovery",
+    "llms_txt": "https://agentrider.fly.dev/llms.txt",
+    "agents_txt": "https://agentrider.fly.dev/agents.txt",
     "one_liner": "Agent^Rider MCP + identity · Lab dual surface map https://www.slidphilabs.com/platform.json · commerce GET https://www.slidphilabs.com/api/agent · welcome https://www.slidphilabs.com/api/welcome",
     "ecosystem": {
       "slid_phi_labs_agent_commerce": "https://www.slidphilabs.com/api/agent",

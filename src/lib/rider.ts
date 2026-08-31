@@ -133,8 +133,8 @@ export function isGateOk(result: GateResult): result is { ok: true; rider: Rider
   return result.ok === true;
 }
 
-const ISSUE_URL = "https://agentrider.vercel.app/api/rider/issue";
-const DOCS_URL = "https://agentrider.vercel.app/docs";
+const ISSUE_URL = "https://agentrider.fly.dev/api/rider/issue";
+const DOCS_URL = "https://agentrider.fly.dev/docs";
 
 // A 401 for a missing/invalid rider is self-describing, the same way OAuth's
 // `WWW-Authenticate: Bearer` challenge works — any agent (or agent framework)

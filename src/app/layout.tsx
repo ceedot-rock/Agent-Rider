@@ -39,11 +39,11 @@ export const metadata = {
   other: {
     "agent-commerce": "x402",
     "agent-protocols": "x402,mcp",
-    "agent-discovery": "https://agentrider.vercel.app/api/discovery",
-    "agent-manifest": "https://agentrider.vercel.app/.well-known/agent.json",
-    "agent-mcp": "https://agentrider.vercel.app/api/mcp",
+    "agent-discovery": "https://agentrider.fly.dev/api/discovery",
+    "agent-manifest": "https://agentrider.fly.dev/.well-known/agent.json",
+    "agent-mcp": "https://agentrider.fly.dev/api/mcp",
     "agent-one-liner":
-      "Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent",
+      "Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json · MCP https://agentrider.fly.dev/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent",
     "lab-commerce": "https://www.slidphilabs.com/api/agent",
   },
 };
@@ -87,10 +87,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="describedby" href="/.well-known/agentic-commerce.json" />
         <meta name="agent-commerce" content="x402" />
         <meta name="agent-protocols" content="x402,mcp" />
-        <meta name="agent-discovery" content="https://agentrider.vercel.app/api/discovery" />
-        <meta name="agent-manifest" content="https://agentrider.vercel.app/.well-known/agent.json" />
-        <meta name="agent-mcp" content="https://agentrider.vercel.app/api/mcp" />
-        <meta name="agent-one-liner" content="Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent" />
+        <meta name="agent-discovery" content="https://agentrider.fly.dev/api/discovery" />
+        <meta name="agent-manifest" content="https://agentrider.fly.dev/.well-known/agent.json" />
+        <meta name="agent-mcp" content="https://agentrider.fly.dev/api/mcp" />
+        <meta name="agent-one-liner" content="Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json · MCP https://agentrider.fly.dev/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent" />
         <meta name="lab-commerce" content="https://www.slidphilabs.com/api/agent" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
       </head>

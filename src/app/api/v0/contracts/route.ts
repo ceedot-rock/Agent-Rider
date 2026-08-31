@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   }
 
   const c = result.contract;
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.vercel.app";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
 
   return NextResponse.json(
     {

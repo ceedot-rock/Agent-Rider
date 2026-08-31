@@ -49,17 +49,17 @@
   ],
   "funding": {
     "type": "individual",
-    "url": "https://agentrider.vercel.app/api/discovery"
+    "url": "https://agentrider.fly.dev/api/discovery"
   },
   "agentic": {
     "commerce": "x402",
-    "discovery": "https://agentrider.vercel.app/api/discovery",
-    "agent_manifest": "https://agentrider.vercel.app/.well-known/agent.json",
-    "mcp": "https://agentrider.vercel.app/api/mcp",
-    "agents_txt": "https://agentrider.vercel.app/agents.txt",
-    "agents_json": "https://agentrider.vercel.app/agents.json",
-    "llms_txt": "https://agentrider.vercel.app/llms.txt",
-    "agentic_commerce": "https://agentrider.vercel.app/.well-known/agentic-commerce.json",
+    "discovery": "https://agentrider.fly.dev/api/discovery",
+    "agent_manifest": "https://agentrider.fly.dev/.well-known/agent.json",
+    "mcp": "https://agentrider.fly.dev/api/mcp",
+    "agents_txt": "https://agentrider.fly.dev/agents.txt",
+    "agents_json": "https://agentrider.fly.dev/agents.json",
+    "llms_txt": "https://agentrider.fly.dev/llms.txt",
+    "agentic_commerce": "https://agentrider.fly.dev/.well-known/agentic-commerce.json",
     "lab_commerce": "https://www.slidphilabs.com/api/agent",
     "cuni_studio": "https://cuni-studio.fly.dev/",
     "networks": [
@@ -67,8 +67,8 @@
       "eip155:8453"
     ],
     "payment_header": "X-PAYMENT",
-    "one_liner": "Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json \u00b7 MCP https://agentrider.vercel.app/api/mcp \u00b7 Lab commerce https://www.slidphilabs.com/api/agent",
-    "site": "https://agentrider.vercel.app"
+    "one_liner": "Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json \u00b7 MCP https://agentrider.fly.dev/api/mcp \u00b7 Lab commerce https://www.slidphilabs.com/api/agent",
+    "site": "https://agentrider.fly.dev"
   },
   "x402": {
     "discovery": "https://www.slidphilabs.com/api/agent",

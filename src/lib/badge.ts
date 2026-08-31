@@ -37,7 +37,7 @@ function sign(payload: object): string {
 }
 
 function platformUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.vercel.app";
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
 }
 
 export async function buildBadge(agentId: string): Promise<TrustBadge | null> {

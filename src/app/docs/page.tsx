@@ -168,7 +168,7 @@ Content-Type: application/json
         <CodeBlock>{`import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const JWKS = createRemoteJWKSet(
-  new URL("https://agentrider.vercel.app/.well-known/jwks.json")
+  new URL("https://agentrider.fly.dev/.well-known/jwks.json")
 );
 
 const { payload: rider } = await jwtVerify(riderToken, JWKS, {
@@ -245,14 +245,14 @@ Content-Type: application/json
         </p>
         <CodeBlock>{`HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Rider realm="agentrider.dev",
-  issue_uri="https://agentrider.vercel.app/api/rider/issue",
-  docs_uri="https://agentrider.vercel.app/docs"
+  issue_uri="https://agentrider.fly.dev/api/rider/issue",
+  docs_uri="https://agentrider.fly.dev/docs"
 Content-Type: application/json
 
 {
   "error": "missing_rider",
-  "issue_url": "https://agentrider.vercel.app/api/rider/issue",
-  "docs_url": "https://agentrider.vercel.app/docs"
+  "issue_url": "https://agentrider.fly.dev/api/rider/issue",
+  "docs_url": "https://agentrider.fly.dev/docs"
 }`}</CodeBlock>
         <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
           Both the header (for clients that parse challenge headers) and the
@@ -275,7 +275,7 @@ Content-Type: application/json
           default) calls each calendar month are included in Merchant Gate,
           calls above that keep succeeding but report as billable overage:
         </p>
-        <CodeBlock>{`curl -X POST https://agentrider.vercel.app/api/verify \\
+        <CodeBlock>{`curl -X POST https://agentrider.fly.dev/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"merchantKey": "merchant_live_..."}'
 # => {

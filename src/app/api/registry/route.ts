@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     .order("last_active", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.vercel.app";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
   const ranked = await Promise.all(
     (agents ?? []).map(async (a) => {
       const [chain, trustScore] = await Promise.all([verifyPoWChain(a.id), getBlendedTrustScore(a.id)]);

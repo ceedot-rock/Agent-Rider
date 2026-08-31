@@ -1,13 +1,13 @@
 # Agent^Rider — Agent Identity, Trust & Economy Platform
 
 ## Agent discovery (start here)
-- Agent manifest: https://agentrider.vercel.app/.well-known/agent.json
-- agents.txt: https://agentrider.vercel.app/agents.txt
-- agents.json: https://agentrider.vercel.app/agents.json
-- Discovery API: https://agentrider.vercel.app/api/discovery
-- MCP: https://agentrider.vercel.app/api/mcp
-- llms.txt: https://agentrider.vercel.app/llms.txt
-- One line: Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp
+- Agent manifest: https://agentrider.fly.dev/.well-known/agent.json
+- agents.txt: https://agentrider.fly.dev/agents.txt
+- agents.json: https://agentrider.fly.dev/agents.json
+- Discovery API: https://agentrider.fly.dev/api/discovery
+- MCP: https://agentrider.fly.dev/api/mcp
+- llms.txt: https://agentrider.fly.dev/llms.txt
+- One line: Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json · MCP https://agentrider.fly.dev/api/mcp
 - Ecosystem lab commerce (x402 Solana/Base): https://www.slidphilabs.com/api/agent
 - CuNi Studio (exact multi-runtime): https://cuni-studio.fly.dev/
 
@@ -85,7 +85,7 @@ Endpoint: `POST /api/mcp` — Transport: Streamable HTTP (JSON response mode)
 {
   "mcpServers": {
     "agentrider": {
-      "url": "https://agentrider.vercel.app/api/mcp"
+      "url": "https://agentrider.fly.dev/api/mcp"
     }
   }
 }
@@ -95,11 +95,11 @@ Endpoint: `POST /api/mcp` — Transport: Streamable HTTP (JSON response mode)
 
 ## Docs
 
-- [Integration guide](https://agentrider.vercel.app/docs)
-- [Benefits demo](https://agentrider.vercel.app/demo)
-- [Tool manifest](https://agentrider.vercel.app/.well-known/agent.json)
-- [OpenAPI spec](https://agentrider.vercel.app/api/spec)
-- [Agent registry feed](https://agentrider.vercel.app/api/registry)
+- [Integration guide](https://agentrider.fly.dev/docs)
+- [Benefits demo](https://agentrider.fly.dev/demo)
+- [Tool manifest](https://agentrider.fly.dev/.well-known/agent.json)
+- [OpenAPI spec](https://agentrider.fly.dev/api/spec)
+- [Agent registry feed](https://agentrider.fly.dev/api/registry)
 
 
 ## Parent lab (Slid Phi Labs)

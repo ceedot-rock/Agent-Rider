@@ -1,7 +1,7 @@
 # agents.txt
 # Standard: https://agents-txt.com
-# JSON: https://agentrider.vercel.app/agents.json
+# JSON: https://agentrider.fly.dev/agents.json
 
 Protocols: x402
-MCP: https://agentrider.vercel.app/api/mcp
-A2A: https://agentrider.vercel.app/.well-known/agent.json
+MCP: https://agentrider.fly.dev/api/mcp
+A2A: https://agentrider.fly.dev/.well-known/agent.json
