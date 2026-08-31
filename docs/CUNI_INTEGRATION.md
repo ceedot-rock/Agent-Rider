@@ -23,8 +23,8 @@ Body: CuNi publish metadata (or `{ "meta": { ... } }`).
   "sourceHash": "…",
   "idempotent": false,
   "endpoints": {
-    "self": "https://agentrider.vercel.app/api/v0/contracts?id=ctr_…",
-    "invoke": "https://agentrider.vercel.app/api/v0/contracts/ctr_…/invoke"
+    "self": "https://agentrider.fly.dev/api/v0/contracts?id=ctr_…",
+    "invoke": "https://agentrider.fly.dev/api/v0/contracts/ctr_…/invoke"
   }
 }
 ```
@@ -43,7 +43,7 @@ Apply once: `supabase/cuni_contracts.sql`
 
 ## Studio side
 
-Set `CUNI_RIDER_URL=https://agentrider.vercel.app` on the Studio host.
+Set `CUNI_RIDER_URL=https://agentrider.fly.dev` on the Studio host.
 Publish then auto-POSTs to this endpoint after exactness PASS.
 
 See CuNi `docs/RIDER_CUTOVER.md`.

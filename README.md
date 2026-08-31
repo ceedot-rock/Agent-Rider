@@ -69,16 +69,16 @@ MIT
 ## Agentic discovery
 
 ```
-Agent^Rider: GET https://agentrider.vercel.app/.well-known/agent.json · MCP https://agentrider.vercel.app/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent
+Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json · MCP https://agentrider.fly.dev/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent
 ```
 
 | Surface | URL |
 |---------|-----|
-| Agent manifest | https://agentrider.vercel.app/.well-known/agent.json |
-| Discovery API | https://agentrider.vercel.app/api/discovery |
-| agents.txt | https://agentrider.vercel.app/agents.txt |
-| agents.json | https://agentrider.vercel.app/agents.json |
-| llms.txt | https://agentrider.vercel.app/llms.txt |
-| MCP | https://agentrider.vercel.app/api/mcp |
+| Agent manifest | https://agentrider.fly.dev/.well-known/agent.json |
+| Discovery API | https://agentrider.fly.dev/api/discovery |
+| agents.txt | https://agentrider.fly.dev/agents.txt |
+| agents.json | https://agentrider.fly.dev/agents.json |
+| llms.txt | https://agentrider.fly.dev/llms.txt |
+| MCP | https://agentrider.fly.dev/api/mcp |
 | Lab x402 commerce | https://www.slidphilabs.com/api/agent |
 | CuNi Studio | https://cuni-studio.fly.dev/ |
