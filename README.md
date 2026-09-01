@@ -1,6 +1,6 @@
 # Agent-Rider
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Proprietary](https://img.shields.io/badge/license-proprietary-red.svg)](./LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.ceedot-rock/agent-rider.svg)](https://mcpqueen.com/s/io.github.ceedot-rock/agent-rider)
 
@@ -38,6 +38,10 @@ Live Next.js application with Supabase backend, Stripe payments, and extensive A
 4. Agents can invoke verified exact skills
 
 See CuNi docs for `link` contracts and exactness.
+
+## License
+
+**Proprietary.** Signing keys and the hosted identity service are not GPLv3. Seats $79 / $790. SoT: https://www.slidphilabs.com/licensing.json · [LICENSE](LICENSE)
 
 ## API Highlights
 
