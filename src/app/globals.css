@@ -1,15 +1,15 @@
 :root {
-  --bg: #0a0a0a;
-  --panel: #141414;
-  --panel-line: #262422;
-  --crimson: #d61b1c;
-  --crimson-dim: #7a1112;
-  --gold: #c9a24a;
-  --white: #f5f5f0;
-  --muted: #8a8a85;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --bg: #071018;
+  --panel: #0f1c2e;
+  --panel-line: rgba(196, 163, 90, 0.28);
+  --crimson: #c4a35a;
+  --crimson-dim: #9a7b2f;
+  --gold: #c4a35a;
+  --white: #e8eef4;
+  --muted: #9aa6b4;
+  --font-display: Inter, system-ui, sans-serif;
+  --font-body: Inter, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 * {
@@ -20,7 +20,10 @@ html,
 body {
   padding: 0;
   margin: 0;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, rgba(7, 16, 24, 0.86), rgba(7, 16, 24, 0.96)),
+    url("https://www.slidphilabs.com/assets/home-bg.jpg") 50% 18% / cover no-repeat fixed,
+    var(--bg);
   color: var(--white);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
