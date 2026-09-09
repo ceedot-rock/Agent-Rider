@@ -47,10 +47,10 @@ function normalizeMeta(raw: unknown): CuniPublishMeta | null {
   const source = typeof meta.source === "string" ? meta.source : null;
   if (!source) return null;
 
-  let sourceHash =
-    typeof meta.sourceHash === "string" ? meta.sourceHash : null;
-  if (!sourceHash) {
-    sourceHash = createHash("sha256").update(source, "utf8").digest("hex");
+  const sourceHash = createHash("sha256").update(source, "utf8").digest("hex");
+  const claimed = typeof meta.sourceHash === "string" ? meta.sourceHash : null;
+  if (claimed && claimed !== sourceHash) {
+    return null;
   }
 
   const exact = (meta.exactness ?? {}) as Record<string, unknown>;
@@ -90,6 +90,14 @@ export async function registerCuniContract(
 > {
   const meta = normalizeMeta(raw);
   if (!meta) {
+    const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+    const inner = (obj?.meta && typeof obj.meta === "object" ? obj.meta : obj) as Record<string, unknown> | null;
+    if (inner && typeof inner.source === "string" && typeof inner.sourceHash === "string") {
+      const digest = createHash("sha256").update(inner.source, "utf8").digest("hex");
+      if (inner.sourceHash !== digest) {
+        return { ok: false, status: 400, error: "source_hash mismatch — identity is the program" };
+      }
+    }
     return { ok: false, status: 400, error: "expected publish metadata with source" };
   }
   if (!meta.exactness.passed) {

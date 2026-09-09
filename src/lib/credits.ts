@@ -1,5 +1,6 @@
 import { getDB } from "@/lib/db";
 import { resolveById, adjustCredits, recordTransaction } from "@/lib/agents";
+import { verifyWarrant, type Warrant } from "@/lib/narrow";
 
 // AGC credit economy — ported from agentmagnet/routes/tokens.js.
 export const SERVICE_COSTS: Record<string, number> = {
@@ -56,7 +57,8 @@ export async function spendCredits(
   participantId: string,
   service: string,
   units = 1,
-  prompt?: string
+  prompt?: string,
+  warrant?: Warrant | null
 ): Promise<SpendResult> {
   const costPerUnit = SERVICE_COSTS[service];
   if (!costPerUnit) throw new Error("unknown_service");
@@ -65,6 +67,12 @@ export async function spendCredits(
   if (!participant) throw new Error("participant_not_found");
 
   const cost = costPerUnit * units;
+  if (warrant) {
+    const gate = verifyWarrant(warrant);
+    if (!gate.ok) throw new Error(gate.error);
+    if (gate.body.agent_id !== participantId) throw new Error("warrant_agent");
+    if (cost > gate.body.max_cents) throw new Error("warrant_cap");
+  }
   if (participant.credits < cost) throw new Error("insufficient_credits");
 
   if (service === "generate") {
