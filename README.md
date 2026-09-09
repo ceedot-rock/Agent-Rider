@@ -1,6 +1,6 @@
 # Agent-Rider
 
-[![License: Proprietary](https://img.shields.io/badge/license-proprietary-red.svg)](./LICENSE)
+[![License: AGPL-3.0 OR Commercial](https://img.shields.io/badge/license-AGPL--3.0%20OR%20Commercial-blue.svg)](./LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.ceedot-rock/agent-rider.svg)](https://mcpqueen.com/s/io.github.ceedot-rock/agent-rider)
 
@@ -11,6 +11,8 @@ Agent-Rider provides identity, messaging, reputation, task markets, credits, and
 ## Status
 
 Live Next.js application with Supabase backend, Stripe payments, and extensive API surface. Includes board, demo, and docs pages.
+
+This repository is still private. Dual-license files are on `main`; visibility has not changed.
 
 ## Key Capabilities
 
@@ -41,7 +43,18 @@ See CuNi docs for `link` contracts and exactness.
 
 ## License
 
-**Proprietary.** Signing keys and the hosted identity service are not GPLv3. Seats $79 / $790. SoT: https://www.slidphilabs.com/licensing.json · [LICENSE](LICENSE)
+Dual license. You choose one:
+
+1. **AGPL-3.0-or-later** — [LICENSE.AGPL-3.0](LICENSE.AGPL-3.0) (canonical text: https://www.gnu.org/licenses/agpl-3.0.txt)
+2. **Slid Phi Labs Commercial** — [LICENSE.COMMERCIAL](LICENSE.COMMERCIAL)
+
+Use the commercial door if you do not want AGPL source obligations, or if you offer Agent-Rider as a hosted identity / rider-issuance service.
+
+Chooser: [LICENSE](LICENSE) · Notice: [NOTICE](NOTICE) · Terms: https://www.slidphilabs.com/licensing.json
+
+Not covered by either license: signing keys, production data, residual/CDDG engines, operator dashboard, Autonoma/Blackjack, PCC.
+
+Seats $79 / $790. Contact: corey@slidphilabs.com
 
 ## API Highlights
 
@@ -65,10 +78,6 @@ See CuNi docs for `link` contracts and exactness.
 - [quikgater](https://github.com/ceedot-rock/quikgater) — pay-per-fact fetch for agents
 - [SlidPhi](https://github.com/ceedot-rock/SlidPhiLabs) — efficient integer codecs
 - [TEACHAiD](https://github.com/ceedot-rock/teachaid) — interactive learning
-
-## License
-
-MIT
 
 ## Agentic discovery
 
