@@ -6,13 +6,14 @@ Agent-Rider is available under two licenses. You choose one.
 
 2. Slid Phi Labs Commercial License
    See LICENSE.COMMERCIAL
-   Required if you do not want AGPL source obligations,
-   or if you offer Agent-Rider or a derivative as a
-   hosted identity / rider-issuance service.
+   Use this if you do not want AGPL source obligations,
+   or if you offer Agent-Rider or a derivative as a hosted
+   identity / rider-issuance service.
 
 Not covered by either license:
 signing keys, production data, residual/CDDG engines,
-operator dashboard, Autonoma/Blackjack, PCC.
+operator dashboard, Autonoma/Blackjack, PCC / Combined GC.
 
+Copyright (c) 2026 Slid Phi Labs / Corey Tasz.
 Seats and current terms: https://www.slidphilabs.com/licensing.json
 Contact: corey@slidphilabs.com
