@@ -47,3 +47,9 @@ Set `CUNI_RIDER_URL=https://agentrider.fly.dev` on the Studio host.
 Publish then auto-POSTs to this endpoint after exactness PASS.
 
 See CuNi `docs/RIDER_CUTOVER.md`.
+
+## Marketplace fee
+
+Integer 5% of task reward: CuNi `examples/laws/rider-fee.cuni`. Must match `src/lib/tasks.ts` default `TASK_FEE_RATE=0.05`.
+
+Agent spend cap (speech vs law): `examples/laws/spend-control.cuni`.

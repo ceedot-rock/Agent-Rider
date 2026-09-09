@@ -33,6 +33,7 @@ const MAX_REWARD = 500;
 // poster still escrows exactly task.reward at postTask() time. Applies only
 // to the reward the poster funded, not the PoW chain bonus (that's a
 // platform-funded emission, not money changing hands between two parties).
+// Law: cuni/examples/laws/rider-fee.cuni — floor 5% of reward in integer cents/credits.
 const TASK_FEE_RATE = Number(process.env.TASK_FEE_RATE ?? 0.05);
 const PLATFORM_TREASURY_ID = "platform-treasury";
 

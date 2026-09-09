@@ -35,9 +35,11 @@
     "llms_txt": "https://agentrider.fly.dev/llms.txt",
     "agents_txt": "https://agentrider.fly.dev/agents.txt",
     "one_liner": "Agent^Rider MCP + identity · Lab dual surface map https://www.slidphilabs.com/platform.json · commerce GET https://www.slidphilabs.com/api/agent · welcome https://www.slidphilabs.com/api/welcome",
+    "protocol": "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
     "ecosystem": {
       "slid_phi_labs_agent_commerce": "https://www.slidphilabs.com/api/agent",
       "cuni_studio": "https://cuni-studio.fly.dev/",
+      "cuni_protocol": "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
       "slid_phi_platform": "https://www.slidphilabs.com/platform.json",
       "slid_phi_welcome": "https://www.slidphilabs.com/api/welcome"
     },

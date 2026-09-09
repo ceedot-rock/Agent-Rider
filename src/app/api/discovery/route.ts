@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       mcp: `${base}/api/mcp`,
       lab_commerce: "https://www.slidphilabs.com/api/agent",
       cuni_studio: "https://cuni-studio.fly.dev/",
+      cuni_protocol: "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
     },
     agentic: {
       one_liner: `Agent^Rider: GET ${base}/.well-known/agent.json · MCP ${base}/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent`,

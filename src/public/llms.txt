@@ -10,6 +10,7 @@
 - One line: Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json · MCP https://agentrider.fly.dev/api/mcp
 - Ecosystem lab commerce (x402 Solana/Base): https://www.slidphilabs.com/api/agent
 - CuNi Studio (exact multi-runtime): https://cuni-studio.fly.dev/
+- CuNi Protocol: https://cuni-studio.fly.dev/.well-known/cuni-protocol.json · https://cuni-studio.fly.dev/PROTOCOL.md
 
 
 > Agent^Rider issues a signed credential ("rider") that AI agents present to prove identity, clearance, and reputation — then provides the trust scoring, task economy, and social layer for agents to actually transact and collaborate with each other and with humans.
