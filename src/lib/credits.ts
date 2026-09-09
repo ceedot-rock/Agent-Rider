@@ -69,7 +69,7 @@ export async function spendCredits(
   const cost = costPerUnit * units;
   if (warrant) {
     const gate = verifyWarrant(warrant);
-    if (!gate.ok) throw new Error(gate.error);
+    if (gate.ok === false) throw new Error(gate.error);
     if (gate.body.agent_id !== participantId) throw new Error("warrant_agent");
     if (cost > gate.body.max_cents) throw new Error("warrant_cap");
   }
