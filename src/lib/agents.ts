@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import { getDB } from "@/lib/db";
 
 export type ParticipantType = "agent" | "human";
+export type ParticipantStore = "supabase" | "disk";
 
 export interface Participant {
   id: string;
@@ -56,11 +57,43 @@ function hashApiKey(apiKey: string): string {
   return createHash("sha256").update(apiKey).digest("hex");
 }
 
-// Decaying signup bonus (ported from agentmagnet/services/store.js) — first
-// 100 registrations get 50 credits, next 500 get 20, everyone after gets 5.
-// Front-loading rewards early adopters is deliberate anti-sybil design: a
-// bot farm registering after the platform has traction gets a much smaller
-// payout per fake account.
+function diskPath(): string {
+  const { join } = require("node:path") as typeof import("node:path");
+  return join(process.cwd(), "data", "participants.json");
+}
+
+function readDiskParticipants(): ParticipantRow[] {
+  const { readFileSync, existsSync } = require("node:fs") as typeof import("node:fs");
+  const p = diskPath();
+  if (!existsSync(p)) return [];
+  try {
+    const list = JSON.parse(readFileSync(p, "utf8"));
+    return Array.isArray(list) ? (list as ParticipantRow[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDiskParticipant(row: ParticipantRow): void {
+  const { writeFileSync, mkdirSync } = require("node:fs") as typeof import("node:fs");
+  const { join } = require("node:path") as typeof import("node:path");
+  const dir = join(process.cwd(), "data");
+  mkdirSync(dir, { recursive: true });
+  const list = readDiskParticipants();
+  const idx = list.findIndex((r) => r.id === row.id);
+  if (idx >= 0) list[idx] = row;
+  else list.push(row);
+  writeFileSync(diskPath(), JSON.stringify(list, null, 2));
+}
+
+function findDiskByApiKeyHash(hash: string): ParticipantRow | null {
+  return readDiskParticipants().find((r) => r.api_key_hash === hash) ?? null;
+}
+
+function findDiskById(id: string): ParticipantRow | null {
+  return readDiskParticipants().find((r) => r.id === id) ?? null;
+}
+
 async function signupBonus(): Promise<number> {
   try {
     const db = getDB();
@@ -85,6 +118,8 @@ export interface RegisterInput {
 export interface RegisterResult {
   participant: Participant;
   apiKey: string;
+  store: ParticipantStore;
+  dbError?: string;
 }
 
 export async function registerParticipant(input: RegisterInput): Promise<RegisterResult> {
@@ -118,26 +153,19 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   };
 
   let row: ParticipantRow | null = null;
+  let dbError: string | undefined;
   try {
     const { data, error } = await db.from("participants").insert(payload).select().single();
     if (!error && data) row = data as ParticipantRow;
-  } catch {
+    else if (error) dbError = error.message?.slice(0, 240);
+  } catch (e: unknown) {
+    dbError = e instanceof Error ? e.message.slice(0, 240) : "insert_threw";
     row = null;
   }
+
+  let store: ParticipantStore = "supabase";
   if (!row) {
-    const { writeFileSync, readFileSync, mkdirSync, existsSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    const dir = join(process.cwd(), "data");
-    mkdirSync(dir, { recursive: true });
-    const p = join(dir, "participants.json");
-    let list: ParticipantRow[] = [];
-    if (existsSync(p)) {
-      try {
-        list = JSON.parse(readFileSync(p, "utf8"));
-      } catch {
-        list = [];
-      }
-    }
+    store = "disk";
     row = {
       ...payload,
       credits,
@@ -147,8 +175,7 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
       registered_at: new Date().toISOString(),
       last_active: new Date().toISOString(),
     } as ParticipantRow;
-    list.push(row);
-    writeFileSync(p, JSON.stringify(list, null, 2));
+    writeDiskParticipant(row);
   }
 
   try {
@@ -158,23 +185,32 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
     /* disk-only signup still returns a key */
   }
 
-  return { participant: rowToParticipant(row as ParticipantRow), apiKey };
+  return { participant: rowToParticipant(row), apiKey, store, dbError };
 }
 
 export async function resolveByApiKey(apiKey: string): Promise<Participant | null> {
-  const db = getDB();
-  const { data } = await db
-    .from("participants")
-    .select("*")
-    .eq("api_key_hash", hashApiKey(apiKey))
-    .single();
-  return data ? rowToParticipant(data as ParticipantRow) : null;
+  const hash = hashApiKey(apiKey);
+  try {
+    const db = getDB();
+    const { data } = await db.from("participants").select("*").eq("api_key_hash", hash).single();
+    if (data) return rowToParticipant(data as ParticipantRow);
+  } catch {
+    /* fall through to disk */
+  }
+  const disk = findDiskByApiKeyHash(hash);
+  return disk ? rowToParticipant(disk) : null;
 }
 
 export async function resolveById(id: string): Promise<Participant | null> {
-  const db = getDB();
-  const { data } = await db.from("participants").select("*").eq("id", id).single();
-  return data ? rowToParticipant(data as ParticipantRow) : null;
+  try {
+    const db = getDB();
+    const { data } = await db.from("participants").select("*").eq("id", id).single();
+    if (data) return rowToParticipant(data as ParticipantRow);
+  } catch {
+    /* fall through to disk */
+  }
+  const disk = findDiskById(id);
+  return disk ? rowToParticipant(disk) : null;
 }
 
 export async function recordTransaction(
@@ -200,11 +236,6 @@ export async function recordTransaction(
   });
 }
 
-/**
- * Adjust a participant's credit balance and log the resulting transaction in
- * one call. Positive `amount` credits, negative debits — callers are
- * responsible for checking sufficient balance before debiting.
- */
 export async function adjustCredits(
   participantId: string,
   amount: number,
