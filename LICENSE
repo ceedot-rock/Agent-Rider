@@ -1,33 +1,18 @@
-Slid Phi Labs Proprietary License
-Copyright (c) 2026 Slid Phi Labs / Corey Tasz. All rights reserved.
+Agent-Rider is available under two licenses. You choose one.
 
-Agent-Rider (this software) is the proprietary property of Slid Phi Labs / Corey Tasz.
+1. GNU Affero General Public License v3.0 or later
+   See LICENSE.AGPL-3.0
+   Official text: https://www.gnu.org/licenses/agpl-3.0.txt
 
-PERMISSIONS
-- Evaluation and non-commercial personal use are allowed solely for testing,
-  provided the Software is not redistributed or offered as a competing hosted
-  identity service.
-- Commercial use, redistribution, or incorporation into a product or service
-  offered to third parties requires a written commercial license.
+2. Slid Phi Labs Commercial License
+   See LICENSE.COMMERCIAL
+   Required if you do not want AGPL source obligations,
+   or if you offer Agent-Rider or a derivative as a
+   hosted identity / rider-issuance service.
 
-RESTRICTIONS
-- You may not copy, modify, publish, or sell copies of the Software except as
-  permitted above or by a commercial license.
-- You may not remove or alter copyright notices.
+Not covered by either license:
+signing keys, production data, residual/CDDG engines,
+operator dashboard, Autonoma/Blackjack, PCC.
 
-COMMERCIAL LICENSING
+Seats and current terms: https://www.slidphilabs.com/licensing.json
 Contact: corey@slidphilabs.com
-Site: https://www.slidphilabs.com
-Product: https://agentrider.fly.dev/
-
-LEGAL IDENTITY
-- Trade name: Slid Phi Labs.
-- Public author / copyright: Corey Tasz.
-- Legal name on manuscript: Corey Robert Ptaszenski.
-
-NO WARRANTY
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
-
-Public discovery files (llms.txt, agents.json, MCP cards) describe the hosted
-service. Private signing keys, residual coefficients, and kernel internals are
-not licensed by this file and must not be published.
