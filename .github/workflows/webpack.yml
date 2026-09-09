@@ -21,33 +21,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # The app lives in src/ with its own package.json — this used to run
-    # `npx webpack` at the repo root, where there's no package.json and no
-    # webpack config, so it never actually built anything. `next build`
-    # (which also type-checks) is the real build this project needs;
-    # placeholder env values below exist only so lib/rider.ts, lib/stripe.ts,
-    # and lib/db.ts don't throw at module load during the build — none of
-    # them are called for real during `next build`.
+    # Placeholder env so lib/stripe.ts and lib/db.ts don't throw at module
+    # load during `next build`. Rider keys are generated in a prior step
+    # and never committed. Do not put a real issuer key here.
     env:
       SUPABASE_URL: https://ci-placeholder.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
       STRIPE_SECRET_KEY: sk_test_ci_placeholder
       BADGE_SECRET: ci-placeholder-badge-secret
       ANTHROPIC_API_KEY: sk-ant-ci-placeholder
-      RIDER_PRIVATE_KEY: |
-        -----BEGIN PRIVATE KEY-----
-        MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg67wBTnsg72h+Yy7i
-        QGaadMfYGzyCj0XQiIJf4Fg/fG+hRANCAAQ/DB/F2ittVv78+1mIv0/n6w/qTNRw
-        HFNEy8qKu07oghmzP+UgVL0mrJsLKKc2QMkfrotYXWTs5fY5A7s/n3nQ
-        -----END PRIVATE KEY-----
-      RIDER_PUBLIC_KEY: |
-        -----BEGIN PUBLIC KEY-----
-        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPwwfxdorbVb+/PtZiL9P5+sP6kzU
-        cBxTRMvKirtO6IIZsz/lIFS9JqybCyinNkDJH66LWF1k7OX2OQO7P5950A==
-        -----END PUBLIC KEY-----
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Generate CI-only rider keypair
+      run: |
+        openssl ecparam -name prime256v1 -genkey -noout -out /tmp/ci-ec.pem
+        openssl pkcs8 -topk8 -nocrypt -in /tmp/ci-ec.pem -out /tmp/ci-priv.pem
+        openssl ec -in /tmp/ci-ec.pem -pubout -out /tmp/ci-pub.pem
+        {
+          echo "RIDER_PRIVATE_KEY<<EOF"
+          cat /tmp/ci-priv.pem
+          echo "EOF"
+          echo "RIDER_PUBLIC_KEY<<EOF"
+          cat /tmp/ci-pub.pem
+          echo "EOF"
+        } >> "$GITHUB_ENV"
+        rm -f /tmp/ci-ec.pem /tmp/ci-priv.pem /tmp/ci-pub.pem
 
     - name: Use Node.js 20
       uses: actions/setup-node@v4
