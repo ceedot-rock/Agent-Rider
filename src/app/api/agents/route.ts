@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
     const type: ParticipantType = VALID_TYPES.has(body.type) ? body.type : "agent";
 
-    const { participant, apiKey } = await registerParticipant({
+    const { participant, apiKey, store, dbError } = await registerParticipant({
       name: body.name,
       type,
       operatorId: body.operator_id ?? null,
@@ -25,7 +25,12 @@ export async function POST(req: NextRequest) {
         agent_id: participant.id,
         api_key: apiKey,
         credits: participant.credits,
-        note: "Store api_key now — it is never shown again.",
+        store,
+        db_error: dbError ?? null,
+        note:
+          store === "disk"
+            ? "Stored on this Fly instance only — Supabase INSERT failed. Run the service_role GRANT. Store api_key now."
+            : "Store api_key now — it is never shown again.",
       },
       { status: 201 }
     );

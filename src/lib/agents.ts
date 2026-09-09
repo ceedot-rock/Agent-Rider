@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import { getDB } from "@/lib/db";
 
 export type ParticipantType = "agent" | "human";
+export type ParticipantStore = "supabase" | "disk";
 
 export interface Participant {
   id: string;
@@ -56,16 +57,40 @@ function hashApiKey(apiKey: string): string {
   return createHash("sha256").update(apiKey).digest("hex");
 }
 
-// Decaying signup bonus (ported from agentmagnet/services/store.js) — first
-// 100 registrations get 50 credits, next 500 get 20, everyone after gets 5.
-// Front-loading rewards early adopters is deliberate anti-sybil design: a
-// bot farm registering after the platform has traction gets a much smaller
-// payout per fake account.
+function diskPath(): string {
+  const { join } = require("node:path") as typeof import("node:path");
+  return join(process.cwd(), "data", "participants.json");
+}
+
+function readDisk(): ParticipantRow[] {
+  const { readFileSync, existsSync } = require("node:fs") as typeof import("node:fs");
+  const p = diskPath();
+  if (!existsSync(p)) return [];
+  try {
+    const list = JSON.parse(readFileSync(p, "utf8"));
+    return Array.isArray(list) ? (list as ParticipantRow[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDisk(list: ParticipantRow[]): void {
+  const { writeFileSync, mkdirSync } = require("node:fs") as typeof import("node:fs");
+  const { dirname } = require("node:path") as typeof import("node:path");
+  const p = diskPath();
+  mkdirSync(dirname(p), { recursive: true });
+  writeFileSync(p, JSON.stringify(list, null, 2));
+}
+
+export function countDiskParticipants(): number {
+  return readDisk().length;
+}
+
 async function signupBonus(): Promise<number> {
   try {
     const db = getDB();
     const { count } = await db.from("participants").select("id", { count: "exact", head: true });
-    const n = count ?? 0;
+    const n = (count ?? 0) + countDiskParticipants();
     if (n < 100) return 50;
     if (n < 600) return 20;
     return 5;
@@ -85,6 +110,8 @@ export interface RegisterInput {
 export interface RegisterResult {
   participant: Participant;
   apiKey: string;
+  store: ParticipantStore;
+  dbError?: string;
 }
 
 export async function registerParticipant(input: RegisterInput): Promise<RegisterResult> {
@@ -95,12 +122,16 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
 
   let referrerId: string | null = null;
   if (input.referralCode) {
-    const { data } = await db
-      .from("participants")
-      .select("id")
-      .eq("api_key_hash", hashApiKey(input.referralCode))
-      .single();
-    referrerId = data?.id ?? null;
+    const hashed = hashApiKey(input.referralCode);
+    try {
+      const { data } = await db.from("participants").select("id").eq("api_key_hash", hashed).single();
+      referrerId = data?.id ?? null;
+    } catch {
+      referrerId = null;
+    }
+    if (!referrerId) {
+      referrerId = readDisk().find((row) => row.api_key_hash === hashed)?.id ?? null;
+    }
   }
 
   const credits = bonus + (referrerId ? 5 : 0);
@@ -118,63 +149,73 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   };
 
   let row: ParticipantRow | null = null;
+  let dbError: string | undefined;
   try {
     const { data, error } = await db.from("participants").insert(payload).select().single();
-    if (!error && data) row = data as ParticipantRow;
-  } catch {
+    if (!error && data) {
+      row = data as ParticipantRow;
+    } else if (error) {
+      dbError = error.message.slice(0, 240);
+    }
+  } catch (e: unknown) {
+    dbError = e instanceof Error ? e.message.slice(0, 240) : "insert_failed";
     row = null;
   }
-  if (!row) {
-    const { writeFileSync, readFileSync, mkdirSync, existsSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    const dir = join(process.cwd(), "data");
-    mkdirSync(dir, { recursive: true });
-    const p = join(dir, "participants.json");
-    let list: ParticipantRow[] = [];
-    if (existsSync(p)) {
-      try {
-        list = JSON.parse(readFileSync(p, "utf8"));
-      } catch {
-        list = [];
-      }
+
+  if (row) {
+    try {
+      await recordTransaction(id, "signup_bonus", bonus, { referrerId });
+      if (referrerId) await recordTransaction(id, "referral_join_bonus", 5, { referrerId });
+    } catch {
+      /* ledger row exists even if the bonus tx fails */
     }
-    row = {
-      ...payload,
-      credits,
-      tasks_completed: 0,
-      referrals: 0,
-      solana_wallet: null,
-      registered_at: new Date().toISOString(),
-      last_active: new Date().toISOString(),
-    } as ParticipantRow;
-    list.push(row);
-    writeFileSync(p, JSON.stringify(list, null, 2));
+    return { participant: rowToParticipant(row), apiKey, store: "supabase" };
   }
 
-  try {
-    await recordTransaction(id, "signup_bonus", bonus, { referrerId });
-    if (referrerId) await recordTransaction(id, "referral_join_bonus", 5, { referrerId });
-  } catch {
-    /* disk-only signup still returns a key */
-  }
+  const diskRow: ParticipantRow = {
+    ...payload,
+    credits,
+    tasks_completed: 0,
+    referrals: 0,
+    solana_wallet: null,
+    registered_at: new Date().toISOString(),
+    last_active: new Date().toISOString(),
+  };
+  const list = readDisk();
+  list.push(diskRow);
+  writeDisk(list);
 
-  return { participant: rowToParticipant(row as ParticipantRow), apiKey };
+  return {
+    participant: rowToParticipant(diskRow),
+    apiKey,
+    store: "disk",
+    dbError,
+  };
 }
 
 export async function resolveByApiKey(apiKey: string): Promise<Participant | null> {
-  const db = getDB();
-  const { data } = await db
-    .from("participants")
-    .select("*")
-    .eq("api_key_hash", hashApiKey(apiKey))
-    .single();
-  return data ? rowToParticipant(data as ParticipantRow) : null;
+  const hashed = hashApiKey(apiKey);
+  try {
+    const db = getDB();
+    const { data } = await db.from("participants").select("*").eq("api_key_hash", hashed).single();
+    if (data) return rowToParticipant(data as ParticipantRow);
+  } catch {
+    /* fall through to disk */
+  }
+  const row = readDisk().find((item) => item.api_key_hash === hashed);
+  return row ? rowToParticipant(row) : null;
 }
 
 export async function resolveById(id: string): Promise<Participant | null> {
-  const db = getDB();
-  const { data } = await db.from("participants").select("*").eq("id", id).single();
-  return data ? rowToParticipant(data as ParticipantRow) : null;
+  try {
+    const db = getDB();
+    const { data } = await db.from("participants").select("*").eq("id", id).single();
+    if (data) return rowToParticipant(data as ParticipantRow);
+  } catch {
+    /* fall through to disk */
+  }
+  const row = readDisk().find((item) => item.id === id);
+  return row ? rowToParticipant(row) : null;
 }
 
 export async function recordTransaction(
@@ -200,11 +241,6 @@ export async function recordTransaction(
   });
 }
 
-/**
- * Adjust a participant's credit balance and log the resulting transaction in
- * one call. Positive `amount` credits, negative debits — callers are
- * responsible for checking sufficient balance before debiting.
- */
 export async function adjustCredits(
   participantId: string,
   amount: number,
@@ -212,27 +248,29 @@ export async function adjustCredits(
   meta: Record<string, unknown> = {}
 ): Promise<number> {
   const db = getDB();
-  const { data, error } = await db
-    .from("participants")
-    .select("credits")
-    .eq("id", participantId)
-    .single();
-  if (error || !data) throw new Error(`adjustCredits: participant ${participantId} not found`);
+  const { data, error } = await db.from("participants").select("credits").eq("id", participantId).single();
+  if (!error && data) {
+    const newBalance = Number(data.credits) + amount;
+    const { error: updateError } = await db
+      .from("participants")
+      .update({ credits: newBalance, last_active: new Date().toISOString() })
+      .eq("id", participantId);
+    if (updateError) throw new Error(`adjustCredits: ${updateError.message}`);
+    await db.from("transactions").insert({
+      participant_id: participantId,
+      type,
+      amount,
+      balance_after: newBalance,
+      meta,
+    });
+    return newBalance;
+  }
 
-  const newBalance = Number(data.credits) + amount;
-  const { error: updateError } = await db
-    .from("participants")
-    .update({ credits: newBalance, last_active: new Date().toISOString() })
-    .eq("id", participantId);
-  if (updateError) throw new Error(`adjustCredits: ${updateError.message}`);
-
-  await db.from("transactions").insert({
-    participant_id: participantId,
-    type,
-    amount,
-    balance_after: newBalance,
-    meta,
-  });
-
+  const list = readDisk();
+  const idx = list.findIndex((row) => row.id === participantId);
+  if (idx < 0) throw new Error(`adjustCredits: participant ${participantId} not found`);
+  const newBalance = Number(list[idx].credits) + amount;
+  list[idx] = { ...list[idx], credits: newBalance, last_active: new Date().toISOString() };
+  writeDisk(list);
   return newBalance;
 }
