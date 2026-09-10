@@ -330,3 +330,14 @@ export async function listOpenTasks(category?: string, minReward?: number): Prom
   const { data } = await query;
   return (data ?? []) as TaskRow[];
 }
+
+export async function listTasksForPoster(posterId: string): Promise<TaskRow[]> {
+  const db = getDB();
+  const { data } = await db
+    .from("tasks")
+    .select("*")
+    .eq("poster_id", posterId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  return (data ?? []) as TaskRow[];
+}
