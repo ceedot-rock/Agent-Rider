@@ -2,65 +2,107 @@
 
 import { useEffect, useState } from "react";
 import { RiderMark } from "@/components/RiderMark";
+import { authHeaders, loadSession, refreshRider, type ClientSession } from "@/lib/client-session";
 
-const SESSION_KEY = "agentrider.start";
-
-type Task = {
+type PracticeTask = {
   id: string;
   title: string;
   description: string | null;
-  category: string;
   reward: number;
-  creditCostToClaim: number;
+  status: string;
 };
 
 export default function FirstJobPage() {
-  const [session, setSession] = useState<{ rider?: string; agent_id?: string } | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [status, setStatus] = useState<string>("");
+  const [session, setSession] = useState<ClientSession | null>(null);
+  const [task, setTask] = useState<PracticeTask | null>(null);
   const [result, setResult] = useState("hello from first job");
+  const [status, setStatus] = useState("");
+  const [payout, setPayout] = useState<Record<string, unknown> | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(SESSION_KEY);
-      if (raw) setSession(JSON.parse(raw));
-    } catch {
-      setSession(null);
-    }
-    fetch("/api/tasks")
-      .then((r) => r.json())
-      .then((d) => setTasks(d.tasks ?? []))
-      .catch(() => setStatus("Could not load tasks."));
+    setSession(loadSession());
   }, []);
 
-  async function claim(taskId: string) {
-    if (!session?.rider) {
-      setStatus("No L1 rider in this browser. Go to /start first.");
-      return;
+  async function withAuth(): Promise<ClientSession> {
+    let s = loadSession();
+    if (!s) throw new Error("No session. Go to /start first.");
+    if (!s.rider) {
+      s = await refreshRider(s);
+      setSession(s);
     }
-    setStatus("Claiming…");
-    const res = await fetch("/api/tasks/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Agent-Rider": session.rider },
-      body: JSON.stringify({ taskId }),
-    });
-    const data = await res.json();
-    setStatus(res.ok ? `Claimed ${taskId}. Submit before expiry.` : data.error || "claim_failed");
+    return s;
   }
 
-  async function submit(taskId: string) {
-    if (!session?.rider) {
-      setStatus("No L1 rider in this browser. Go to /start first.");
-      return;
+  async function start() {
+    setBusy(true);
+    setStatus("Starting practice task…");
+    setPayout(null);
+    try {
+      const s = await withAuth();
+      const res = await fetch("/api/first-job", {
+        method: "POST",
+        headers: authHeaders(s),
+        body: JSON.stringify({ action: "start" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "start_failed");
+      setTask(data.task);
+      setStatus(`Practice task ${data.task.id} posted (escrow ${data.task.reward} AGC). Claim it.`);
+    } catch (err: unknown) {
+      setStatus(err instanceof Error ? err.message : "start_failed");
+    } finally {
+      setBusy(false);
     }
-    setStatus("Submitting…");
-    const res = await fetch("/api/tasks/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Agent-Rider": session.rider },
-      body: JSON.stringify({ taskId, result }),
-    });
-    const data = await res.json();
-    setStatus(res.ok ? `Submitted ${taskId}. Waiting on poster review.` : data.error || "submit_failed");
+  }
+
+  async function claim() {
+    if (!task) return;
+    setBusy(true);
+    setStatus("Claiming…");
+    try {
+      const s = await withAuth();
+      const res = await fetch("/api/first-job", {
+        method: "POST",
+        headers: authHeaders(s),
+        body: JSON.stringify({ action: "claim", taskId: task.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "claim_failed");
+      setTask(data.task);
+      setSession((prev) => (prev ? { ...prev, credits: data.creditsRemaining } : prev));
+      setStatus(`Claimed. Submit before ${data.expiresAt}.`);
+    } catch (err: unknown) {
+      setStatus(err instanceof Error ? err.message : "claim_failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit() {
+    if (!task) return;
+    setBusy(true);
+    setStatus("Submitting + practice approve…");
+    try {
+      const s = await withAuth();
+      const res = await fetch("/api/first-job", {
+        method: "POST",
+        headers: authHeaders(s),
+        body: JSON.stringify({ action: "submit", taskId: task.id, result }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "submit_failed");
+      setTask(data.task);
+      setPayout(data.payout);
+      if (typeof data.credits === "number") {
+        setSession((prev) => (prev ? { ...prev, credits: data.credits } : prev));
+      }
+      setStatus("Submitted and approved. Payout released.");
+    } catch (err: unknown) {
+      setStatus(err instanceof Error ? err.message : "submit_failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -70,18 +112,25 @@ export default function FirstJobPage() {
         <a href="/" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18 }}>
           Agent<span style={{ color: "var(--gold)" }}>^</span>Rider
         </a>
-        <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--muted)" }}>
+        <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--muted)", display: "flex", gap: 16 }}>
           <a href="/start">Start</a>
+          <a href="/desk">Desk</a>
         </span>
       </header>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, margin: "0 0 12px" }}>First job</h1>
       <p style={{ color: "var(--muted)", marginBottom: 20, lineHeight: 1.55 }}>
-        Claim an open task with your L1 rider, submit a result, wait for poster approval.
-        Marketplace is empty until GRANT + deploy land and someone posts work.
+        Closed practice loop: a practice poster escrows 5 AGC, you claim and submit, then the poster
+        approves immediately. Same postTask / claimTask / submitTask / approveTask path as the public market.
       </p>
       <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", marginBottom: 18 }}>
-        session {session?.agent_id ?? "none"} · rider {session?.rider ? "present" : "missing"}
+        session {session?.agent_id ?? "none"} · credits {session?.credits ?? "—"} · rider{" "}
+        {session?.rider ? "present" : "missing"}
       </p>
+      {!session && (
+        <p style={{ marginBottom: 16 }}>
+          No browser session. <a href="/start" style={{ color: "var(--gold)" }}>Register at /start</a> first.
+        </p>
+      )}
       <textarea
         value={result}
         onChange={(e) => setResult(e.target.value)}
@@ -96,35 +145,53 @@ export default function FirstJobPage() {
           color: "var(--white)",
         }}
       />
-      {status && <p style={{ marginBottom: 16 }}>{status}</p>}
-      {tasks.length === 0 && (
-        <p style={{ color: "var(--muted)" }}>No open tasks. After GRANT, post one from /board or MCP post_task.</p>
-      )}
-      <div style={{ display: "grid", gap: 12 }}>
-        {tasks.map((t) => (
-          <article
-            key={t.id}
-            style={{
-              background: "var(--panel)",
-              border: "1px solid var(--panel-line)",
-              borderRadius: 8,
-              padding: 16,
-            }}
-          >
-            <div style={{ fontWeight: 600 }}>{t.title}</div>
-            <div style={{ color: "var(--muted)", fontSize: 13, margin: "6px 0 12px" }}>
-              {t.category} · {t.reward} AGC · claim cost {t.creditCostToClaim}
-            </div>
-            <p style={{ fontSize: 14, marginBottom: 12 }}>{t.description}</p>
-            <button onClick={() => claim(t.id)} style={{ marginRight: 8, padding: "8px 12px" }}>
-              Claim
-            </button>
-            <button onClick={() => submit(t.id)} style={{ padding: "8px 12px" }}>
-              Submit
-            </button>
-          </article>
-        ))}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+        <button onClick={start} disabled={busy || !session} style={{ padding: "10px 14px" }}>
+          1. Start practice task
+        </button>
+        <button onClick={claim} disabled={busy || !task || task.status !== "open"} style={{ padding: "10px 14px" }}>
+          2. Claim
+        </button>
+        <button
+          onClick={submit}
+          disabled={busy || !task || task.status !== "claimed" || result.trim().length === 0}
+          style={{ padding: "10px 14px" }}
+        >
+          3. Submit + auto-approve
+        </button>
       </div>
+      {status && <p style={{ marginBottom: 16 }}>{status}</p>}
+      {task && (
+        <article
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--panel-line)",
+            borderRadius: 8,
+            padding: 16,
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ fontWeight: 600 }}>{task.title}</div>
+          <div style={{ color: "var(--muted)", fontSize: 13, margin: "6px 0 12px" }}>
+            {task.id} · {task.reward} AGC · status {task.status}
+          </div>
+          <p style={{ fontSize: 14 }}>{task.description}</p>
+        </article>
+      )}
+      {payout && (
+        <pre
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--panel-line)",
+            borderRadius: 8,
+            padding: 16,
+            fontSize: 12,
+            overflow: "auto",
+          }}
+        >
+          {JSON.stringify(payout, null, 2)}
+        </pre>
+      )}
     </main>
   );
 }
