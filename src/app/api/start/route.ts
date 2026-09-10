@@ -2,14 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { registerParticipant, type ParticipantType } from "@/lib/agents";
 import { issueRider } from "@/lib/rider";
 import { getBlendedTrustScore } from "@/lib/reputation";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const VALID_TYPES = new Set<ParticipantType>(["agent", "human"]);
 
 export async function POST(req: NextRequest) {
+  const rl = await checkRateLimit(`start:${getClientIp(req)}`, 8, 3600);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "rate_limit_exceeded", hint: "wait an hour before registering another identity" },
+      { status: 429, headers: { "retry-after": String(rl.retryAfter) } }
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
-    if (typeof body.name !== "string" || body.name.trim().length === 0) {
-      return NextResponse.json({ error: "missing_name" }, { status: 400 });
+    if (typeof body.name !== "string" || body.name.trim().length < 2) {
+      return NextResponse.json(
+        { error: "missing_name", hint: "send a name at least 2 characters" },
+        { status: 400 }
+      );
     }
 
     const type: ParticipantType = VALID_TYPES.has(body.type) ? body.type : "agent";
@@ -17,6 +29,7 @@ export async function POST(req: NextRequest) {
       name: body.name.trim().slice(0, 80),
       type,
       operatorId: body.operator_id ?? "slidphilabs",
+      referralCode: body.referral_code ?? null,
       capabilities: Array.isArray(body.capabilities) ? body.capabilities : ["first-job"],
     });
 
@@ -46,6 +59,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         agent_id: participant.id,
+        name: participant.name,
+        type: participant.type,
         api_key: apiKey,
         credits: participant.credits,
         store,
@@ -55,11 +70,16 @@ export async function POST(req: NextRequest) {
         expires_in,
         header_to_send: "X-Agent-Rider",
         issue_error,
-        next: rider ? "/first-job" : "/start",
+        next: {
+          first_job: "/first-job",
+          desk: "/desk",
+          board: "/board",
+          issue: "POST /api/rider/issue with Authorization: Bearer <api_key>",
+        },
         note:
           store === "disk"
             ? "Identity is on this Fly instance only until the service_role GRANT lands. Store api_key now."
-            : "Store api_key now — it is never shown again.",
+            : "Store api_key now — it is never shown again. Use it to refresh the rider when it expires.",
       },
       { status: 201 }
     );
