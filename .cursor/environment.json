@@ -1,0 +1,14 @@
+{
+  "name": "Agent-Rider",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "cd src && npm run dev",
+      "description": "Next.js dev server for Agent-Rider on http://localhost:3000"
+    }
+  ],
+  "ports": [
+    { "name": "web", "port": 3000 }
+  ]
+}
