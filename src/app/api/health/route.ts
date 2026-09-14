@@ -45,15 +45,10 @@ export async function GET() {
       !hasStripe && "STRIPE_SECRET_KEY",
     ].filter(Boolean),
     stats,
-    supabase: {
+    db: {
       configured: hasDb,
       reachable: dbReachable,
       error_class: dbClass,
-      error: dbError,
-      key_kind: creds.keyKind,
-      key_source: creds.keySource,
-      url_host: creds.urlHost,
-      url_source: creds.urlSource,
     },
   });
 }
