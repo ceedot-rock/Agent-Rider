@@ -1,10 +1,7 @@
 /**
- * key_id prefix selects the rail:
- *   x402:<resource>       facilitator verify + settle (USDC)
- *   stripe:<priceId>      human checkout only — not a hop debit
- *   tiun:<productId>      human entitlement only — not a hop debit
- *   credits:<id>          removed from hop equation (410)
- *   key_site_*            x402 with resource = job_id
+ * Hop currency: regular stablecoins only.
+ * Accepts USDC and USDT on Base (sepolia + mainnet).
+ * Stripe / tiun attach. credits: gone.
  */
 
 export type Rail = "credits" | "x402" | "stripe" | "tiun" | "unknown";
@@ -16,6 +13,33 @@ export interface SettleHop {
   amount_usd: number;
   key_id: string;
 }
+
+export const STABLES = [
+  {
+    id: "usdc-base-sepolia",
+    network: "base-sepolia",
+    symbol: "USDC",
+    asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    payTo: process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
+    decimals: 6,
+  },
+  {
+    id: "usdc-base",
+    network: "base",
+    symbol: "USDC",
+    asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    payTo: process.env.X402_PAY_TO_MAINNET || process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
+    decimals: 6,
+  },
+  {
+    id: "usdt-base",
+    network: "base",
+    symbol: "USDT",
+    asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+    payTo: process.env.X402_PAY_TO_MAINNET || process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
+    decimals: 6,
+  },
+] as const;
 
 export function parseKeyRail(keyId: string): { rail: Rail; rest: string } {
   const i = keyId.indexOf(":");
@@ -53,31 +77,45 @@ export function parseCuniSettle(text: string): SettleHop | null {
   };
 }
 
+function requirement(resource: string, amountUsd: number, s: (typeof STABLES)[number]) {
+  const atomic = String(Math.max(1, Math.round(amountUsd * 10 ** s.decimals)));
+  return {
+    scheme: "exact",
+    network: s.network,
+    maxAmountRequired: atomic,
+    asset: s.asset,
+    payTo: s.payTo,
+    resource,
+    description: `SettleHop ${s.symbol}`,
+    mimeType: "application/json",
+    outputSchema: null,
+    maxTimeoutSeconds: 180,
+    extra: { name: s.symbol, version: "2", id: s.id },
+  };
+}
+
+function pickReq(
+  payment: any,
+  accepts: ReturnType<typeof requirement>[]
+) {
+  const net = payment?.network || payment?.accepted?.network;
+  const asset = (payment?.asset || payment?.accepted?.asset || "").toLowerCase();
+  return (
+    accepts.find(
+      (a) =>
+        (!net || a.network === net) &&
+        (!asset || a.asset.toLowerCase() === asset)
+    ) || accepts[0]
+  );
+}
+
 export async function settleX402(opts: {
   resource: string;
   paymentHeader: string | null;
   amountUsd: number;
 }): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
   const facilitator = process.env.X402_FACILITATOR || "https://x402.org/facilitator";
-  const network = process.env.X402_NETWORK || "base-sepolia";
-  const asset =
-    process.env.X402_ASSET || "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
-  const payTo =
-    process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c";
-  const atomic = String(Math.max(1, Math.round(opts.amountUsd * 1_000_000)));
-  const reqs = {
-    scheme: "exact",
-    network,
-    maxAmountRequired: atomic,
-    asset,
-    payTo,
-    resource: opts.resource,
-    description: "SettleHop x402",
-    mimeType: "application/json",
-    outputSchema: null,
-    maxTimeoutSeconds: 180,
-    extra: { name: "USDC", version: "2" },
-  };
+  const accepts = STABLES.map((s) => requirement(opts.resource, opts.amountUsd, s));
   if (!opts.paymentHeader) {
     return {
       ok: false,
@@ -85,12 +123,12 @@ export async function settleX402(opts: {
       body: {
         error: "Payment Required",
         x402Version: 1,
-        accepts: [reqs],
-        rail: "x402",
+        accepts,
+        rail: "stablecoin",
       },
     };
   }
-  let payment: unknown = opts.paymentHeader;
+  let payment: any = opts.paymentHeader;
   try {
     payment = JSON.parse(opts.paymentHeader);
   } catch {
@@ -100,6 +138,7 @@ export async function settleX402(opts: {
       return { ok: false, status: 400, body: { error: "bad_x402_header" } };
     }
   }
+  const reqs = pickReq(payment, accepts);
   const post = async (path: string) => {
     const res = await fetch(`${facilitator}${path}`, {
       method: "POST",
@@ -114,11 +153,11 @@ export async function settleX402(opts: {
   };
   const verified = await post("/verify");
   if (!verified?.isValid) {
-    return { ok: false, status: 402, body: { error: "reject.funds", rail: "x402", verified } };
+    return { ok: false, status: 402, body: { error: "reject.funds", rail: "stablecoin", verified, accepts } };
   }
   const settled = await post("/settle");
   if (!settled?.success) {
-    return { ok: false, status: 402, body: { error: "reject.funds", rail: "x402", settled } };
+    return { ok: false, status: 402, body: { error: "reject.funds", rail: "stablecoin", settled, accepts } };
   }
-  return { ok: true, status: 200, body: { rail: "x402", settled } };
+  return { ok: true, status: 200, body: { rail: "stablecoin", asset: reqs.extra.name, network: reqs.network, settled } };
 }
