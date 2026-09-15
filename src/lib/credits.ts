@@ -9,14 +9,12 @@ export const SERVICE_COSTS: Record<string, number> = {
   generate: 5,
   export: 8,
   priority: 10,
+  hop: 1,
 };
 
-// Credits buy-in pricing — $1 = 100 AGC, flat, no bonus tiers until there's
-// a reason to complicate it. Shared by /api/credits/purchase and the
-// purchase_credits MCP tool so the two surfaces can't drift.
 export const CREDITS_PER_USD = Number(process.env.CREDITS_PER_USD ?? 100);
-export const MIN_PURCHASE_USD_CENTS = 100; // $1
-export const MAX_PURCHASE_USD_CENTS = 50000; // $500 per purchase
+export const MIN_PURCHASE_USD_CENTS = 100;
+export const MAX_PURCHASE_USD_CENTS = 50000;
 
 export function usdCentsToCredits(usdCents: number): number {
   return Math.round((usdCents / 100) * CREDITS_PER_USD);
@@ -49,8 +47,6 @@ export interface SpendResult {
   generated?: string;
 }
 
-// The `generate` service calls Grok (xAI) and does not debit on failure —
-// every other service is a flat metered credit debit.
 const GROK_MODEL = process.env.GROK_MODEL || "grok-4.6";
 
 export async function spendCredits(
@@ -126,8 +122,6 @@ export async function getTransactionHistory(participantId: string, limit = 20) {
   return data ?? [];
 }
 
-// 25% of an agent's earnings mirror to the human operator who deployed it —
-// ported from agentmagnet's "Dual Incentive Mirror".
 export async function mirrorCreditToOperator(agentId: string, amount: number): Promise<void> {
   const agent = await resolveById(agentId);
   if (!agent || agent.type !== "agent" || !agent.referredBy) return;
