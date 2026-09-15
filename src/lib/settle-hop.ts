@@ -1,12 +1,10 @@
 /**
- * One clerk entry for every payment rail the lab actually uses.
- *
  * key_id prefix selects the rail:
- *   credits:<agentId>     Rider AGC ledger (live debit)
- *   x402:<resource>       facilitator verify + settle (USDC testnet)
+ *   x402:<resource>       facilitator verify + settle (USDC)
  *   stripe:<priceId>      human checkout only — not a hop debit
  *   tiun:<productId>      human entitlement only — not a hop debit
- *   key_site_*            treated as credits if RIDER default, else reject.funds
+ *   credits:<id>          removed from hop equation (410)
+ *   key_site_*            x402 with resource = job_id
  */
 
 export type Rail = "credits" | "x402" | "stripe" | "tiun" | "unknown";
