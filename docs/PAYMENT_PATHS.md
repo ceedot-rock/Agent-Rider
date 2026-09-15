@@ -1,16 +1,25 @@
-# Agent payment paths
+# Agent payment paths — live USDC
 
-Hops settle in regular stablecoins (USDC). No AGC. No lab token.
+Default is **Base mainnet USDC** through the CDP facilitator.
+`https://x402.org/facilitator` is testnet only. Do not use it on live hops.
 
-Clerk POSTs a bound `SettleHop` to `POST /api/settle` with `X-Agent-Rider`.
-`amount_usd` is USDC (6 decimals on the wire).
+## Env (Fly / Vercel production)
 
-Default rail: Base Sepolia USDC via x402 facilitator. Set `X402_NETWORK`, `X402_ASSET`, `X402_PAY_TO`, `X402_FACILITATOR` for Base mainnet USDC when those keys are live.
+```
+X402_NETWORK=base
+X402_PAY_TO=0xYourBaseAddress
+CDP_API_KEY_ID=
+CDP_API_KEY_SECRET=
+```
 
-| key_id | What happens |
+Optional: `X402_FACILITATOR=https://api.cdp.coinbase.com/platform/v2/x402`
+Test only: `X402_NETWORK=base-sepolia`
+
+Need `@coinbase/cdp-sdk` on the server so verify/settle send a CDP JWT. Without those keys, 402 quotes still advertise live USDC/USDT, but settle will fail auth.
+
+| key_id | Live behavior |
 |---|---|
-| `x402:<resource>` | USDC verify + settle, or 402 with `accepts` |
-| `key_site_*` | Same USDC rail; resource = `job_id` |
-| `stripe:<price>` | Human attaches fiat → later USDC spend. Not the hop. |
-| `tiun:<product>` | Human entitlement. Not the hop. |
-| `credits:<id>` | 410. AGC is not a currency here. |
+| `x402:<resource>` | 402 accepts Base USDC + USDT, or X-PAYMENT → CDP verify/settle |
+| `key_site_*` | Same; resource = job_id |
+| `stripe:` / `tiun:` | Human attach only |
+| `credits:` | 410 |
