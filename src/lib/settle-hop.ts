@@ -1,7 +1,6 @@
 /**
- * Hop currency: regular stablecoins only.
- * Accepts USDC and USDT on Base (sepolia + mainnet).
- * Stripe / tiun attach. credits: gone.
+ * Live default: Base mainnet USDC through CDP facilitator.
+ * Sepolia only if X402_NETWORK=base-sepolia.
  */
 
 export type Rail = "credits" | "x402" | "stripe" | "tiun" | "unknown";
@@ -14,32 +13,47 @@ export interface SettleHop {
   key_id: string;
 }
 
-export const STABLES = [
-  {
-    id: "usdc-base-sepolia",
-    network: "base-sepolia",
-    symbol: "USDC",
-    asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    payTo: process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
-    decimals: 6,
-  },
-  {
-    id: "usdc-base",
-    network: "base",
-    symbol: "USDC",
-    asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    payTo: process.env.X402_PAY_TO_MAINNET || process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
-    decimals: 6,
-  },
-  {
-    id: "usdt-base",
-    network: "base",
-    symbol: "USDT",
-    asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
-    payTo: process.env.X402_PAY_TO_MAINNET || process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
-    decimals: 6,
-  },
-] as const;
+const PAY_TO =
+  process.env.X402_PAY_TO || "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c";
+
+const LIVE = {
+  network: "eip155:8453",
+  networkName: "base",
+  symbol: "USDC",
+  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  facilitator: "https://api.cdp.coinbase.com/platform/v2/x402",
+  verifyPath: "/verify",
+  settlePath: "/settle",
+};
+
+const TEST = {
+  network: "eip155:84532",
+  networkName: "base-sepolia",
+  symbol: "USDC",
+  asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  facilitator: "https://x402.org/facilitator",
+  verifyPath: "/verify",
+  settlePath: "/settle",
+};
+
+const USDT_BASE = {
+  network: "eip155:8453",
+  networkName: "base",
+  symbol: "USDT",
+  asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+  facilitator: LIVE.facilitator,
+  verifyPath: "/verify",
+  settlePath: "/settle",
+};
+
+function isTestnet() {
+  return (process.env.X402_NETWORK || "base") === "base-sepolia";
+}
+
+function rails() {
+  if (isTestnet()) return [TEST];
+  return [LIVE, USDT_BASE];
+}
 
 export function parseKeyRail(keyId: string): { rail: Rail; rest: string } {
   const i = keyId.indexOf(":");
@@ -77,36 +91,44 @@ export function parseCuniSettle(text: string): SettleHop | null {
   };
 }
 
-function requirement(resource: string, amountUsd: number, s: (typeof STABLES)[number]) {
-  const atomic = String(Math.max(1, Math.round(amountUsd * 10 ** s.decimals)));
+function requirement(resource: string, amountUsd: number, r: (typeof LIVE)) {
   return {
     scheme: "exact",
-    network: s.network,
-    maxAmountRequired: atomic,
-    asset: s.asset,
-    payTo: s.payTo,
+    network: r.network,
+    maxAmountRequired: String(Math.max(1, Math.round(amountUsd * 1_000_000))),
+    asset: r.asset,
+    payTo: PAY_TO,
     resource,
-    description: `SettleHop ${s.symbol}`,
+    description: `SettleHop ${r.symbol} ${r.networkName}`,
     mimeType: "application/json",
     outputSchema: null,
     maxTimeoutSeconds: 180,
-    extra: { name: s.symbol, version: "2", id: s.id },
+    extra: { name: r.symbol, version: "2" },
   };
 }
 
-function pickReq(
-  payment: any,
-  accepts: ReturnType<typeof requirement>[]
-) {
-  const net = payment?.network || payment?.accepted?.network;
-  const asset = (payment?.asset || payment?.accepted?.asset || "").toLowerCase();
-  return (
-    accepts.find(
-      (a) =>
-        (!net || a.network === net) &&
-        (!asset || a.asset.toLowerCase() === asset)
-    ) || accepts[0]
-  );
+async function cdpHeaders(method: string, path: string, body: string) {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  const id = process.env.CDP_API_KEY_ID;
+  const secret = process.env.CDP_API_KEY_SECRET;
+  if (!id || !secret) return headers;
+  try {
+    const mod: any = await import("@coinbase/cdp-sdk/auth");
+    const jwt = await mod.generateJwt({
+      apiKeyId: id,
+      apiKeySecret: secret,
+      requestMethod: method,
+      requestHost: "api.cdp.coinbase.com",
+      requestPath: `/platform/v2/x402${path}`,
+      expiresIn: 120,
+    });
+    headers.Authorization = `Bearer ${jwt}`;
+  } catch {
+    if (process.env.CDP_ACCESS_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.CDP_ACCESS_TOKEN}`;
+    }
+  }
+  return headers;
 }
 
 export async function settleX402(opts: {
@@ -114,8 +136,10 @@ export async function settleX402(opts: {
   paymentHeader: string | null;
   amountUsd: number;
 }): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
-  const facilitator = process.env.X402_FACILITATOR || "https://x402.org/facilitator";
-  const accepts = STABLES.map((s) => requirement(opts.resource, opts.amountUsd, s));
+  const chosen = rails();
+  const facilitator = process.env.X402_FACILITATOR || chosen[0].facilitator;
+  const accepts = chosen.map((r) => requirement(opts.resource, opts.amountUsd, r));
+
   if (!opts.paymentHeader) {
     return {
       ok: false,
@@ -125,9 +149,12 @@ export async function settleX402(opts: {
         x402Version: 1,
         accepts,
         rail: "stablecoin",
+        live: !isTestnet(),
+        facilitator,
       },
     };
   }
+
   let payment: any = opts.paymentHeader;
   try {
     payment = JSON.parse(opts.paymentHeader);
@@ -138,26 +165,44 @@ export async function settleX402(opts: {
       return { ok: false, status: 400, body: { error: "bad_x402_header" } };
     }
   }
-  const reqs = pickReq(payment, accepts);
+
+  const net = payment?.network || payment?.accepted?.network;
+  const asset = (payment?.asset || payment?.accepted?.asset || "").toLowerCase();
+  const rail =
+    chosen.find((r) => (!net || r.network === net || r.networkName === net) && (!asset || r.asset.toLowerCase() === asset)) ||
+    chosen[0];
+  const reqs = requirement(opts.resource, opts.amountUsd, rail);
+
   const post = async (path: string) => {
-    const res = await fetch(`${facilitator}${path}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        x402Version: 1,
-        paymentPayload: payment,
-        paymentRequirements: reqs,
-      }),
+    const payload = JSON.stringify({
+      x402Version: 1,
+      paymentPayload: payment,
+      paymentRequirements: reqs,
     });
-    return res.json().catch(() => ({ isValid: false, success: false }));
+    const headers = await cdpHeaders("POST", path, payload);
+    const res = await fetch(`${facilitator}${path}`, { method: "POST", headers, body: payload });
+    return res.json().catch(() => ({ isValid: false, success: false, status: res.status }));
   };
+
   const verified = await post("/verify");
   if (!verified?.isValid) {
-    return { ok: false, status: 402, body: { error: "reject.funds", rail: "stablecoin", verified, accepts } };
+    return {
+      ok: false,
+      status: 402,
+      body: { error: "reject.funds", rail: "stablecoin", live: !isTestnet(), verified, accepts },
+    };
   }
   const settled = await post("/settle");
   if (!settled?.success) {
-    return { ok: false, status: 402, body: { error: "reject.funds", rail: "stablecoin", settled, accepts } };
+    return {
+      ok: false,
+      status: 402,
+      body: { error: "reject.funds", rail: "stablecoin", live: !isTestnet(), settled, accepts },
+    };
   }
-  return { ok: true, status: 200, body: { rail: "stablecoin", asset: reqs.extra.name, network: reqs.network, settled } };
+  return {
+    ok: true,
+    status: 200,
+    body: { rail: "stablecoin", live: !isTestnet(), asset: rail.symbol, network: rail.network, settled },
+  };
 }
