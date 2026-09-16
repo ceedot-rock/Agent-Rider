@@ -1,25 +1,23 @@
-# Agent payment paths — live USDC
+# Agent payment paths — USDC on Base and Solana
 
-Default is **Base mainnet USDC** through the CDP facilitator.
-`https://x402.org/facilitator` is testnet only. Do not use it on live hops.
+Same asset. Two chains. Two receive addresses. One protocol (x402 exact).
 
-## Env (Fly / Vercel production)
+| Chain | Network id | USDC | Receive env |
+|---|---|---|---|
+| Base | `eip155:8453` (also `base`) | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | `X402_PAY_TO_BASE` |
+| Solana | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (also `solana-mainnet-beta`) | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | `X402_PAY_TO_SOLANA` |
 
-```
-X402_NETWORK=base
-X402_PAY_TO=0xYourBaseAddress
-CDP_API_KEY_ID=
-CDP_API_KEY_SECRET=
-```
+Do not put a Solana base58 address in an EVM `payTo` or a `0x` in a Solana accept.
 
-Optional: `X402_FACILITATOR=https://api.cdp.coinbase.com/platform/v2/x402`
-Test only: `X402_NETWORK=base-sepolia`
+`X402_PAY_TO` is legacy: `0x…` → Base, anything else → Solana.
 
-Need `@coinbase/cdp-sdk` on the server so verify/settle send a CDP JWT. Without those keys, 402 quotes still advertise live USDC/USDT, but settle will fail auth.
+Facilitator live: CDP `https://api.cdp.coinbase.com/platform/v2/x402` + `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET`.
+`https://x402.org/facilitator` only if `X402_NETWORK=base-sepolia`.
 
-| key_id | Live behavior |
+Storefront `POST /api/x402-products` already builds the same two-accept list when both pay-tos are set. Probe on 2026-09-15 only saw Solana because Base pay-to was empty.
+
+| key_id | Behavior |
 |---|---|
-| `x402:<resource>` | 402 accepts Base USDC + USDT, or X-PAYMENT → CDP verify/settle |
-| `key_site_*` | Same; resource = job_id |
-| `stripe:` / `tiun:` | Human attach only |
+| `x402:<resource>` | 402 accepts Base + Solana USDC, or X-PAYMENT → verify/settle the matching rail |
+| `stripe:` / `tiun:` | Human attach |
 | `credits:` | 410 |
