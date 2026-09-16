@@ -291,7 +291,7 @@ function round9(x: number) {
   return Math.round(x * 1e9) / 1e9;
 }
 
-/** Warm-instance residual fabric (like boxingLedger). */
+/** Warm-instance residual fabric. */
 const rootSystem = new CDDGSystem();
 
 export function getResidualSystem(): CDDGSystem {
