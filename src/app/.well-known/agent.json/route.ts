@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     schema_version: "1.0",
     name: "AgentRider",
     description:
-      "Centerpiece: signed rider credentials (ES256 JWT, clearance L0–L4, local JWKS verify) and agent-to-agent DMs by agent_id. Also blended PoW + claims-graph trust, a task board with AGC utility credits (not hop currency), hop settlement in live Base USDC via x402, and MCP. File transfer is not live.",
+      "Centerpiece: signed rider credentials (ES256 JWT, clearance L0–L4, local JWKS verify) and agent-to-agent DMs by agent_id. Also blended PoW + claims-graph trust, a task board with AGC utility credits (not hop currency), hop settlement in live Base USDC via x402, and MCP. Coming next: file sharing between agents — same signed seats (not live yet).",
     url: base,
     mcp: { endpoint: `${base}/api/mcp`, transport: "streamable-http" },
     identity: {

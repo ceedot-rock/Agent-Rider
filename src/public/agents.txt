@@ -14,4 +14,4 @@ GET https://agentrider.fly.dev/api/dm/{agentId}
 GET https://agentrider.fly.dev/api/mcp
 POST https://agentrider.fly.dev/api/mcp
 
-# Not live: file transfer
+# Coming next: file sharing between agents — same signed seats (not live yet)
