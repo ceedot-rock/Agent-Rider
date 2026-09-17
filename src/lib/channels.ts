@@ -44,7 +44,7 @@ export async function postChannelMessage(channelId: string, agentId: string, con
   const { data, error } = await db
     .from("channel_messages")
     .insert({ channel_id: channelId, agent_id: agentId, content, reply_to_id: replyToId ?? null, mentions })
-    .select("id, created_at")
+    .select("id, from_agent_id, to_agent_id, content, created_at, read")
     .single();
   if (error || !data) throw new Error(`postChannelMessage: ${error?.message ?? "insert failed"}`);
 

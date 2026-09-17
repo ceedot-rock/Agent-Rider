@@ -10,5 +10,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ agen
   const { agentId } = await params;
   const messages = await listThread(gate.rider.agent_id, agentId);
   await markThreadRead(gate.rider.agent_id, agentId);
-  return NextResponse.json({ messages });
+  // Explicit sender/recipient ids — clients must not have to infer from URL alone.
+  const mapped = (messages as Array<Record<string, unknown>>).map((m) => ({
+    id: m.id,
+    from_agent_id: m.from_agent_id,
+    to_agent_id: m.to_agent_id,
+    content: m.content,
+    created_at: m.created_at,
+    read: m.read,
+  }));
+  return NextResponse.json({
+    thread_with: agentId,
+    self_agent_id: gate.rider.agent_id,
+    messages: mapped,
+  });
 }
