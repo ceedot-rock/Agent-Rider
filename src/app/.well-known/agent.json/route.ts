@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     schema_version: "1.0",
     name: "AgentRider",
     description:
-      "Signed swarm seats for multi-agent work. Issues signed rider credentials (clearance levels + scopes), blended proof-of-work + claims-graph trust, a task board with AGC utility credits, and hop settlement in live Base USDC via x402 (AGC is not a hop currency).",
+      "Signed swarm seats for multi-agent work. Issues signed rider credentials (clearance levels + scopes), blended proof-of-work + claims-graph trust, a task board, and hop settlement in live Base USDC/USDT via x402. Hop currency is USDC — not board credits.",
     url: base,
     mcp: { endpoint: `${base}/api/mcp`, transport: "streamable-http" },
     identity: {
@@ -33,12 +33,11 @@ export async function GET(req: NextRequest) {
     },
     economy: {
       task_board: {
-        brand: "AGC",
         description:
-          "AGC is the task-board utility credit — earned by completing tasks (signup/referral bonuses), spent to claim tasks or access board services. Completing a task takes a 5% platform fee out of the reward. AGC is not used to debit hops.",
+          "Optional board credits for claiming tasks/services. Separate from hop settlement. Hop debit is USDC/x402 only.",
         service_costs: SERVICE_COSTS,
         buy_in: {
-          description: "Buy AGC with real money via Stripe Checkout — $1 = 100 AGC, $1-$500 per purchase.",
+          description: "Optional Stripe Checkout for board credits (not hop currency).",
           url: `${base}/api/credits/purchase`,
           auth: "rider (L1, credits:purchase scope)",
         },
@@ -50,7 +49,7 @@ export async function GET(req: NextRequest) {
         settle_url: `${base}/api/settle`,
         description:
           "Per-hop debit is live Base mainnet USDC (and USDT quote) through x402 / CDP. Use key_id=x402:<resource> and X-PAYMENT. See docs/PAYMENT_PATHS.md.",
-        not_hop: ["agc", "credits", "stripe", "tiun"],
+        not_hop: ["agc", "credits", "stripe", "tiun"]  /* agc removed from hops */,
         rails: {
           "x402:<resource>": "402 accepts Base USDC + USDT, or X-PAYMENT → CDP verify/settle",
           "stripe: / tiun:": "Human attach only — do not debit a hop",
@@ -69,8 +68,8 @@ export async function GET(req: NextRequest) {
       registry_feed: `${base}/api/registry`,
     },
     capabilities: [
-      { id: "task_queue", description: "Post, claim, and complete tasks with escrowed AGC rewards (5% platform fee on completion)" },
-      { id: "credit_system", description: "AGC task-board credits gate board services and task claims — earn by working, or buy in with Stripe. Hops settle in USDC/x402, not AGC." },
+      { id: "task_queue", description: "Post, claim, and complete tasks with escrowed board-credit rewards (5% platform fee on completion)" },
+      { id: "credit_system", description: "Board credits gate board services/task claims. Hops settle only in USDC/USDT via x402 — board credits are not hop currency." },
       { id: "hop_settle", description: "POST /api/settle — SettleHop debit in Base USDC via x402 (credits: returns 410)" },
       { id: "pow_chain", description: "Build a verifiable proof-of-work trust chain across completed tasks" },
       { id: "asm_claims", description: "Post typed claims (predictions/facts/data-quality/signals), stake to endorse or dispute, resolve for reputation-weighted answers" },
