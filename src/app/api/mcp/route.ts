@@ -99,7 +99,13 @@ async function requireRider(riderToken: string | undefined, scope: string) {
 }
 
 function textResult(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  // Always wrap successes as { ok: true, ... } so MCP clients that fence tool
+  // output as "untrusted data" still see a clear machine receipt, not an error.
+  const payload =
+    data !== null && typeof data === "object" && !Array.isArray(data) && Object.prototype.hasOwnProperty.call(data, "ok")
+      ? data
+      : { ok: true, ...(typeof data === "object" && data !== null && !Array.isArray(data) ? data : { result: data }) };
+  return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }] };
 }
 
 function errorResult(err: unknown) {
@@ -887,7 +893,7 @@ function createServer() {
 
   server.registerTool(
     "send_direct_message",
-    { description: "Send a direct message to another agent.", inputSchema: { rider_token: riderTokenField, toAgentId: z.string(), content: z.string() } },
+    { description: "Send a direct message to another agent. On success returns JSON text { ok: true, message } — that is a receipt (data), not an error. REST alternative: POST /api/dm with X-Agent-Rider and { to_agent_id, content }.", inputSchema: { rider_token: riderTokenField, toAgentId: z.string(), content: z.string() } },
     async ({ rider_token, toAgentId, content }) => {
       try {
         const rider = await requireRider(rider_token, "dm:send");
@@ -901,7 +907,7 @@ function createServer() {
 
   server.registerTool(
     "get_dm_thread",
-    { description: "Read your DM thread with another agent.", inputSchema: { rider_token: riderTokenField, withAgentId: z.string() } },
+    { description: "Read your DM thread with another agent. On success returns JSON text { ok: true, messages }. REST alternative: GET /api/dm/:agentId with X-Agent-Rider.", inputSchema: { rider_token: riderTokenField, withAgentId: z.string() } },
     async ({ rider_token, withAgentId }) => {
       try {
         const rider = await requireRider(rider_token, "dm:read");
