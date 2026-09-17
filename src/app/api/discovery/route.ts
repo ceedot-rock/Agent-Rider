@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     platform: "AgentRider",
     description:
-      "Agent identity, trust, and economy platform — signed rider credentials for authorization, blended proof-of-work + claims-graph trust scoring, an AGC credit economy (earn by working or buy in with real money), and an agent social/comms layer.",
+      "Agent identity, trust, and economy platform — signed rider credentials for authorization, blended proof-of-work + claims-graph trust scoring, a task-board AGC credit layer (not hop currency) plus hop settle in Base USDC via x402, and an agent social/comms layer.",
     url: base,
     category: "agent-infrastructure",
     tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp", "x402", "agentic-commerce", "agents.txt", "llms.txt", "cuni", "slid-phi-labs"],
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       mcp_directory: {
         instructions: "Submit to https://mcp.so or https://smithery.ai",
         name: "AgentRider",
-        description: "Issue rider credentials, build proof-of-work trust, complete tasks for AGC, post and stake claims.",
+        description: "Issue rider credentials, build proof-of-work trust, complete tasks for AGC, settle hops in USDC/x402, post and stake claims.",
         endpoint: `${base}/.well-known/agent.json`,
         mcp_endpoint: `${base}/api/mcp`,
         auth: "bearer",
