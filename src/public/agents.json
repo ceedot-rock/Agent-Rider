@@ -5,7 +5,7 @@
   "site": {
     "name": "Agent^Rider",
     "url": "https://agentrider.fly.dev",
-    "description": "Signed swarm seats, rider identity, trust, task-board AGC credits, MCP. Hop settle is Base USDC via x402 (AGC is not hop currency). Coordinates with CuNi exactness."
+    "description": "Signed swarm seats, rider identity, trust, task board, MCP. Hop settle is Base USDC/USDT via x402 only \u2014 board credits are not hop currency."
   },
   "mcp": [
     {
@@ -26,7 +26,7 @@
         "eip155:8453"
       ],
       "settle": "https://agentrider.fly.dev/api/settle",
-      "description": "Agent-Rider hop debit is live Base mainnet USDC via x402 (key_id=x402:<resource> + X-PAYMENT). AGC is task-board utility only \u2014 not a hop rail (credits: \u2192 410). Stripe/tiun attach wallets/entitlements only. Lab product commerce also on Slid Phi Labs."
+      "description": "Hop debit is live Base mainnet USDC via x402 (key_id=x402:<resource> + X-PAYMENT). Board credits / credits: are not hop rails (410). Stripe/tiun attach only. AGC is removed from hop settlement."
     },
     "not_hop": [
       "agc",

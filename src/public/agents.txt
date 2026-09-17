@@ -10,4 +10,4 @@ Protocols: x402
 MCP: https://agentrider.fly.dev/api/mcp
 A2A: https://agentrider.fly.dev/.well-known/agent.json
 Settle: POST https://agentrider.fly.dev/api/settle
-Hop currency: USDC (Base / x402) — AGC is task-board credit only, not hop debit
+Hop currency: USDC/USDT (Base / x402) only — AGC removed from hops (credits: → 410)
