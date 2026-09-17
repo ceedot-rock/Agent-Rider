@@ -1,7 +1,13 @@
 # agents.txt
 # Standard: https://agents-txt.com
 # JSON: https://agentrider.fly.dev/agents.json
+# Manifest: https://agentrider.fly.dev/.well-known/agent.json
+
+# Signed swarm seats. Proof of who acted. Exact tools. Receipts.
+# Live door: Fly only (agentrider.fly.dev) — do not use vercel.app.
 
 Protocols: x402
 MCP: https://agentrider.fly.dev/api/mcp
 A2A: https://agentrider.fly.dev/.well-known/agent.json
+Settle: POST https://agentrider.fly.dev/api/settle
+Hop currency: USDC (Base / x402) — AGC is task-board credit only, not hop debit
