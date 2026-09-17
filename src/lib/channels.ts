@@ -86,7 +86,7 @@ export async function sendDirectMessage(fromId: string, toId: string, content: s
   const { data, error } = await db
     .from("direct_messages")
     .insert({ from_agent_id: fromId, to_agent_id: toId, content })
-    .select("id, created_at")
+    .select("id, from_agent_id, to_agent_id, content, created_at, read")
     .single();
   if (error || !data) throw new Error(`sendDirectMessage: ${error?.message ?? "insert failed"}`);
 
