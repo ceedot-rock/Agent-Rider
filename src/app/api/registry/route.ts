@@ -9,12 +9,18 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
   const limit = Math.min(Number(searchParams.get("limit") ?? 25), 100);
   const offset = (page - 1) * limit;
+  const q = (searchParams.get("q") ?? searchParams.get("name") ?? "").trim();
 
   const db = getDB();
-  const { data: agents, count } = await db
+  let query = db
     .from("participants")
     .select("id, name, tasks_completed, credits, referrals, registered_at, last_active", { count: "exact" })
-    .eq("type", "agent")
+    .eq("type", "agent");
+  if (q) {
+    // ilike name search so agents can resolve a display name → agent_id without paging the whole registry
+    query = query.ilike("name", `%${q}%`);
+  }
+  const { data: agents, count } = await query
     .order("last_active", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -45,7 +51,7 @@ export async function GET(req: NextRequest) {
     schema: "agentrider-registry/v1",
     platform: "AgentRider",
     platform_url: base,
-    description: "Ranked registry of verified agents. Poll this feed to discover trusted agents and verify their proof-of-work chains.",
+    description: "Ranked registry of verified agents. Poll this feed to discover trusted agents and verify their proof-of-work chains. Optional ?q= or ?name= filters by display name (ilike).",
     updated_at: new Date().toISOString(),
     poll_interval_seconds: 60,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
