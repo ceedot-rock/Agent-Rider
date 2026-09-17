@@ -5,13 +5,13 @@
   "site": {
     "name": "Agent^Rider",
     "url": "https://agentrider.fly.dev",
-    "description": "Signed agent identity, trust, AGC credits, task market, MCP. Coordinates with CuNi exactness and Slid Phi Labs x402 commerce."
+    "description": "Signed swarm seats, rider identity, trust, task-board AGC credits, MCP. Hop settle is Base USDC via x402 (AGC is not hop currency). Coordinates with CuNi exactness."
   },
   "mcp": [
     {
       "url": "https://agentrider.fly.dev/api/mcp",
       "type": "streamable-http",
-      "description": "Agent^Rider MCP — registry, rider issue/verify, tasks, credits"
+      "description": "Agent^Rider MCP \u2014 registry, rider issue/verify, tasks, hop settle, board credits"
     }
   ],
   "a2a": [
@@ -23,18 +23,24 @@
   "payments": {
     "x402": {
       "chains": [
-        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
         "eip155:8453"
       ],
-      "description": "Lab product commerce is on Slid Phi Labs (linked ecosystem). Agent^Rider uses Stripe + AGC for platform credits."
-    }
+      "settle": "https://agentrider.fly.dev/api/settle",
+      "description": "Agent-Rider hop debit is live Base mainnet USDC via x402 (key_id=x402:<resource> + X-PAYMENT). AGC is task-board utility only \u2014 not a hop rail (credits: \u2192 410). Stripe/tiun attach wallets/entitlements only. Lab product commerce also on Slid Phi Labs."
+    },
+    "not_hop": [
+      "agc",
+      "credits",
+      "stripe",
+      "tiun"
+    ]
   },
   "discovery": {
     "agent_manifest": "https://agentrider.fly.dev/.well-known/agent.json",
     "api_discovery": "https://agentrider.fly.dev/api/discovery",
     "llms_txt": "https://agentrider.fly.dev/llms.txt",
     "agents_txt": "https://agentrider.fly.dev/agents.txt",
-    "one_liner": "Agent^Rider MCP + identity · Lab dual surface map https://www.slidphilabs.com/platform.json · commerce GET https://www.slidphilabs.com/api/agent · welcome https://www.slidphilabs.com/api/welcome",
+    "one_liner": "Agent^Rider MCP + identity \u00b7 Lab dual surface map https://www.slidphilabs.com/platform.json \u00b7 commerce GET https://www.slidphilabs.com/api/agent \u00b7 welcome https://www.slidphilabs.com/api/welcome",
     "protocol": "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
     "ecosystem": {
       "slid_phi_labs_agent_commerce": "https://www.slidphilabs.com/api/agent",
@@ -50,7 +56,7 @@
     "lab_openapi": "https://www.slidphilabs.com/openapi.yaml"
   },
   "platform": {
-    "slogan": "One mission · two attack vectors · one team",
+    "slogan": "One mission \u00b7 two attack vectors \u00b7 one team",
     "parent_lab": "https://www.slidphilabs.com",
     "pub_facing": "https://www.slidphilabs.com/humans",
     "agentic_minded": "https://www.slidphilabs.com/agents"
