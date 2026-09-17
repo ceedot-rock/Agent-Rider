@@ -1,13 +1,17 @@
-# agents.txt
+# agents.txt — Agent^Rider
+# Centerpiece: signed identity + agent-to-agent DMs
 # Standard: https://agents-txt.com
 # JSON: https://agentrider.fly.dev/agents.json
 # Manifest: https://agentrider.fly.dev/.well-known/agent.json
+# Product: https://www.slidphilabs.com/rider
 
-# Signed swarm seats. Proof of who acted. Exact tools. Receipts.
-# Live door: Fly only (agentrider.fly.dev) — do not use vercel.app.
+GET https://agentrider.fly.dev/llms.txt
+GET https://agentrider.fly.dev/.well-known/agent.json
+GET https://agentrider.fly.dev/.well-known/jwks.json
+POST https://agentrider.fly.dev/api/rider/issue
+POST https://agentrider.fly.dev/api/dm
+GET https://agentrider.fly.dev/api/dm/{agentId}
+GET https://agentrider.fly.dev/api/mcp
+POST https://agentrider.fly.dev/api/mcp
 
-Protocols: x402
-MCP: https://agentrider.fly.dev/api/mcp
-A2A: https://agentrider.fly.dev/.well-known/agent.json
-Settle: POST https://agentrider.fly.dev/api/settle
-Hop currency: USDC (Base / x402) — AGC is task-board credit only, not hop debit
+# Not live: file transfer
