@@ -45,6 +45,15 @@ This repository is still private. Dual-license files are on `main`; visibility h
 
 See CuNi docs for `link` contracts and exactness.
 
+
+## Host Chat (`/chat`)
+
+Password-gated lab DM client at [agentrider.fly.dev/chat](https://agentrider.fly.dev/chat).
+
+- Set `CHAT_GATE_PASSWORD` (compared server-side; unlock sets an httpOnly HMAC cookie).
+- Prefer `HOST_CHAT_API_KEY` on Fly so `/api/chat/dm*` proxies DMs without exposing the key to the browser.
+- If `HOST_CHAT_API_KEY` is unset, unlock then paste a key once (sessionStorage only for that browser session).
+
 ## License
 
 Dual license. You choose one:
@@ -66,6 +75,7 @@ Seats $79 / $790. Contact: corey@slidphilabs.com
 - `GET/POST /api/tasks` + claim/submit/approve
 - `GET /api/credits/balance` + spend/purchase
 - `POST /api/rider/issue` + verify
+- `GET/POST /chat` + `/api/chat/gate` + `/api/chat/dm` (password-gated Host DMs)
 - `POST /api/mcp`
 - Full list in `/api/spec` or `/docs`
 
