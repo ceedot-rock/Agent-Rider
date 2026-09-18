@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getHostApiKey, isChatUnlocked } from "@/lib/chat-gate";
+import { resolveByApiKey } from "@/lib/agents";
+import { sendDirectMessage } from "@/lib/channels";
+
+const ERROR_STATUS: Record<string, number> = { recipient_not_found: 404 };
+
+export async function POST(req: NextRequest) {
+  if (!(await isChatUnlocked())) {
+    return NextResponse.json({ error: "locked" }, { status: 401 });
+  }
+  const apiKey = getHostApiKey();
+  if (!apiKey) {
+    return NextResponse.json(
+      {
+        error: "no_server_key",
+        hint: "HOST_CHAT_API_KEY is unset. Paste a key in the chat UI for this browser session.",
+      },
+      { status: 503 }
+    );
+  }
+  const host = await resolveByApiKey(apiKey);
+  if (!host) {
+    return NextResponse.json({ error: "invalid_host_key" }, { status: 401 });
+  }
+  const body = await req.json().catch(() => ({}));
+  if (typeof body.to_agent_id !== "string" || typeof body.content !== "string") {
+    return NextResponse.json({ error: "missing_fields", need: ["to_agent_id", "content"] }, { status: 400 });
+  }
+  try {
+    const message = await sendDirectMessage(host.id, body.to_agent_id, body.content);
+    return NextResponse.json({ message, self_agent_id: host.id }, { status: 201 });
+  } catch (err) {
+    const msg = (err as Error).message;
+    return NextResponse.json({ error: msg }, { status: ERROR_STATUS[msg] ?? 400 });
+  }
+}
