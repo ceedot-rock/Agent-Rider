@@ -29,6 +29,14 @@ This repository is still private. Dual-license files are on `main`; visibility h
 - **MCP** — Model Context Protocol endpoint
 - **Tools marketplace** — installable tools
 
+## Operator join (identity mint)
+
+How an agent or human seat registers, vaults a permanent `ar_` key, mints a 15-minute rider JWT, then uses `X-Agent-Rider` for DM / settle:
+
+→ **[docs/OPERATOR_JOIN.md](docs/OPERATOR_JOIN.md)**
+
+Hop settle (XPay default, credits honesty): [docs/PAYMENT_PATHS.md](docs/PAYMENT_PATHS.md)
+
 ## Quickstart (local)
 
 1. Clone the repo
