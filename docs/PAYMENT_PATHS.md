@@ -91,3 +91,20 @@ Expected status codes (summary):
 | XPay `POST /verify` empty body | not 401/403 (typically 400 validation) |
 | Hop `credits:*` (after rider) | 410 `reject.agc_removed` |
 | Live `/api/settle` no rider | 401 `missing_rider` |
+
+
+## Funded Base USDC settle smoke (operator)
+
+Exact steps (issue JWT → 402 accepts → pay → POST settle), env/wallets, and
+fail-closed script: **[`SETTLE_SMOKE.md`](./SETTLE_SMOKE.md)**.
+
+```bash
+# CI-safe dry (no secrets, no USDC)
+cd src && npm run smoke:settle
+
+# Funded spend — fails closed unless SETTLE_FUNDED=1 + AR_API_KEY + SETTLE_PAYER_PRIVATE_KEY
+cd src && npm run smoke:settle:funded
+```
+
+Never print or commit `ar_` / private keys. CI cannot run the funded step without
+operator-injected secrets on a local machine.

@@ -17,6 +17,12 @@ export interface SettleHop {
 export const XPAY_FACILITATOR = "https://facilitator.xpay.sh";
 export const CDP_FACILITATOR = "https://api.cdp.coinbase.com/platform/v2/x402";
 
+/** Operator funded-smoke + payment path docs (actionable settle errors). */
+export const SETTLE_SMOKE_DOCS_URL =
+  "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/SETTLE_SMOKE.md";
+export const PAYMENT_PATHS_DOCS_URL =
+  "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md";
+
 const PAY_TO =
   process.env.X402_PAY_TO ||
   process.env.X402_PAY_TO_BASE ||
@@ -28,6 +34,8 @@ const LIVE = {
   networkName: "base",
   caip2: "eip155:8453",
   symbol: "USDC",
+  // Circle Base mainnet USDC EIP-712 domain name (not the ticker)
+  eip712Name: "USD Coin",
   asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   facilitator: XPAY_FACILITATOR,
   verifyPath: "/verify",
@@ -39,6 +47,7 @@ const TEST = {
   networkName: "base-sepolia",
   caip2: "eip155:84532",
   symbol: "USDC",
+  eip712Name: "USDC", // Sepolia USDC domain differs from mainnet
   asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   facilitator: "https://x402.org/facilitator",
   verifyPath: "/verify",
@@ -50,6 +59,7 @@ const USDT_BASE = {
   networkName: "base",
   caip2: "eip155:8453",
   symbol: "USDT",
+  eip712Name: "USDT",
   asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
   facilitator: XPAY_FACILITATOR,
   verifyPath: "/verify",
@@ -143,7 +153,7 @@ function requirement(resource: string, amountUsd: number, r: (typeof LIVE)) {
     mimeType: "application/json",
     outputSchema: null,
     maxTimeoutSeconds: 180,
-    extra: { name: r.symbol, version: "2" },
+    extra: { name: r.eip712Name || r.symbol, version: "2" },
   };
 }
 
@@ -201,12 +211,24 @@ export async function settleX402(opts: {
       ok: false,
       status: 402,
       body: {
-        error: "Payment Required",
+        error: "payment_required",
+        message: "Payment Required",
         x402Version: 1,
         accepts,
         rail: "stablecoin",
         live: !isTestnet(),
         facilitator,
+        payment_header: "X-PAYMENT",
+        hint:
+          "Mint X-Agent-Rider (OPERATOR_JOIN), POST SettleHop with key_id=x402:<resource>, read accepts[], sign EIP-3009 Base USDC, retry with X-PAYMENT. Credits are not hop currency (410).",
+        docs_url: SETTLE_SMOKE_DOCS_URL,
+        payment_paths_url: PAYMENT_PATHS_DOCS_URL,
+        next: [
+          "POST /api/rider/issue with Bearer ar_…",
+          "POST /api/settle without X-PAYMENT → 402 accepts",
+          "Sign transferWithAuthorization for accepts[0]",
+          "POST /api/settle with X-PAYMENT",
+        ],
       },
     };
   }
@@ -218,7 +240,16 @@ export async function settleX402(opts: {
     try {
       payment = JSON.parse(Buffer.from(opts.paymentHeader, "base64").toString("utf8"));
     } catch {
-      return { ok: false, status: 400, body: { error: "bad_x402_header" } };
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          error: "bad_x402_header",
+          hint: "X-PAYMENT must be JSON or base64(JSON) x402 PaymentPayload (scheme exact, network base, EIP-3009 authorization + signature).",
+          docs_url: SETTLE_SMOKE_DOCS_URL,
+          payment_header: "X-PAYMENT",
+        },
+      };
     }
   }
 
@@ -252,7 +283,17 @@ export async function settleX402(opts: {
     return {
       ok: false,
       status: 402,
-      body: { error: "reject.funds", rail: "stablecoin", live: !isTestnet(), verified, accepts },
+      body: {
+        error: "reject.funds",
+        rail: "stablecoin",
+        live: !isTestnet(),
+        verified,
+        accepts,
+        hint:
+          "Facilitator /verify failed. Check Base USDC balance, payTo matches accepts, authorization validAfter/validBefore window, asset address, and X-PAYMENT encoding.",
+        docs_url: SETTLE_SMOKE_DOCS_URL,
+        facilitator,
+      },
     };
   }
   const settled = await post("/settle");
@@ -260,7 +301,17 @@ export async function settleX402(opts: {
     return {
       ok: false,
       status: 402,
-      body: { error: "reject.funds", rail: "stablecoin", live: !isTestnet(), settled, accepts },
+      body: {
+        error: "reject.funds",
+        rail: "stablecoin",
+        live: !isTestnet(),
+        settled,
+        accepts,
+        hint:
+          "Facilitator /settle failed after verify. Re-check nonce reuse, authorization expiry, and payTo. See SETTLE_SMOKE.md funded path.",
+        docs_url: SETTLE_SMOKE_DOCS_URL,
+        facilitator,
+      },
     };
   }
   return {
