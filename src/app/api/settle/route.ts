@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkGate, isGateOk } from "@/lib/rider";
+import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
 import { parseCuniSettle, parseKeyRail, settleX402, type SettleHop } from "@/lib/settle-hop";
 
 export async function POST(req: NextRequest) {
@@ -10,13 +11,20 @@ export async function POST(req: NextRequest) {
 
   const ctype = req.headers.get("content-type") || "";
   let hop: SettleHop | null = null;
+  let jsonBody: Record<string, unknown> = {};
   if (ctype.includes("text/plain") || ctype.includes("application/cuni")) {
     hop = parseCuniSettle(await req.text());
   } else {
-    const body = await req.json().catch(() => ({}));
-    if (typeof body.cuni === "string") hop = parseCuniSettle(body.cuni);
-    else if (body.hop_id && body.key_id) hop = body as SettleHop;
+    jsonBody = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    if (typeof jsonBody.cuni === "string") hop = parseCuniSettle(jsonBody.cuni);
+    else if (jsonBody.hop_id && jsonBody.key_id) hop = jsonBody as unknown as SettleHop;
   }
+
+  const citizenGate = checkCitizenReceiptGate(jsonBody);
+  if (!isCitizenGateOk(citizenGate)) {
+    return NextResponse.json(citizenGate.body, { status: citizenGate.status });
+  }
+
   if (!hop) {
     return NextResponse.json(
       {
@@ -86,6 +94,9 @@ export async function POST(req: NextRequest) {
       hop_id: hop.hop_id,
       job_id: hop.job_id,
       key_id: hop.key_id,
+      ...(citizenGate.receipt
+        ? { citizen_receipt_source_hash: citizenGate.receipt.source_hash }
+        : {}),
       ...out.body,
     },
     { status: out.status }

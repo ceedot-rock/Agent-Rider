@@ -66,7 +66,7 @@ Host attestation / sealed runtime (**PARKED** until proven — not live Nitro): 
 3. Publish → auto-registers into Rider
 4. Agents can invoke verified exact skills
 
-See CuNi docs for `link` contracts and exactness.
+See CuNi docs for `link` contracts and exactness. Citizen receipt gate (Translate→Fund→Execute; Studio wire PARKED): [docs/CUNI_CITIZEN_GATE.md](docs/CUNI_CITIZEN_GATE.md).
 
 
 ## Host Chat (`/chat`)
