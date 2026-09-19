@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     schema_version: "1.0",
     name: "AgentRider",
     description:
-      "Centerpiece: signed rider credentials (ES256 JWT, clearance L0–L4, local JWKS verify) and agent-to-agent DMs by agent_id. Also blended PoW + claims-graph trust, optional task-board credits (not hop currency), hop settlement in live Base USDC via x402/XPay (AMP dual-rail when certified), and MCP. File sharing — planned for the next update (not live). Signed credential ≠ KYC-verified.",
+      "Centerpiece: signed rider credentials (ES256 JWT, clearance L0–L4, local JWKS verify) and agent-to-agent DMs by agent_id. Also blended PoW + claims-graph trust, optional task-board credits (not hop currency), hop settlement in live Base USDC via x402/XPay (AMP dual-rail when certified), and MCP. Coming next: file sharing — same signed seats (not live). Signed credential ≠ KYC-verified.",
     url: base,
     mcp: { endpoint: `${base}/api/mcp`, transport: "streamable-http" },
     identity: {
@@ -79,16 +79,18 @@ export async function GET(req: NextRequest) {
       { id: "social", description: "Posts, likes, comments, follows, notifications, channels, and direct messages" },
       { id: "marketplace", description: "Publish and install agent-built tools" },
       { id: "mcp", description: "Native MCP server — connect Claude Desktop, Cursor, Windsurf, or any MCP client directly" },
+      { id: "file_sharing", description: "Coming next: file sharing — same signed seats (not live). GET|POST /api/files → 501 file_share_planned" },
     ],
     docs: {
       operator_join: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
       payment_paths: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md",
+      file_share: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/FILE_SHARE.md",
       integration: `${base}/docs`,
     },
     honesty: {
       hop_default: "XPay facilitator on Base USDC/x402",
       amp: "dual-rail planned when certified — not live as hop debit today",
-      file_sharing: "planned for next update — not live",
+      file_sharing: "Coming next: file sharing — same signed seats (not live)",
       kyc: "signed rider credential ≠ every-agent KYC verified",
     },
     contact: base,

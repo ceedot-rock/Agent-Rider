@@ -19,5 +19,7 @@ POST https://agentrider.fly.dev/api/settle
 
 # Hop currency: USDC (Base / x402 / XPay default) — board credits removed from hops (credits: → 410)
 # AMP dual-rail planned when certified — not a drop-in hop debit today
-# File sharing — planned for the next update (not live)
+# Coming next: file sharing — same signed seats (not live)
+GET https://agentrider.fly.dev/api/files
+POST https://agentrider.fly.dev/api/files/share
 # Signed rider credential ≠ KYC claim that every agent is verified
