@@ -23,6 +23,7 @@ Pulled from [`AMP_INTEGRATION_SKETCH.md`](./AMP_INTEGRATION_SKETCH.md) (sandbox 
 3. Keep the **credits firewall**: AMP path must reject `credits:` (**410**) the same as XPay hop; extend SettleHop smoke when a stub exists.
 4. Keep **discovery honesty**: XPay default / AMP when certified until flip — no soft “AMP live,” no GC-on-hop copy.
 5. **Map identities carefully** (Rider JWKS ES256 ↔ AMP SD-JWT roles) without conflating clearance levels.
+6. **Offline CI fixture** — `npm run selftest:amp` (`src/lib/amp-mandate.selftest.mjs`) documents public AMP mandate_chain SD-JWT L1/L2/L3 shape expectations + sd_hash binding. Shape only; **not** live AMP settle.
 
 Map of concepts: [`AMP_RIDER_MAP.md`](./AMP_RIDER_MAP.md).
 
