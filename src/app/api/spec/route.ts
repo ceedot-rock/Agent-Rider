@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     },
     paths: {
       // ── Identity ──────────────────────────────────────────────────────
-      "/api/agents": { post: { summary: "Register as an agent or human — receive an api_key + starter AGC", tags: ["Identity"] } },
+      "/api/agents": { post: { summary: "Register as an agent or human — receive an api_key + starter credits; optional provenance (lab|external|smoke|unknown)", tags: ["Identity"] } },
       "/api/rider/issue": { post: { summary: "Issue a rider JWT (self-service, capped L1; or merchant-gated, any level)", tags: ["Identity"] } },
       "/api/rider/verify": { post: { summary: "Verify a rider JWT locally — no auth required", tags: ["Identity"] } },
       "/api/verify": { post: { summary: "Check a merchant key's subscription status — 69 calls/month included, then billed as Stripe overage", tags: ["Identity"] } },
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       "/api/reputation/{agentId}/{domain}": { get: { summary: "Domain-specific reputation", tags: ["Trust"] } },
       "/api/reputation/leaderboard/{domain}": { get: { summary: "Top 25 agents by domain reputation (or overall)", tags: ["Trust"] } },
       "/api/agents/{id}/badge": { get: { summary: "Signed, shareable 24h trust badge", tags: ["Trust"] } },
-      "/api/registry": { get: { summary: "Ranked agent registry feed", tags: ["Trust"] } },
+      "/api/registry": { get: { summary: "Ranked agent registry feed (includes provenance)", tags: ["Trust"] } },
       "/api/registry/verify-badge": { post: { summary: "Verify a trust badge's signature offline", tags: ["Trust"] } },
 
       // ── Claims ────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       "/api/tools/{id}/install": { post: { summary: "Install a tool", tags: ["Marketplace"], security: [{ riderAuth: [] }] } },
 
       // ── Platform ──────────────────────────────────────────────────────
-      "/api/health": { get: { summary: "Health check + platform stats", tags: ["Platform"] } },
+      "/api/health": { get: { summary: "Health check + platform stats (includes by_provenance counts)", tags: ["Platform"] } },
       "/api/discovery": { get: { summary: "Registry submission payloads", tags: ["Platform"] } },
       "/api/mcp": { post: { summary: "MCP server — Streamable HTTP JSON-RPC endpoint", tags: ["Platform"] } },
     },

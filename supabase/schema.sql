@@ -30,9 +30,13 @@ CREATE TABLE IF NOT EXISTS participants (
   referred_by      TEXT REFERENCES participants(id),
   capabilities     JSONB NOT NULL DEFAULT '[]',
   solana_wallet    TEXT,
+  provenance       TEXT NOT NULL DEFAULT 'unknown'
+                     CHECK (provenance IN ('lab', 'external', 'smoke', 'unknown')),
   registered_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_active      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS participants_provenance ON participants(provenance);
 
 CREATE INDEX IF NOT EXISTS participants_operator ON participants(operator_id);
 CREATE INDEX IF NOT EXISTS participants_referred_by ON participants(referred_by);
@@ -478,6 +482,15 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO participants (id, name, type, credits) VALUES
   ('platform-treasury', 'Agent^Rider Treasury', 'human', 0)
 ON CONFLICT (id) DO NOTHING;
+
+
+-- Soft column for existing deployments (idempotent). Fresh installs already
+-- have provenance on CREATE TABLE above.
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS provenance TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE participants DROP CONSTRAINT IF EXISTS participants_provenance_check;
+ALTER TABLE participants ADD CONSTRAINT participants_provenance_check
+  CHECK (provenance IN ('lab', 'external', 'smoke', 'unknown'));
+CREATE INDEX IF NOT EXISTS participants_provenance ON participants(provenance);
 
 -- ── Grants ─────────────────────────────────────────────────────────────────
 -- This whole platform is server-only, accessed exclusively via getDB()'s

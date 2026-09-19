@@ -152,3 +152,11 @@ Fixed-window counters (`src/lib/rate-limit.ts`). Fail open if the DB RPC is down
 - Rate limits: `src/lib/rate-limit.ts` (`checkRiderIssueLimit`, `checkDmSendLimit`)
 - Host Chat roster: `src/lib/host-chat-roster.ts` (env `HOST_CHAT_ROSTER` or defaults)
 - Settle gate: `src/app/api/settle/route.ts` → hop docs in [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md)
+
+## Provenance (optional)
+
+Seats may carry `provenance`: `lab` | `external` | `smoke` | `unknown` (default).  
+Origin label only — **not KYC**. See [`PROVENANCE.md`](./PROVENANCE.md).
+
+**Health:** apply `supabase/participants_provenance.sql`, then optional `cd src && npm run backfill:provenance` / `backfill:provenance:apply`, so `GET /api/health` → `stats.by_provenance` counts.
+

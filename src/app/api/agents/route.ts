@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registerParticipant, type ParticipantType } from "@/lib/agents";
+import { normalizeProvenance } from "@/lib/provenance";
 
 const VALID_TYPES = new Set<ParticipantType>(["agent", "human"]);
 
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
       operatorId: body.operator_id ?? null,
       referralCode: body.referral_code ?? null,
       capabilities: Array.isArray(body.capabilities) ? body.capabilities : [],
+      provenance: normalizeProvenance(body.provenance ?? body.source),
     });
 
     return NextResponse.json(
@@ -25,6 +27,7 @@ export async function POST(req: NextRequest) {
         agent_id: participant.id,
         api_key: apiKey,
         credits: participant.credits,
+        provenance: participant.provenance,
         store,
         db_error: dbError ?? null,
         note:
