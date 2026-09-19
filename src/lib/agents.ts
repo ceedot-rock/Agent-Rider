@@ -1,8 +1,10 @@
 import { createHash, randomBytes } from "crypto";
 import { getDB } from "@/lib/db";
+import { normalizeProvenance, type Provenance } from "@/lib/provenance";
 
 export type ParticipantType = "agent" | "human";
 export type ParticipantStore = "supabase" | "disk";
+export type { Provenance };
 
 export interface Participant {
   id: string;
@@ -15,6 +17,8 @@ export interface Participant {
   referredBy: string | null;
   capabilities: string[];
   solanaWallet: string | null;
+  /** Seat origin label — lab|external|smoke|unknown. Not KYC. */
+  provenance: Provenance;
   registeredAt: string;
   lastActive: string;
 }
@@ -32,6 +36,7 @@ interface ParticipantRow {
   referred_by: string | null;
   capabilities: string[];
   solana_wallet: string | null;
+  provenance?: string | null;
   registered_at: string;
   last_active: string;
 }
@@ -48,6 +53,7 @@ function rowToParticipant(row: ParticipantRow): Participant {
     referredBy: row.referred_by,
     capabilities: row.capabilities ?? [],
     solanaWallet: row.solana_wallet,
+    provenance: normalizeProvenance(row.provenance),
     registeredAt: row.registered_at,
     lastActive: row.last_active,
   };
@@ -105,6 +111,8 @@ export interface RegisterInput {
   operatorId?: string | null;
   referralCode?: string | null;
   capabilities?: string[];
+  /** Optional; defaults unknown. Invalid values coerced to unknown. */
+  provenance?: Provenance | string | null;
 }
 
 export interface RegisterResult {
@@ -136,6 +144,7 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
 
   const credits = bonus + (referrerId ? 5 : 0);
 
+  const provenance = normalizeProvenance(input.provenance);
   const payload = {
     id,
     api_key_hash: hashApiKey(apiKey),
@@ -146,12 +155,18 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
     credits,
     referred_by: referrerId,
     capabilities: input.capabilities ?? [],
+    provenance,
   };
 
   let row: ParticipantRow | null = null;
   let dbError: string | undefined;
   try {
-    const { data, error } = await db.from("participants").insert(payload).select().single();
+    let { data, error } = await db.from("participants").insert(payload).select().single();
+    // Soft: column not migrated yet — retry without provenance (defaults unknown in app layer).
+    if (error && /provenance/i.test(error.message)) {
+      const { provenance: _drop, ...withoutProv } = payload;
+      ({ data, error } = await db.from("participants").insert(withoutProv).select().single());
+    }
     if (!error && data) {
       row = data as ParticipantRow;
     } else if (error) {
