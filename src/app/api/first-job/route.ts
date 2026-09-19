@@ -3,6 +3,7 @@ import { resolveCaller, isCallerOk } from "@/lib/identity";
 import { postTask, claimTask, submitTask, approveTask, getTask } from "@/lib/tasks";
 import { ensurePracticePoster, PRACTICE_POSTER_ID, PRACTICE_REWARD } from "@/lib/practice-poster";
 import { resolveById } from "@/lib/agents";
+import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
 
 const ERROR_STATUS: Record<string, number> = {
   invalid_category: 400,
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "claim") {
+      const citizenGate = checkCitizenReceiptGate(body);
+      if (!isCitizenGateOk(citizenGate)) {
+        return NextResponse.json(citizenGate.body, { status: citizenGate.status });
+      }
       if (typeof body.taskId !== "string") {
         return NextResponse.json({ error: "missing_fields", need: ["taskId"] }, { status: 400 });
       }
@@ -72,6 +77,9 @@ export async function POST(req: NextRequest) {
         expiresAt: result.expiresAt,
         creditsRemaining: result.creditsRemaining,
         next: { submit: "POST /api/first-job { action: \"submit\", taskId, result }" },
+        ...(citizenGate.receipt
+          ? { citizen_receipt_source_hash: citizenGate.receipt.source_hash }
+          : {}),
       });
     }
 

@@ -4,6 +4,7 @@ import {
   listCuniContracts,
   getCuniContract,
 } from "@/lib/cuni-contracts";
+import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +20,19 @@ export async function OPTIONS() {
  * POST /api/v0/contracts
  * Accept verified CuNi publish metadata. Requires exactness.passed === true.
  * Idempotent on sourceHash.
+ * Citizen receipt gate: validate-when-present; strict via CUNI_CITIZEN_RECEIPT_REQUIRED.
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
+
+  const citizenGate = checkCitizenReceiptGate(body);
+  if (!isCitizenGateOk(citizenGate)) {
+    return NextResponse.json(citizenGate.body, {
+      status: citizenGate.status,
+      headers: CORS,
+    });
+  }
+
   const result = await registerCuniContract(body);
 
   if (!result.ok) {

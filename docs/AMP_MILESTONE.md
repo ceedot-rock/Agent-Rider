@@ -43,4 +43,4 @@ Until then: operators settle hops with XPay; AMP stays tracked, not live.
 
 ## Related security
 
-Host cryptographic attestation + sealed runtime (PARKED until proven — not live Nitro): [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md). Operator key vault / mint: [`OPERATOR_JOIN.md`](./OPERATOR_JOIN.md).
+Host cryptographic attestation + sealed runtime (PARKED until proven — not live Nitro): [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md). Operator key vault / mint: [`OPERATOR_JOIN.md`](./OPERATOR_JOIN.md). CuNi citizen receipt gate (T→F→E; Studio wire PARKED): [`CUNI_CITIZEN_GATE.md`](./CUNI_CITIZEN_GATE.md).
