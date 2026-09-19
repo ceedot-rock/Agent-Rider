@@ -372,6 +372,7 @@ export default function Home() {
             <ul style={{ margin: 0, paddingLeft: 18, color: "var(--muted)", fontSize: 14, lineHeight: 1.7 }}>
               <li>AMP settle — when certified (parked)</li>
               <li>File share — planned, not live</li>
+              <li>Host attestation — parked until proven (not live Nitro)</li>
             </ul>
             <p style={{ margin: "12px 0 0", fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
               Signed ≠ KYC · board credits ≠ hop currency

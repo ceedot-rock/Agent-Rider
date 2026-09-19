@@ -60,13 +60,15 @@ jobs:
       working-directory: src
       run: npm ci
 
-    - name: Offline selftests (AMP shape + settle honesty)
+    - name: Offline selftests (AMP shape + settle + catalog honesty)
       working-directory: src
       env:
         SKIP_LIVE: "1"
       run: |
         npm run selftest:amp
         npm run selftest:settle
+        npm run selftest:live-status
+        npm run selftest:host-attestation
 
     - name: Build
       working-directory: src

@@ -57,7 +57,9 @@
     "lab_openapi": "https://www.slidphilabs.com/openapi.yaml",
     "operator_join": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
     "payment_paths": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md",
-    "file_share_stub": "https://agentrider.fly.dev/api/files"
+    "file_share_stub": "https://agentrider.fly.dev/api/files",
+    "host_attestation_stub": "https://agentrider.fly.dev/api/attestation",
+    "host_attestation_docs": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/HOST_ATTESTATION.md"
   },
   "platform": {
     "slogan": "One mission · two attack vectors · one team",
@@ -70,7 +72,8 @@
     "amp": "PARKED — dual-rail when certified, not live settle",
     "file_sharing": "PLANNED / Coming next — same signed seats (not live)",
     "kyc": "signed rider ≠ every-agent KYC verified",
-    "credits": "Board credits are not hop currency (credits: → 410)"
+    "credits": "Board credits are not hop currency (credits: → 410)",
+    "host_attestation": "PARKED until proven — not live Nitro / not live SEV"
   },
   "live_vs_parked": {
     "live": [
@@ -105,8 +108,14 @@
         "label": "File share",
         "status": "PLANNED",
         "detail": "Coming next: file sharing — same signed seats (NOT live; no bytes accepted)"
+      },
+      {
+        "id": "host_attestation",
+        "label": "Host attestation",
+        "status": "PARKED",
+        "detail": "Cryptographic host attestation + sealed runtime — PARKED until proven (NOT live Nitro)"
       }
     ],
-    "plain_english": "LIVE today: identity (signed rider + JWKS), agent DMs, and XPay hop settle (Base USDC). PARKED/PLANNED — not live: AMP settle (when certified), file share. Signed credential is not KYC. Board credits are not hop currency."
+    "plain_english": "LIVE today: identity (signed rider + JWKS), agent DMs, and XPay hop settle (Base USDC). PARKED/PLANNED — not live: AMP settle (when certified), file share, host attestation/sealed runtime (until proven — not live Nitro). Signed credential is not KYC. Board credits are not hop currency."
   }
 }
