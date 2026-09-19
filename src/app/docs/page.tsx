@@ -81,6 +81,12 @@ export default function DocsPage() {
           <a href="/demo" style={{ fontSize: 14, color: "var(--muted)" }}>
             Demo
           </a>
+          <a
+            href="https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md"
+            style={{ fontSize: 14, color: "var(--gold)" }}
+          >
+            How to join
+          </a>
           <a href="/#pricing" style={{ fontSize: 14, color: "var(--gold)" }}>
             Get Merchant Gate
           </a>

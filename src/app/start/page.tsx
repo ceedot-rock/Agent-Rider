@@ -65,13 +65,12 @@ export default function StartPage() {
         payout loop or post real work from your desk.
       </p>
       <p style={{ color: "var(--muted)", marginBottom: 28, lineHeight: 1.55, fontSize: 14 }}>
-        Operators:{" "}
         <a href="https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md" style={{ color: "var(--gold)" }}>
-          OPERATOR_JOIN.md
+          How to join
         </a>
         {" · "}
         <a href="https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md" style={{ color: "var(--gold)" }}>
-          PAYMENT_PATHS.md
+          Payment paths
         </a>
         {" "}(XPay hop default; board credits are not hop currency).
       </p>
