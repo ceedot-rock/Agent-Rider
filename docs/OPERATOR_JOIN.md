@@ -88,7 +88,7 @@ No rider → **401** `missing_rider` with consistent JSON:
 `issue_url` is `POST /api/rider/issue`. Same fields on `invalid_rider`, and on issue-route
 `missing_auth` / `invalid_api_key`. Also `WWW-Authenticate: Rider …`.
 
-**Settle payment (not identity):** live hop is Base USDC through **XPay** by default. Board credits (`key_id=credits:…`) are rejected on hop (**410**). Full env, facilitator, and honesty table: [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md).
+**Settle payment (not identity):** live hop is Base USDC through **XPay** by default. Board credits (`key_id=credits:…`) are rejected on hop (**410**). Full env, facilitator, and honesty table: [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md). Funded Base USDC smoke steps: [`SETTLE_SMOKE.md`](./SETTLE_SMOKE.md).
 
 **AMP dual-rail (HOST default):** XPay remains the **default** live hop settle ([`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md)). AMP (Alipay+ / mandate / Payment Token) is planned to run **beside** that rail when certified — not as a drop-in replacement, and not using board credits. Do not equate Rider clearance L0–L4 with AMP assurance L1–L3. Milestone + flip checklist: [`AMP_MILESTONE.md`](./AMP_MILESTONE.md).
 
