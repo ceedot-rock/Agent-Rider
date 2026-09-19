@@ -1,5 +1,6 @@
 import { getDB } from "@/lib/db";
 import { adjustCredits, resolveById, type Participant } from "@/lib/agents";
+import { normalizeProvenance } from "@/lib/provenance";
 
 export const PRACTICE_POSTER_ID = "practice-poster";
 export const PRACTICE_REWARD = 5;
@@ -57,6 +58,7 @@ export async function ensurePracticePoster(): Promise<Participant> {
     referredBy: data.referred_by,
     capabilities: data.capabilities ?? [],
     solanaWallet: data.solana_wallet,
+    provenance: normalizeProvenance(data.provenance),
     registeredAt: data.registered_at,
     lastActive: data.last_active,
   };
