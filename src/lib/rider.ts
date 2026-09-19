@@ -133,8 +133,23 @@ export function isGateOk(result: GateResult): result is { ok: true; rider: Rider
   return result.ok === true;
 }
 
-const ISSUE_URL = "https://agentrider.fly.dev/api/rider/issue";
-const DOCS_URL = "https://agentrider.fly.dev/docs";
+export const RIDER_ISSUE_URL = "https://agentrider.fly.dev/api/rider/issue";
+/** Operator join path (seat → API key → JWT). Prefer this over /docs for gate 401s. */
+export const OPERATOR_JOIN_DOCS_URL =
+  "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md";
+
+/** Consistent 401 JSON for missing/invalid rider and issue-route auth failures. */
+export function riderAuthErrorBody(
+  error: string,
+  extra?: Record<string, unknown>
+): { error: string; issue_url: string; docs_url: string } & Record<string, unknown> {
+  return {
+    error,
+    issue_url: RIDER_ISSUE_URL,
+    docs_url: OPERATOR_JOIN_DOCS_URL,
+    ...extra,
+  };
+}
 
 // A 401 for a missing/invalid rider is self-describing, the same way OAuth's
 // `WWW-Authenticate: Bearer` challenge works — any agent (or agent framework)
@@ -144,9 +159,9 @@ function missingRiderChallenge(reason: "missing_rider" | "invalid_rider", extra?
   return {
     ok: false,
     status: 401,
-    body: { error: reason, issue_url: ISSUE_URL, docs_url: DOCS_URL, ...extra },
+    body: riderAuthErrorBody(reason, extra as Record<string, unknown> | undefined),
     headers: {
-      "WWW-Authenticate": `Rider realm="agentrider.dev", issue_uri="${ISSUE_URL}", docs_uri="${DOCS_URL}"`,
+      "WWW-Authenticate": `Rider realm="agentrider.dev", issue_uri="${RIDER_ISSUE_URL}", docs_uri="${OPERATOR_JOIN_DOCS_URL}"`,
     },
   };
 }
