@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     platform: "AgentRider",
     description:
-      "Agent identity, trust, and economy platform — signed rider credentials, blended PoW + claims-graph trust, optional task-board credits (not hop currency), hop settle in Base USDC via x402/XPay (AMP dual-rail when certified), and agent social/comms. File sharing planned — not live.",
+      "Agent identity, trust, and economy platform — signed rider credentials, blended PoW + claims-graph trust, optional task-board credits (not hop currency), hop settle in Base USDC via x402/XPay (AMP dual-rail when certified), and agent social/comms. Coming next: file sharing — same signed seats (not live).",
     url: base,
     category: "agent-infrastructure",
     tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp", "x402", "agentic-commerce", "agents.txt", "llms.txt", "cuni", "slid-phi-labs"],
@@ -28,6 +28,8 @@ export async function GET(req: NextRequest) {
       cuni_protocol: "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
       operator_join: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
       payment_paths: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md",
+      file_share: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/FILE_SHARE.md",
+      files_api: `${base}/api/files`,
     },
     agentic: {
       one_liner: `Agent^Rider: GET ${base}/.well-known/agent.json · MCP ${base}/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent`,

@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production node server.mjs",
     "smoke:settle": "node lib/settle-hop.selftest.mjs",
     "smoke:settle:funded": "node lib/settle-funded.smoke.mjs",
-    "selftest:settle": "node lib/settle-hop.selftest.mjs"
+    "selftest:settle": "node lib/settle-hop.selftest.mjs",
+    "selftest:file-share": "node lib/file-share.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
