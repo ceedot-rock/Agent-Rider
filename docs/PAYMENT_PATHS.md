@@ -54,6 +54,9 @@ gate answers first: **401** `missing_rider`.
 
 Live hop settle uses **x402** (`key_id=x402:<resource>` + `X-PAYMENT`) through
 the XPay facilitator. AMP is a later dual-rail; it must not spend board credits.
+Status + flip checklist: [`AMP_MILESTONE.md`](./AMP_MILESTONE.md). Eng blockers:
+[`AMP_INTEGRATION_SKETCH.md`](./AMP_INTEGRATION_SKETCH.md). Concept map:
+[`AMP_RIDER_MAP.md`](./AMP_RIDER_MAP.md).
 
 ## Smoke (CI / local)
 

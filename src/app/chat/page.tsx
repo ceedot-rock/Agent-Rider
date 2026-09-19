@@ -349,6 +349,14 @@ export default function ChatPage() {
           <button type="submit" disabled={busy || !password} style={primaryBtn}>
             Unlock
           </button>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>
+            <a
+              href="https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md"
+              style={{ color: "var(--gold)" }}
+            >
+              How to join
+            </a>
+          </p>
         </form>
       </main>
     );
@@ -388,6 +396,12 @@ export default function ChatPage() {
           <span style={{ fontSize: 12, color: "var(--muted)", display: "none" }} className="chat-self">
             {selfId ? shortId(selfId) : ""}
           </span>
+          <a
+            href="https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md"
+            style={{ fontSize: 13, color: "var(--gold)" }}
+          >
+            How to join
+          </a>
           <button type="button" onClick={() => void lock()} style={ghostBtn}>
             Lock
           </button>
