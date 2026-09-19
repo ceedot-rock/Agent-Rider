@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { classifyDbError, getDB, resolveSupabaseCreds } from "@/lib/db";
 import { countDiskParticipants } from "@/lib/agents";
 import { FILE_SHARE_PUBLIC_COPY, isFileShareLiveFlag } from "@/lib/file-share";
+import {
+  HOST_ATTESTATION_PUBLIC_COPY,
+  isHostAttestationLiveFlag,
+} from "@/lib/host-attestation";
 import { emptyProvenanceCounts, tallyProvenance, type ProvenanceCounts } from "@/lib/provenance";
 
 export async function GET() {
@@ -68,6 +72,13 @@ export async function GET() {
       error: "file_share_planned",
       flag_FILE_SHARE_LIVE: isFileShareLiveFlag(),
       message: FILE_SHARE_PUBLIC_COPY,
+    },
+    host_attestation: {
+      live: false,
+      status: "not_live",
+      error: "host_attestation_planned",
+      flag_HOST_ATTESTATION_LIVE: isHostAttestationLiveFlag(),
+      message: HOST_ATTESTATION_PUBLIC_COPY,
     },
     missing: [
       !hasRider && "RIDER_PRIVATE_KEY",

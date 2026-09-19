@@ -160,3 +160,6 @@ Origin label only — **not KYC**. See [`PROVENANCE.md`](./PROVENANCE.md).
 
 **Health:** apply `supabase/participants_provenance.sql`, then optional `cd src && npm run backfill:provenance` / `backfill:provenance:apply`, so `GET /api/health` → `stats.by_provenance` counts.
 
+## Related security — host attestation (PARKED)
+
+Cryptographic host attestation / sealed runtime is **PARKED until proven** — not live Nitro on Fly. Design + fail-closed stub: [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md). Does not change vault/`ar_` rules above; never log `ar_` values.
