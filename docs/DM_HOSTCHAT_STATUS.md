@@ -49,7 +49,7 @@ POST /api/dm (no auth)         → 401
 1. **Ops:** Set or verify Fly secret `HOST_CHAT_API_KEY` (Host seat `ar_…`) so `/api/chat/dm*` proxy is the default path after unlock — then re-check `has_server_key: true` post-unlock.
 2. **Ops:** After unlock smoke: send + list one DM via proxy (cookie only, no browser paste).
 3. **Optional:** When locked, gate could expose `has_server_key` without revealing the key (today it is forced `false` until unlock — makes external “proxy green” checks ambiguous).
-4. **Roster:** Keep Host Chat `SEATS` in sync with vault registry (Muse rotation caught this audit).
+4. **Roster:** Single source `src/lib/host-chat-roster.ts` (+ optional Fly `HOST_CHAT_ROSTER` JSON). Muse id `949a2349…` in defaults. `/api/chat/config` serves seats after unlock (no keys).
 
 ## Code anchors
 

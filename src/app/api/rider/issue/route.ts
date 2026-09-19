@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { issueRider, type ClearanceLevel } from "@/lib/rider";
+import { issueRider, riderAuthErrorBody, type ClearanceLevel } from "@/lib/rider";
 import { findSubscriptionByMerchantKey } from "@/lib/stripe";
 import { resolveById, resolveByApiKey } from "@/lib/agents";
 import { getBlendedTrustScore } from "@/lib/reputation";
+import { checkRiderIssueLimit, getClientIp } from "@/lib/rate-limit";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const VALID_LEVELS = new Set<ClearanceLevel>(["L0", "L1", "L2", "L3", "L4"]);
@@ -27,6 +28,20 @@ function extractBearer(req: NextRequest): string | null {
   return token.trim();
 }
 
+function rateLimited(retryAfter: number) {
+  return NextResponse.json(
+    {
+      error: "rate_limit_exceeded",
+      retry_after: retryAfter,
+      hint: "too many rider issues; wait and retry (default 30/hour per principal)",
+    },
+    {
+      status: 429,
+      headers: { ...CORS_HEADERS, "retry-after": String(retryAfter) },
+    }
+  );
+}
+
 // Two ways to mint a rider, previously only one existed:
 //
 // 1. Merchant-gated (original): a paying merchant (X-Merchant-Key, active
@@ -48,10 +63,9 @@ export async function POST(req: NextRequest) {
 
   if (!merchantKey && !apiKey) {
     return NextResponse.json(
-      {
-        error: "missing_auth",
+      riderAuthErrorBody("missing_auth", {
         hint: "send X-Merchant-Key (paid merchant, any agent/level) or Authorization: Bearer <your api_key> (self-service, capped at L1)",
-      },
+      }),
       { status: 401, headers: CORS_HEADERS }
     );
   }
@@ -61,6 +75,10 @@ export async function POST(req: NextRequest) {
   const scopes: string[] = Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : ["*"];
 
   if (merchantKey) {
+    const ip = getClientIp(req);
+    const rl = await checkRiderIssueLimit(`merchant:${ip}`);
+    if (!rl.ok) return rateLimited(rl.retryAfter);
+
     try {
       const subscription = await findSubscriptionByMerchantKey(merchantKey);
       if (!subscription || !ACTIVE_STATUSES.has(subscription.status)) {
@@ -105,8 +123,16 @@ export async function POST(req: NextRequest) {
 
   const participant = await resolveByApiKey(apiKey!);
   if (!participant) {
-    return NextResponse.json({ error: "invalid_api_key" }, { status: 401, headers: CORS_HEADERS });
+    return NextResponse.json(
+      riderAuthErrorBody("invalid_api_key", {
+        hint: "Bearer must be your registered API key; see docs_url for join path",
+      }),
+      { status: 401, headers: CORS_HEADERS }
+    );
   }
+
+  const rl = await checkRiderIssueLimit(`agent:${participant.id}`);
+  if (!rl.ok) return rateLimited(rl.retryAfter);
 
   const level: ClearanceLevel =
     LEVEL_RANK[requestedLevel] < LEVEL_RANK[SELF_SERVICE_MAX_LEVEL] ? requestedLevel : SELF_SERVICE_MAX_LEVEL;
