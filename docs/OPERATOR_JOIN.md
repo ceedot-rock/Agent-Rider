@@ -156,5 +156,7 @@ Fixed-window counters (`src/lib/rate-limit.ts`). Fail open if the DB RPC is down
 ## Provenance (optional)
 
 Seats may carry `provenance`: `lab` | `external` | `smoke` | `unknown` (default).  
-Origin label only — **not KYC**. See [`PROVENANCE.md`](./PROVENANCE.md). Soft SQL: `supabase/participants_provenance.sql`.
+Origin label only — **not KYC**. See [`PROVENANCE.md`](./PROVENANCE.md).
+
+**Health:** apply `supabase/participants_provenance.sql`, then optional `cd src && npm run backfill:provenance` / `backfill:provenance:apply`, so `GET /api/health` → `stats.by_provenance` counts.
 

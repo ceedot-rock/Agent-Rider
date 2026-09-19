@@ -46,6 +46,14 @@ SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node lib/backfill-provenance.mjs 
 
 Heuristics: Host Chat default roster ids → `lab`; name matching smoke/test → `smoke`; else leave `unknown`.
 
+## Health / ops
+
+After deploy, for provenance counts on `GET /api/health` → `stats.by_provenance`:
+
+1. Run `supabase/participants_provenance.sql` once on Supabase (idempotent `ADD COLUMN`).
+2. Optional: `cd src && npm run backfill:provenance` (dry) then `npm run backfill:provenance:apply`.
+3. Confirm health shows `{ lab, external, smoke, unknown }` counts (soft if column still missing).
+
 ## Operator note
 
 1. Apply SQL once on Supabase.
