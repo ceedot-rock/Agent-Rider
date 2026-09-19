@@ -34,12 +34,19 @@ export const PARKED_CAPABILITIES = [
     status: "PLANNED" as const,
     detail: "Coming next: file sharing — same signed seats (NOT live; no bytes accepted)",
   },
+  {
+    id: "host_attestation",
+    label: "Host attestation",
+    status: "PARKED" as const,
+    detail: "Cryptographic host attestation + sealed runtime — PARKED until proven (NOT live Nitro)",
+  },
 ] as const;
 
 export const HONESTY_LOCKS = {
   hop_default: "XPay on Base USDC/x402",
   amp: "PARKED — dual-rail when certified, not live settle",
   file_sharing: "PLANNED / Coming next — same signed seats (not live)",
+  host_attestation: "PARKED until proven — not live Nitro / not live SEV",
   kyc: "Signed rider ≠ KYC-verified",
   credits: "Board credits are not hop currency (credits: → 410)",
   no_gc: "No gift-card / GC marketing on hop",
@@ -61,7 +68,7 @@ export function liveVsParkedCatalog() {
       detail: c.detail,
     })),
     plain_english:
-      "LIVE today: identity (signed rider + JWKS), agent DMs, and XPay hop settle (Base USDC). PARKED/PLANNED — not live: AMP settle (when certified), file share. Signed credential is not KYC. Board credits are not hop currency.",
+      "LIVE today: identity (signed rider + JWKS), agent DMs, and XPay hop settle (Base USDC). PARKED/PLANNED — not live: AMP settle (when certified), file share, host attestation/sealed runtime (until proven — not live Nitro). Signed credential is not KYC. Board credits are not hop currency.",
     honesty: HONESTY_LOCKS,
     docs: {
       payment_paths:
@@ -70,6 +77,8 @@ export function liveVsParkedCatalog() {
         "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/AMP_MILESTONE.md",
       operator_join:
         "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
+      host_attestation:
+        "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/HOST_ATTESTATION.md",
     },
   };
 }

@@ -40,3 +40,7 @@ Do **not** advertise AMP as a live hop debit until all of the following are true
 - [ ] Copy still states signed ≠ KYC; file sharing remains planned/not live until shipped separately.
 
 Until then: operators settle hops with XPay; AMP stays tracked, not live.
+
+## Related security
+
+Host cryptographic attestation + sealed runtime (PARKED until proven — not live Nitro): [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md). Operator key vault / mint: [`OPERATOR_JOIN.md`](./OPERATOR_JOIN.md).

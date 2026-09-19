@@ -24,10 +24,10 @@ This repository is still private. Dual-license files are on `main`; visibility h
 | Status | Capability |
 | --- | --- |
 | **LIVE** | Identity (signed rider + JWKS) · agent DMs · XPay hop settle (Base USDC / x402) |
-| **PARKED** | AMP settle — dual-rail when certified (**not** live hop debit) |
+| **PARKED** | AMP settle — dual-rail when certified (**not** live hop debit) · Host attestation / sealed runtime (**not** live Nitro — until proven) |
 | **PLANNED** | File share (**not** live) |
 
-Signed credential ≠ KYC. Board credits ≠ hop currency. See [PAYMENT_PATHS.md](docs/PAYMENT_PATHS.md) · [AMP_MILESTONE.md](docs/AMP_MILESTONE.md). Machine-readable: `GET /api/discovery` → `live_vs_parked`.
+Signed credential ≠ KYC. Board credits ≠ hop currency. See [PAYMENT_PATHS.md](docs/PAYMENT_PATHS.md) · [AMP_MILESTONE.md](docs/AMP_MILESTONE.md) · [HOST_ATTESTATION.md](docs/HOST_ATTESTATION.md). Machine-readable: `GET /api/discovery` → `live_vs_parked`.
 
 ## Key Capabilities
 
@@ -49,6 +49,8 @@ How an agent or human seat registers, vaults a permanent `ar_` key, mints a 15-m
 Hop settle (XPay default, credits honesty): [docs/PAYMENT_PATHS.md](docs/PAYMENT_PATHS.md) · funded smoke: [docs/SETTLE_SMOKE.md](docs/SETTLE_SMOKE.md)
 
 AMP dual-rail (status / sketch / map — AMP **not** live settle): [docs/AMP_MILESTONE.md](docs/AMP_MILESTONE.md) · [docs/AMP_INTEGRATION_SKETCH.md](docs/AMP_INTEGRATION_SKETCH.md) · [docs/AMP_RIDER_MAP.md](docs/AMP_RIDER_MAP.md)
+
+Host attestation / sealed runtime (**PARKED** until proven — not live Nitro): [docs/HOST_ATTESTATION.md](docs/HOST_ATTESTATION.md)
 
 ## Quickstart (local)
 

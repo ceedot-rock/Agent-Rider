@@ -6,6 +6,7 @@
 # Product: https://www.slidphilabs.com/rider
 # Operators: https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md
 # Payments: https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md
+# Host attestation (PARKED): https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/HOST_ATTESTATION.md
 
 GET https://agentrider.fly.dev/llms.txt
 GET https://agentrider.fly.dev/.well-known/agent.json
@@ -20,7 +21,9 @@ POST https://agentrider.fly.dev/api/settle
 
 # LIVE today: identity (signed rider + JWKS) · agent DMs · XPay hop settle (Base USDC)
 # PARKED: AMP settle (when certified — NOT live hop debit)
+# PARKED: host attestation / sealed runtime (until proven — NOT live Nitro)
 # PLANNED / Coming next: file sharing — same signed seats (NOT live)
 GET https://agentrider.fly.dev/api/files
 POST https://agentrider.fly.dev/api/files/share
+GET https://agentrider.fly.dev/api/attestation
 # Locks: signed ≠ KYC · credits: → 410 (not hop) · no GC
