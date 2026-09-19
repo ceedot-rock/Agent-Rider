@@ -261,7 +261,7 @@ export default function Home() {
                 padding: "2px 7px",
               }}
             >
-              VERIFIED
+              SIGNED
             </span>
           </div>
           <div
