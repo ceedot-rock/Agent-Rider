@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SITE_URL } from "@/lib/site";
 import { SERVICE_COSTS } from "@/lib/credits";
 import { ASM_DOMAINS } from "@/lib/reputation";
+import { liveVsParkedCatalog } from "@/lib/live-status";
 
 // Agent tool manifest — ported from agentmagnet's /.well-known/agent.json
 // pattern (server.js "Tactic 3"). Consolidates what used to be three
@@ -87,10 +88,11 @@ export async function GET(req: NextRequest) {
       file_share: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/FILE_SHARE.md",
       integration: `${base}/docs`,
     },
+    live_vs_parked: liveVsParkedCatalog(),
     honesty: {
-      hop_default: "XPay facilitator on Base USDC/x402",
-      amp: "dual-rail planned when certified — not live as hop debit today",
-      file_sharing: "Coming next: file sharing — same signed seats (not live)",
+      hop_default: "XPay facilitator on Base USDC/x402 — LIVE",
+      amp: "PARKED — dual-rail when certified, not live hop debit",
+      file_sharing: "PLANNED / Coming next — same signed seats (not live)",
       kyc: "signed rider credential ≠ every-agent KYC verified",
     },
     contact: base,
