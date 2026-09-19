@@ -5,23 +5,6 @@ import { RiderMark } from "@/components/RiderMark";
 
 type Seat = { name: string; agent_id: string };
 
-const SEATS: Seat[] = [
-  { name: "CoS", agent_id: "c34d9ac1c8a3f8f0" },
-  { name: "Kernel", agent_id: "5563ddb8303144ee" },
-  { name: "Theory", agent_id: "203abf89452ca6d1" },
-  { name: "Apex", agent_id: "c14a55242f214c3a" },
-  { name: "Ship", agent_id: "826803ab2fcca042" },
-  { name: "Muse/Amani", agent_id: "949a2349b902e088" },
-  { name: "Steve", agent_id: "a0d6fab989156e1d" },
-  { name: "Docs", agent_id: "6122039b85c05140" },
-  { name: "Growth", agent_id: "098b75f0d43189c7" },
-  { name: "Press", agent_id: "659b2059c2d9b279" },
-  { name: "Pixel", agent_id: "c3bb529b7f79c949" },
-  { name: "Workplace", agent_id: "3462d60783f41104" },
-  { name: "Design", agent_id: "1e503e7745ca2202" },
-  { name: "CuNi", agent_id: "44beb26e49c64d67" },
-];
-
 const PASTE_KEY = "host_chat_api_key";
 const RIDER_CACHE_KEY = "host_chat_rider";
 const POLL_MS = 4000;
@@ -72,10 +55,11 @@ export default function ChatPage() {
   const [password, setPassword] = useState("");
   const [gateError, setGateError] = useState("");
   const [hasServerKey, setHasServerKey] = useState(false);
+  const [seats, setSeats] = useState<Seat[]>([]);
 
   const [pasteKey, setPasteKey] = useState("");
   const [pasteSaved, setPasteSaved] = useState(false);
-  const [selectedId, setSelectedId] = useState(SEATS[0]?.agent_id ?? "");
+  const [selectedId, setSelectedId] = useState("");
   const [messages, setMessages] = useState<DmMessage[]>([]);
   const [selfId, setSelfId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -85,7 +69,10 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const selected = useMemo(() => SEATS.find((s) => s.agent_id === selectedId) ?? SEATS[0], [selectedId]);
+  const selected = useMemo(
+    () => seats.find((s) => s.agent_id === selectedId) ?? seats[0],
+    [seats, selectedId]
+  );
 
   const useProxy = hasServerKey;
 
@@ -96,11 +83,29 @@ export default function ChatPage() {
         const data = await res.json();
         setUnlocked(Boolean(data.unlocked));
         setHasServerKey(Boolean(data.has_server_key));
-        if (data.unlocked && !data.has_server_key) {
-          const existing = loadPasteKey();
-          if (existing) {
-            setPasteKey(existing);
-            setPasteSaved(true);
+        if (data.unlocked) {
+          try {
+            const cfg = await fetch("/api/chat/config", { credentials: "include" });
+            if (cfg.ok) {
+              const c = await cfg.json();
+              setHasServerKey(Boolean(c.has_server_key));
+              if (Array.isArray(c.seats) && c.seats.length > 0) {
+                const next = (c.seats as Seat[]).filter(
+                  (s) => s && typeof s.name === "string" && typeof s.agent_id === "string"
+                );
+                setSeats(next);
+                setSelectedId(next[0]?.agent_id ?? "");
+              }
+            }
+          } catch {
+            /* roster stays empty until retry */
+          }
+          if (!data.has_server_key) {
+            const existing = loadPasteKey();
+            if (existing) {
+              setPasteKey(existing);
+              setPasteSaved(true);
+            }
           }
         }
       } catch {
@@ -130,6 +135,22 @@ export default function ChatPage() {
       setUnlocked(true);
       setPassword("");
       setHasServerKey(Boolean(data.has_server_key));
+      try {
+        const cfg = await fetch("/api/chat/config", { credentials: "include" });
+        if (cfg.ok) {
+          const c = await cfg.json();
+          setHasServerKey(Boolean(c.has_server_key));
+          if (Array.isArray(c.seats) && c.seats.length > 0) {
+            const next = (c.seats as Seat[]).filter(
+              (s) => s && typeof s.name === "string" && typeof s.agent_id === "string"
+            );
+            setSeats(next);
+            setSelectedId((prev) => (prev && next.some((s) => s.agent_id === prev) ? prev : next[0]?.agent_id ?? ""));
+          }
+        }
+      } catch {
+        /* roster load soft-fail */
+      }
       if (!data.has_server_key) {
         const existing = loadPasteKey();
         if (existing) {
@@ -423,7 +444,7 @@ export default function ChatPage() {
           <div style={{ padding: "8px 14px", fontSize: 12, color: "var(--muted)", letterSpacing: 0.04 }}>
             Team
           </div>
-          {SEATS.map((seat) => {
+          {seats.map((seat) => {
             const active = seat.agent_id === selectedId;
             return (
               <button

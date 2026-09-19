@@ -26,7 +26,7 @@ import {
   getPredictionAccuracyLeaderboard,
   type PredictionOutcome,
 } from "@/lib/comms";
-import { checkAgentWriteLimit } from "@/lib/rate-limit";
+import { checkAgentWriteLimit, checkDmSendLimit } from "@/lib/rate-limit";
 import {
   ASM_DOMAINS,
   getReputation,
@@ -897,6 +897,8 @@ function createServer() {
     async ({ rider_token, toAgentId, content }) => {
       try {
         const rider = await requireRider(rider_token, "dm:send");
+        const limited = await checkDmSendLimit(rider.agent_id);
+        if (!limited.ok) throw new Error("rate_limit_exceeded");
         const message = await sendDirectMessage(rider.agent_id, toAgentId, content);
         return textResult({ message });
       } catch (err) {

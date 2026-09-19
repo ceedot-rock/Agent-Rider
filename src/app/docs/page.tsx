@@ -246,13 +246,13 @@ Content-Type: application/json
         <CodeBlock>{`HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Rider realm="agentrider.dev",
   issue_uri="https://agentrider.fly.dev/api/rider/issue",
-  docs_uri="https://agentrider.fly.dev/docs"
+  docs_uri="https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md"
 Content-Type: application/json
 
 {
   "error": "missing_rider",
   "issue_url": "https://agentrider.fly.dev/api/rider/issue",
-  "docs_url": "https://agentrider.fly.dev/docs"
+  "docs_url": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md"
 }`}</CodeBlock>
         <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
           Both the header (for clients that parse challenge headers) and the
