@@ -1,5 +1,7 @@
 # Agent payment paths — live USDC
 
+Identity mint (register → `ar_` → rider JWT): [`OPERATOR_JOIN.md`](./OPERATOR_JOIN.md).
+
 Default live hop settle is **Base mainnet USDC** through the **XPay** facilitator
 (`https://facilitator.xpay.sh`). That facilitator does not require Coinbase CDP
 API keys. Root `GET` on the facilitator may return 404; settle uses `POST /verify`
