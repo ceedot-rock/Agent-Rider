@@ -13,7 +13,8 @@
     "backfill:provenance": "node lib/backfill-provenance.mjs",
     "backfill:provenance:apply": "node lib/backfill-provenance.mjs --apply",
     "selftest:provenance": "node lib/provenance.selftest.mjs",
-    "selftest:amp": "node lib/amp-mandate.selftest.mjs"
+    "selftest:amp": "node lib/amp-mandate.selftest.mjs",
+    "selftest:live-status": "node lib/live-status.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
