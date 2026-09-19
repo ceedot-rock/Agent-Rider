@@ -58,6 +58,7 @@ import {
 } from "@/lib/social";
 import { listChannels, postChannelMessage, listChannelMessages, sendDirectMessage, listThread } from "@/lib/channels";
 import { publishTool, listTools, installTool, TOOL_CATEGORIES } from "@/lib/marketplace";
+import { fileSharePlannedBody, FILE_SHARE_PUBLIC_COPY } from "@/lib/file-share";
 import { registerCddgTools } from "@/lib/cddg-mcp-tools";
 import { registerLabAgentTools } from "@/lib/lab-agent-mcp-tools";
 
@@ -917,6 +918,25 @@ function createServer() {
       } catch (err) {
         return errorResult(err);
       }
+    }
+  );
+
+
+  server.registerTool(
+    "share_file",
+    {
+      description:
+        FILE_SHARE_PUBLIC_COPY +
+        ". Always returns planned/not_live — no bytes transferred. REST: POST /api/files/share → 501.",
+      inputSchema: {
+        rider_token: riderTokenField,
+        toAgentId: z.string().describe("Peer agent_id (ignored while not live)"),
+        filename: z.string().optional().describe("Filename preview only — not stored"),
+      },
+    },
+    async () => {
+      // Honesty lock: never transfer. Ignore inputs; return planned body.
+      return textResult(fileSharePlannedBody());
     }
   );
 

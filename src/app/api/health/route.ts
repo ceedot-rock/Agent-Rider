@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { classifyDbError, getDB, resolveSupabaseCreds } from "@/lib/db";
 import { countDiskParticipants } from "@/lib/agents";
+import { FILE_SHARE_PUBLIC_COPY, isFileShareLiveFlag } from "@/lib/file-share";
 
 export async function GET() {
   const creds = resolveSupabaseCreds();
@@ -39,6 +40,13 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     host: "fly",
     ready: { rider: hasRider, db: hasDb && dbReachable, stripe: hasStripe },
+    file_share: {
+      live: false,
+      status: "not_live",
+      error: "file_share_planned",
+      flag_FILE_SHARE_LIVE: isFileShareLiveFlag(),
+      message: FILE_SHARE_PUBLIC_COPY,
+    },
     missing: [
       !hasRider && "RIDER_PRIVATE_KEY",
       !hasDb && "SUPABASE_SERVICE_ROLE_KEY",
