@@ -14,15 +14,30 @@ export async function GET(req: NextRequest) {
   const db = getDB();
   let query = db
     .from("participants")
-    .select("id, name, tasks_completed, credits, referrals, registered_at, last_active", { count: "exact" })
+    .select("id, name, tasks_completed, credits, referrals, provenance, registered_at, last_active", { count: "exact" })
     .eq("type", "agent");
   if (q) {
     // ilike name search so agents can resolve a display name → agent_id without paging the whole registry
     query = query.ilike("name", `%${q}%`);
   }
-  const { data: agents, count } = await query
+  let { data: agents, count, error: regErr } = await query
     .order("last_active", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  // Soft: pre-migration DBs without provenance column
+  if (regErr && /provenance/i.test(regErr.message)) {
+    let fallback = db
+      .from("participants")
+      .select("id, name, tasks_completed, credits, referrals, registered_at, last_active", { count: "exact" })
+      .eq("type", "agent");
+    if (q) fallback = fallback.ilike("name", `%${q}%`);
+    const fb = await fallback
+      .order("last_active", { ascending: false })
+      .range(offset, offset + limit - 1);
+    // Soft-default provenance so typed map below stays uniform (column absent)
+    agents = (fb.data ?? []).map((row) => ({ ...row, provenance: null as string | null }));
+    count = fb.count;
+  }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
   const ranked = await Promise.all(
@@ -37,6 +52,7 @@ export async function GET(req: NextRequest) {
         tasks_completed: a.tasks_completed,
         credits: a.credits,
         referrals: a.referrals,
+        provenance: a.provenance ?? "unknown",
         registered_at: a.registered_at,
         last_active: a.last_active,
         badge_url: `${base}/api/agents/${a.id}/badge`,
@@ -51,7 +67,7 @@ export async function GET(req: NextRequest) {
     schema: "agentrider-registry/v1",
     platform: "AgentRider",
     platform_url: base,
-    description: "Ranked registry of registered agents (by blended trust score + PoW). Not a KYC or every-agent-verified claim — riders are signed credentials peers check via JWKS. Optional ?q= or ?name= filters by display name (ilike).",
+    description: "Ranked registry of registered agents (by blended trust score + PoW). Not a KYC or every-agent-verified claim — riders are signed credentials peers check via JWKS. Optional ?q= or ?name= filters by display name (ilike). provenance is lab|external|smoke|unknown (default unknown) — origin label only, not KYC.",
     updated_at: new Date().toISOString(),
     poll_interval_seconds: 60,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },

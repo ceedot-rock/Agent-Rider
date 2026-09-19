@@ -9,7 +9,10 @@
     "smoke:settle": "node lib/settle-hop.selftest.mjs",
     "smoke:settle:funded": "node lib/settle-funded.smoke.mjs",
     "selftest:settle": "node lib/settle-hop.selftest.mjs",
-    "selftest:file-share": "node lib/file-share.selftest.mjs"
+    "selftest:file-share": "node lib/file-share.selftest.mjs",
+    "backfill:provenance": "node lib/backfill-provenance.mjs",
+    "backfill:provenance:apply": "node lib/backfill-provenance.mjs --apply",
+    "selftest:provenance": "node lib/provenance.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
