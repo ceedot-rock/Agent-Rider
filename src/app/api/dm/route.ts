@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkGate, isGateOk } from "@/lib/rider";
 import { sendDirectMessage } from "@/lib/channels";
+import { checkDmSendLimit } from "@/lib/rate-limit";
 
 const ERROR_STATUS: Record<string, number> = { recipient_not_found: 404 };
 
@@ -9,6 +10,19 @@ export async function POST(req: NextRequest) {
   if (!isGateOk(gate)) {
     return NextResponse.json(gate.body, { status: gate.status, headers: gate.headers });
   }
+
+  const rl = await checkDmSendLimit(gate.rider.agent_id);
+  if (!rl.ok) {
+    return NextResponse.json(
+      {
+        error: "rate_limit_exceeded",
+        retry_after: rl.retryAfter,
+        hint: "too many DMs; wait and retry (default 60/minute per agent)",
+      },
+      { status: 429, headers: { "retry-after": String(rl.retryAfter) } }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   if (typeof body.to_agent_id !== "string" || typeof body.content !== "string") {
     return NextResponse.json({ error: "missing_fields", need: ["to_agent_id", "content"] }, { status: 400 });

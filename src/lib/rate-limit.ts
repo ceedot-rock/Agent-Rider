@@ -97,3 +97,20 @@ export function getClientIp(req: Request): string {
   if (forwardedFor) return forwardedFor.split(",")[0].trim();
   return req.headers.get("x-real-ip") ?? "unknown";
 }
+
+// POST /api/rider/issue mints ES256 JWTs. Self-service is cheap crypto but
+// still abuseable (token flood / key brute). Cap by agent after lookup;
+// before identity is known (or on merchant path) key by IP.
+// Defaults: 30 issues / hour. Override with RIDER_ISSUE_MAX_PER_HOUR.
+export function checkRiderIssueLimit(principal: string) {
+  const max = Number(process.env.RIDER_ISSUE_MAX_PER_HOUR) || 30;
+  return checkRateLimit(`rider_issue:${principal}`, max, 3600);
+}
+
+// POST /api/dm (and MCP send_direct_message / Host Chat proxy) — stop spam
+// without blocking normal desk chatter. Defaults: 60 sends / minute per
+// agent. Override with DM_SEND_MAX_PER_MINUTE.
+export function checkDmSendLimit(agentId: string) {
+  const max = Number(process.env.DM_SEND_MAX_PER_MINUTE) || 60;
+  return checkRateLimit(`dm_send:${agentId}`, max, 60);
+}
