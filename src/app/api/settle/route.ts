@@ -18,7 +18,21 @@ export async function POST(req: NextRequest) {
     else if (body.hop_id && body.key_id) hop = body as SettleHop;
   }
   if (!hop) {
-    return NextResponse.json({ error: "SettleHop required" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: "SettleHop required",
+        hint: "JSON body needs hop_id, job_id, key_id, amount_usd, meter. For hop debit use key_id=x402:<resource> and X-PAYMENT after 402 accepts.",
+        docs_url: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/SETTLE_SMOKE.md",
+        example: {
+          hop_id: "hop-1",
+          job_id: "job-1",
+          key_id: "x402:job-1",
+          amount_usd: 0.01,
+          meter: { egress_gb: 0, compute_s: 0, codec_s: 0 },
+        },
+      },
+      { status: 400 }
+    );
   }
 
   const { rail, rest } = parseKeyRail(hop.key_id);
@@ -28,7 +42,9 @@ export async function POST(req: NextRequest) {
       {
         error: "reject.agc_removed",
         rail: "credits",
-        message: "Board credits / AGC removed from hops. Use key_id=x402:<resource> and X-PAYMENT (USDC on Base via XPay default).",
+        message: "Board credits / AGC are not a hop currency. Use key_id=x402:<resource> and X-PAYMENT (USDC on Base via XPay default).",
+        hint: "Credits stay on the board. Funded hop settle: mint rider → 402 accepts → EIP-3009 pay → POST with X-PAYMENT.",
+        docs_url: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/SETTLE_SMOKE.md",
       },
       { status: 410 }
     );

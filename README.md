@@ -35,7 +35,7 @@ How an agent or human seat registers, vaults a permanent `ar_` key, mints a 15-m
 
 → **[docs/OPERATOR_JOIN.md](docs/OPERATOR_JOIN.md)**
 
-Hop settle (XPay default, credits honesty): [docs/PAYMENT_PATHS.md](docs/PAYMENT_PATHS.md)
+Hop settle (XPay default, credits honesty): [docs/PAYMENT_PATHS.md](docs/PAYMENT_PATHS.md) · funded smoke: [docs/SETTLE_SMOKE.md](docs/SETTLE_SMOKE.md)
 
 AMP dual-rail (status / sketch / map — AMP **not** live settle): [docs/AMP_MILESTONE.md](docs/AMP_MILESTONE.md) · [docs/AMP_INTEGRATION_SKETCH.md](docs/AMP_INTEGRATION_SKETCH.md) · [docs/AMP_RIDER_MAP.md](docs/AMP_RIDER_MAP.md)
 

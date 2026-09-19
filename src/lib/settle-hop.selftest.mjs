@@ -9,6 +9,10 @@
  * Env:
  *   SKIP_LIVE=1  — skip agentrider.fly.dev unauth probe
  *   LIVE_BASE    — default https://agentrider.fly.dev
+ *   SETTLE_FUNDED_PROBE=1 — after dry checks, report funded arm status
+ *                          (SKIP unless SETTLE_FUNDED=1 + secrets; never prints keys)
+ *
+ * Funded USDC spend: npm run smoke:settle:funded (fail-closed). See docs/SETTLE_SMOKE.md.
  */
 
 const XPAY = "https://facilitator.xpay.sh";
@@ -85,7 +89,7 @@ function creditsHopRejectBody() {
     body: {
       error: "reject.agc_removed",
       rail: "credits",
-      message: "AGC is not a hop currency. Use key_id=x402:<resource> and X-PAYMENT.",
+      message: "Board credits / AGC are not a hop currency. Use key_id=x402:<resource> and X-PAYMENT (USDC on Base via XPay default).",
     },
   };
 }
@@ -251,11 +255,38 @@ if (!SKIP_LIVE) {
   console.log("SKIP  live_unauth_settle_missing_rider (SKIP_LIVE=1)");
 }
 
+/**
+ * Optional: report whether funded settle *could* run (never spends here).
+ * SETTLE_FUNDED_PROBE=1 → SKIP unless SETTLE_FUNDED=1 and secrets present.
+ * Actual spend: npm run smoke:settle:funded (fail-closed without secrets).
+ */
+const PROBE_FUNDED =
+  process.env.SETTLE_FUNDED_PROBE === "1" || process.env.SETTLE_FUNDED_PROBE === "true";
+if (PROBE_FUNDED) {
+  await check("funded_arm_status", async () => {
+    const armed = process.env.SETTLE_FUNDED === "1" || process.env.SETTLE_FUNDED === "true";
+    const hasAr = !!(process.env.AR_API_KEY || process.env.AGENT_RIDER_API_KEY);
+    const hasPk = !!process.env.SETTLE_PAYER_PRIVATE_KEY;
+    if (!armed || !hasAr || !hasPk) {
+      console.log("SKIP  funded_settle (need SETTLE_FUNDED=1 + AR_API_KEY + SETTLE_PAYER_PRIVATE_KEY)");
+      console.log("  info  present", {
+        SETTLE_FUNDED: armed,
+        AR_API_KEY: hasAr,
+        SETTLE_PAYER_PRIVATE_KEY: hasPk,
+      });
+      console.log("  info  for spend: cd src && npm run smoke:settle:funded");
+      return;
+    }
+    console.log("PASS  funded_secrets_present (dry selftest will not spend USDC)");
+    console.log("  info  run: cd src && npm run smoke:settle:funded");
+  });
+}
+
 console.log("");
 console.log(`settle-hop smoke: ${passed} passed, ${failed} failed`);
 if (failed > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log("ok settle-hop smoke (xpay dry + credits reject + live gate)");
+console.log("ok settle-hop smoke (xpay dry + credits reject + live gate; funded via smoke:settle:funded)");
 process.exit(0);
