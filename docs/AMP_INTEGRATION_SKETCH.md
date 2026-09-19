@@ -32,4 +32,5 @@ These are Host-side engineering gates — not marketing milestones.
 1. Sandbox: clone/run AMP samples; note mandate session + token fields needed at settle.
 2. Sketch adapter interface beside XPay facilitator client (feature-flagged off).
 3. Dry verify path + smoke: AMP stub refuses `credits:`; missing AMP config does not break XPay.
+   Offline shape fixture already in CI: `npm run selftest:amp` (L1/L2/L3 + sd_hash; **not** live settle) — see [`AMP_MILESTONE.md`](./AMP_MILESTONE.md).
 4. Update discovery + `PAYMENT_PATHS.md` only when certify + flip checklist passes.
