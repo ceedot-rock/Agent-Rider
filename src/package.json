@@ -12,7 +12,8 @@
     "selftest:file-share": "node lib/file-share.selftest.mjs",
     "backfill:provenance": "node lib/backfill-provenance.mjs",
     "backfill:provenance:apply": "node lib/backfill-provenance.mjs --apply",
-    "selftest:provenance": "node lib/provenance.selftest.mjs"
+    "selftest:provenance": "node lib/provenance.selftest.mjs",
+    "selftest:amp": "node lib/amp-mandate.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
