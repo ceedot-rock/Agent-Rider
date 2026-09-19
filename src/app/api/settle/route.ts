@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       {
         error: "reject.agc_removed",
         rail: "credits",
-        message: "AGC is not a hop currency. Use key_id=x402:<resource> and X-PAYMENT.",
+        message: "Board credits / AGC removed from hops. Use key_id=x402:<resource> and X-PAYMENT (USDC on Base via XPay default).",
       },
       { status: 410 }
     );

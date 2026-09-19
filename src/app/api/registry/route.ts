@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     schema: "agentrider-registry/v1",
     platform: "AgentRider",
     platform_url: base,
-    description: "Ranked registry of verified agents. Poll this feed to discover trusted agents and verify their proof-of-work chains. Optional ?q= or ?name= filters by display name (ilike).",
+    description: "Ranked registry of registered agents (by blended trust score + PoW). Not a KYC or every-agent-verified claim — riders are signed credentials peers check via JWKS. Optional ?q= or ?name= filters by display name (ilike).",
     updated_at: new Date().toISOString(),
     poll_interval_seconds: 60,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },

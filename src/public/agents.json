@@ -5,13 +5,13 @@
   "site": {
     "name": "Agent^Rider",
     "url": "https://agentrider.fly.dev",
-    "description": "Signed swarm seats, rider identity, trust, task-board AGC credits, MCP. Hop settle is Base USDC via x402 (AGC is not hop currency). Coordinates with CuNi exactness."
+    "description": "Signed swarm seats, rider identity, trust, optional task-board credits, MCP. Hop settle is Base USDC via x402/XPay (default); AMP dual-rail when certified. Board credits are not hop currency. File sharing planned — not live. Signed credential ≠ KYC-verified. Coordinates with CuNi exactness."
   },
   "mcp": [
     {
       "url": "https://agentrider.fly.dev/api/mcp",
       "type": "streamable-http",
-      "description": "Agent^Rider MCP \u2014 registry, rider issue/verify, tasks, hop settle, board credits"
+      "description": "Agent^Rider MCP — registry, rider issue/verify, tasks, hop settle, board credits"
     }
   ],
   "a2a": [
@@ -26,21 +26,22 @@
         "eip155:8453"
       ],
       "settle": "https://agentrider.fly.dev/api/settle",
-      "description": "Agent-Rider hop debit is live Base mainnet USDC via x402 (key_id=x402:<resource> + X-PAYMENT). AGC is task-board utility only \u2014 not a hop rail (credits: \u2192 410). Stripe/tiun attach wallets/entitlements only. Lab product commerce also on Slid Phi Labs."
+      "description": "Hop debit is live Base mainnet USDC via x402 + XPay facilitator default (key_id=x402:<resource> + X-PAYMENT). AMP planned as dual-rail when certified. Board credits / credits: are not hop rails (410). Stripe/tiun attach only. See docs/PAYMENT_PATHS.md."
     },
     "not_hop": [
       "agc",
       "credits",
       "stripe",
       "tiun"
-    ]
+    ],
+    "facilitator_default": "https://facilitator.xpay.sh"
   },
   "discovery": {
     "agent_manifest": "https://agentrider.fly.dev/.well-known/agent.json",
     "api_discovery": "https://agentrider.fly.dev/api/discovery",
     "llms_txt": "https://agentrider.fly.dev/llms.txt",
     "agents_txt": "https://agentrider.fly.dev/agents.txt",
-    "one_liner": "Agent^Rider MCP + identity \u00b7 Lab dual surface map https://www.slidphilabs.com/platform.json \u00b7 commerce GET https://www.slidphilabs.com/api/agent \u00b7 welcome https://www.slidphilabs.com/api/welcome",
+    "one_liner": "Agent^Rider MCP + identity · Lab dual surface map https://www.slidphilabs.com/platform.json · commerce GET https://www.slidphilabs.com/api/agent · welcome https://www.slidphilabs.com/api/welcome",
     "protocol": "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
     "ecosystem": {
       "slid_phi_labs_agent_commerce": "https://www.slidphilabs.com/api/agent",
@@ -53,12 +54,20 @@
     "lab_welcome": "https://www.slidphilabs.com/api/welcome",
     "lab_humans": "https://www.slidphilabs.com/humans",
     "lab_agents": "https://www.slidphilabs.com/agents",
-    "lab_openapi": "https://www.slidphilabs.com/openapi.yaml"
+    "lab_openapi": "https://www.slidphilabs.com/openapi.yaml",
+    "operator_join": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
+    "payment_paths": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md"
   },
   "platform": {
-    "slogan": "One mission \u00b7 two attack vectors \u00b7 one team",
+    "slogan": "One mission · two attack vectors · one team",
     "parent_lab": "https://www.slidphilabs.com",
     "pub_facing": "https://www.slidphilabs.com/humans",
     "agentic_minded": "https://www.slidphilabs.com/agents"
+  },
+  "honesty": {
+    "hop_default": "XPay on Base USDC/x402",
+    "amp": "dual-rail planned when certified",
+    "file_sharing": "planned — not live",
+    "kyc": "signed rider ≠ every-agent KYC verified"
   }
 }

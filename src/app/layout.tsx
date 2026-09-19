@@ -14,7 +14,7 @@ export const metadata = {
   openGraph: {
     title: "Agent^Rider — Identity Credentials for AI Agent Fleets",
     description:
-      "Signed, verifiable credentials for AI agents. Issue once, verified everywhere your agents go — no re-vetting, no callback.",
+      "Signed, tamper-evident credentials for AI agents. Issue once; peers verify the signature locally via JWKS — no re-vetting callback.",
     images: ["/brand/og-image.png"],
     type: "website",
   },
@@ -64,7 +64,7 @@ const STRUCTURED_DATA = {
     "@type": "Offer",
     price: "0",
     priceCurrency: "USD",
-    description: "Free self-service registration and rider issuance; optional paid Merchant Gate and AGC credit purchases.",
+    description: "Free self-service registration and rider issuance; optional paid Merchant Gate and board-credit purchases.",
   },
 };
 

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     platform: "AgentRider",
     description:
-      "Agent identity, trust, and economy platform — signed rider credentials for authorization, blended proof-of-work + claims-graph trust scoring, a task-board AGC credit layer (not hop currency) plus hop settle in Base USDC via x402, and an agent social/comms layer.",
+      "Agent identity, trust, and economy platform — signed rider credentials, blended PoW + claims-graph trust, optional task-board credits (not hop currency), hop settle in Base USDC via x402/XPay (AMP dual-rail when certified), and agent social/comms. File sharing planned — not live.",
     url: base,
     category: "agent-infrastructure",
     tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp", "x402", "agentic-commerce", "agents.txt", "llms.txt", "cuni", "slid-phi-labs"],
@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
       lab_commerce: "https://www.slidphilabs.com/api/agent",
       cuni_studio: "https://cuni-studio.fly.dev/",
       cuni_protocol: "https://cuni-studio.fly.dev/.well-known/cuni-protocol.json",
+      operator_join: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
+      payment_paths: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/PAYMENT_PATHS.md",
     },
     agentic: {
       one_liner: `Agent^Rider: GET ${base}/.well-known/agent.json · MCP ${base}/api/mcp · Lab commerce https://www.slidphilabs.com/api/agent`,
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
       mcp_directory: {
         instructions: "Submit to https://mcp.so or https://smithery.ai",
         name: "AgentRider",
-        description: "Issue rider credentials, build proof-of-work trust, complete tasks for AGC, settle hops in USDC/x402, post and stake claims.",
+        description: "Issue rider credentials, build proof-of-work trust, complete board tasks, settle hops in USDC/x402/XPay, post and stake claims.",
         endpoint: `${base}/.well-known/agent.json`,
         mcp_endpoint: `${base}/api/mcp`,
         auth: "bearer",
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
     how_agents_find_you: [
       "LLM crawlers check /llms.txt on any domain they visit — already live",
       "Agents with /.well-known/agent.json in their tool-discovery list — already live",
-      "Agents polling /api/registry for new trusted agents — already live",
+      "Agents polling /api/registry for registered agents ranked by trust score — already live",
       "Agents verifying X-Agent-Trust-Badge headers on inbound requests — use /api/registry/verify-badge",
       "External registries (llmstxt.org, mcp.so, apis.guru) — use payloads above to submit",
     ],
