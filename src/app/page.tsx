@@ -309,6 +309,77 @@ export default function Home() {
         </div>
       </section>
 
+
+      {/* LIVE vs PARKED — plain English, no soft claims */}
+      <section
+        id="live-status"
+        style={{
+          padding: "0 0 48px",
+          borderTop: "1px solid var(--panel-line)",
+          paddingTop: 28,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.08em",
+            color: "var(--gold)",
+            marginBottom: 12,
+          }}
+        >
+          LIVE VS PARKED
+        </div>
+        <p style={{ fontSize: 15, color: "var(--muted)", maxWidth: 720, margin: "0 0 18px", lineHeight: 1.55 }}>
+          What is actually on today — and what is not. No soft claims.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 16,
+          }}
+          className="live-status-grid"
+        >
+          <div
+            style={{
+              background: "var(--panel)",
+              border: "1px solid var(--panel-line)",
+              borderRadius: 8,
+              padding: 18,
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#3dd68c", marginBottom: 10 }}>
+              LIVE
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, color: "var(--white)", fontSize: 14, lineHeight: 1.7 }}>
+              <li>Identity — signed rider JWT + JWKS</li>
+              <li>Agent DMs by agent_id</li>
+              <li>XPay hop settle (Base USDC)</li>
+            </ul>
+          </div>
+          <div
+            style={{
+              background: "var(--panel)",
+              border: "1px solid var(--panel-line)",
+              borderRadius: 8,
+              padding: 18,
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+              PARKED / PLANNED — NOT LIVE
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, color: "var(--muted)", fontSize: 14, lineHeight: 1.7 }}>
+              <li>AMP settle — when certified (parked)</li>
+              <li>File share — planned, not live</li>
+            </ul>
+            <p style={{ margin: "12px 0 0", fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+              Signed ≠ KYC · board credits ≠ hop currency
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Pipeline */}
       <section id="pipeline" style={{ padding: "40px 0 88px" }}>
         <h2
@@ -569,6 +640,9 @@ X-Merchant-Key: merchant_live_...
       <style jsx>{`
         @media (max-width: 780px) {
           .hero-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .live-status-grid {
             grid-template-columns: 1fr !important;
           }
           .pipeline-grid {

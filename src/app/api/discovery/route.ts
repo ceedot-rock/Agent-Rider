@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SITE_URL } from "@/lib/site";
+import { liveVsParkedCatalog } from "@/lib/live-status";
 
 // Submission-ready payloads for external agent/LLM registries — ported from
 // agentmagnet's /api/discovery (server.js "Tactic 3").
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
     url: base,
     category: "agent-infrastructure",
     tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp", "x402", "agentic-commerce", "agents.txt", "llms.txt", "cuni", "slid-phi-labs"],
+    live_vs_parked: liveVsParkedCatalog(),
     discovery_endpoints: {
       llms_txt: `${base}/llms.txt`,
       agent_manifest: `${base}/.well-known/agent.json`,
