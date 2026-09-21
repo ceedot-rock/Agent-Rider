@@ -10,6 +10,7 @@
 - [`AMP_MILESTONE.md`](./AMP_MILESTONE.md) — AMP dual-rail parked; XPay remains live hop debit
 - [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md) — hop settle rails; credits → 410
 - [`FILE_SHARE.md`](./FILE_SHARE.md) — planned peer share; 501 stubs
+- [`CUNI_CITIZEN_GATE.md`](./CUNI_CITIZEN_GATE.md) — Translate→Fund→Execute citizen receipt PASS fields (Studio wire PARKED)
 
 ---
 

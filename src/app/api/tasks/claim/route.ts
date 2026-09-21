@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkGate, isGateOk } from "@/lib/rider";
+import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
 import { claimTask } from "@/lib/tasks";
 
 const ERROR_STATUS: Record<string, number> = {
@@ -18,6 +19,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
+
+  const citizenGate = checkCitizenReceiptGate(body);
+  if (!isCitizenGateOk(citizenGate)) {
+    return NextResponse.json(citizenGate.body, { status: citizenGate.status });
+  }
+
   if (typeof body.taskId !== "string") {
     return NextResponse.json({ error: "missing_fields", need: ["taskId"] }, { status: 400 });
   }
@@ -30,6 +37,9 @@ export async function POST(req: NextRequest) {
       expiresAt: result.expiresAt,
       creditsRemaining: result.creditsRemaining,
       note: "Submit result via POST /api/tasks/submit before expiresAt or the task will be released.",
+      ...(citizenGate.receipt
+        ? { citizen_receipt_source_hash: citizenGate.receipt.source_hash }
+        : {}),
     });
   } catch (err) {
     const message = (err as Error).message;

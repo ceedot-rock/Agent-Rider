@@ -53,3 +53,13 @@ See CuNi `docs/RIDER_CUTOVER.md`.
 Integer 5% of task reward: CuNi `examples/laws/rider-fee.cuni`. Must match `src/lib/tasks.ts` default `TASK_FEE_RATE=0.05`.
 
 Agent spend cap (speech vs law): `examples/laws/spend-control.cuni`.
+
+## Citizen receipt gate (Translate → Fund → Execute)
+
+Rider validates CuNi citizen receipt PASS fields (`source_hash` + `exactness.passed === true`) on contract register, hop settle (XPay fund path — not PCC), and job claim.
+
+- Default: validate-when-present
+- Strict: `CUNI_CITIZEN_RECEIPT_REQUIRED=true` (fail-closed)
+- Live Studio → Rider receipt push: **PARKED** (local gate does not call Studio)
+
+→ [`CUNI_CITIZEN_GATE.md`](./CUNI_CITIZEN_GATE.md)
