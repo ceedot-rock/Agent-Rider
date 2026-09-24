@@ -15,6 +15,18 @@ export async function GET(req: NextRequest) {
     category: "agent-infrastructure",
     tags: ["agents", "identity", "credentials", "trust", "reputation", "proof-of-work", "credits", "payments", "mcp", "x402", "agentic-commerce", "agents.txt", "llms.txt", "cuni", "slid-phi-labs"],
     live_vs_parked: liveVsParkedCatalog(),
+    try_path: {
+      free: {
+        register: `${base}/api/agents`,
+        issue: `${base}/api/rider/issue`,
+        mcp: `${base}/api/mcp`,
+        quickstart: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/QUICKSTART.md",
+      },
+      paid: {
+        public_cash: "https://www.slidphilabs.com/pcc",
+        note: "Sole public cash face. Board AGC Stripe is not a second public cash CTA. Hop settle remains XPay USDC.",
+      },
+    },
     discovery_endpoints: {
       llms_txt: `${base}/llms.txt`,
       agent_manifest: `${base}/.well-known/agent.json`,

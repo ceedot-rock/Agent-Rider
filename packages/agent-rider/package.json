@@ -1,0 +1,21 @@
+{
+  "name": "@slidphi/agent-rider",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Thin Agent-Rider client helpers — live Fly base, MCP URL, register/issue wrappers. Publish held until CoS-green.",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://agentrider.fly.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ceedot-rock/Agent-Rider.git",
+    "directory": "packages/agent-rider"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": ["src", "README.md"],
+  "keywords": ["agent-rider", "agentrider", "mcp", "slidphi", "x402"],
+  "publishConfig": { "access": "public" },
+  "engines": { "node": ">=18" }
+}

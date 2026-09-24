@@ -52,6 +52,10 @@ AMP dual-rail (status / sketch / map — AMP **not** live settle): [docs/AMP_MIL
 
 Host attestation / sealed runtime (**PARKED** until proven — not live Nitro): [docs/HOST_ATTESTATION.md](docs/HOST_ATTESTATION.md)
 
+## Quickstart (live try)
+
+Human + agent minutes on Fly: **[docs/QUICKSTART.md](docs/QUICKSTART.md)** · thin client surface: `packages/agent-rider` (`@slidphi/agent-rider`, publish held).
+
 ## Quickstart (local)
 
 1. Clone the repo
