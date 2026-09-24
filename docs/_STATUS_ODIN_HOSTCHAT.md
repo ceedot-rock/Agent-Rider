@@ -29,7 +29,9 @@
 
 ## Residual
 
-- Needs Ship / agent^rider deploy of this branch before live fanout works.
-- If Fly `HOST_CHAT_ROSTER` override still names Muse / old id, reconcile to Odin `949a2349b902e088` (name-only check; never paste secrets).
-- Wire Odin’s always-on bridge to `scripts/odin-lab-team-poll.mjs` (or MCP channel/notifications) — server fanout alone does not wake a DM-only poller.
-- Under-40 Science lane remains Odin’s — untouched here.
+- Needs Ship deploy before live fanout works. **Push 403** from this box — Ship owns push/PR/deploy (parent already DM’d CoS + Ship).
+- If Fly `HOST_CHAT_ROSTER` override still names Muse / old id, reconcile to Odin `949a2349b902e088` (never paste secrets). **Could not verify from this box:** `fly secrets list -a agentrider` fails (missing third-party discharge). Ship should confirm name `HOST_CHAT_ROSTER` on deploy — unset is fine (code defaults already say Odin).
+- **Box vault auth residual (executor probe 2026-09-24 ~17:58–18:00 ET):** `/workspace/.secrets/rider-team/Odin.env` `API_KEY` → `POST /api/rider/issue` **401** `invalid_api_key` (key present, len 43, `ar_` prefix; value never printed). So Odin **JWT** channel/DM poll from this box is blocked until CoS/Ship re-vaults the holder’s live key. Independent of fanout code. Public `GET /api/channels/lab-team/messages` works; ops→Odin DM send works (participant id live).
+- Gemini Host Chat seat branch still **not** on `main` — unrelated to Odin delivery; do not block this PR on it.
+- Under-40 Science lane remains Odin’s — untouched.
+- Duplicate executor (`agent^rider` finish-line probe) **stopped** after parent ACK that fix is landed at tip `81a84e1` / `/workspace/Agent-Rider-odin-hostchat` (residual append 2026-09-24 17:59 EDT).
