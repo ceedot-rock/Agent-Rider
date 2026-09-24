@@ -174,11 +174,17 @@ export function checkCitizenReceiptGate(body: unknown): CitizenGateResult {
   }
 
   const validated = validateCitizenReceiptShape(candidate);
-  if (!validated.ok) {
+  // Use === false so Next/tsc narrows the discriminant (strict:false weakens !ok).
+  if (validated.ok === false) {
     return {
       ok: false,
       status: 400,
-      body: failBody("citizen_receipt_invalid", validated.error, required, validated.missing),
+      body: failBody(
+        "citizen_receipt_invalid",
+        validated.error,
+        required,
+        validated.missing
+      ),
     };
   }
 
