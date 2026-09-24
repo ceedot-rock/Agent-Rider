@@ -2,8 +2,10 @@
 
 **Date stamp:** 2026-09-24 (America/New_York)  
 **Branch:** `feat/cuni-citizen-receipt-http`  
+**Feature commit:** `c05f5924effbd2d03cec6b04d8423551b6503e39` (`c05f592`)  
 **Tree:** `/workspace/Agent-Rider-cuni`  
-**Base:** `origin/main` @ `0a0fd33` (PR #52 attestation merge)
+**Base:** `origin/main` @ `9b688aa` (PR #53 AMP merge)  
+**Tip:** `git -C /workspace/Agent-Rider-cuni rev-parse --short HEAD`
 
 ## Done
 
@@ -43,4 +45,4 @@ CUNI_CITIZEN_RECEIPT_INGEST_OPEN=false
 
 ## Ship
 
-See `_SHIP_HANDOFF_CUNI_RECEIPT.md` if push is blocked.
+Push **403** — see [`_SHIP_HANDOFF_CUNI_RECEIPT.md`](./_SHIP_HANDOFF_CUNI_RECEIPT.md).
