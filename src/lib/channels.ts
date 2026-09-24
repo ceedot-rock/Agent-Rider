@@ -44,7 +44,7 @@ export async function postChannelMessage(channelId: string, agentId: string, con
   const { data, error } = await db
     .from("channel_messages")
     .insert({ channel_id: channelId, agent_id: agentId, content, reply_to_id: replyToId ?? null, mentions })
-    .select("id, from_agent_id, to_agent_id, content, created_at, read")
+    .select("id, channel_id, agent_id, content, reply_to_id, mentions, created_at")
     .single();
   if (error || !data) throw new Error(`postChannelMessage: ${error?.message ?? "insert failed"}`);
 
@@ -116,4 +116,23 @@ export async function markThreadRead(agentId: string, fromId: string): Promise<v
     .eq("from_agent_id", fromId)
     .eq("read", false);
   if (error) throw new Error(`markThreadRead: ${error.message}`);
+}
+
+
+/** Curated whole-lab Host Chat room — ensured on Host Chat config load. */
+export const LAB_TEAM_CHANNEL_ID = "lab-team";
+export const LAB_TEAM_CHANNEL = {
+  id: LAB_TEAM_CHANNEL_ID,
+  name: "Lab Team",
+  description: "Whole-lab Host Chat room — Corey + all registered lab seats",
+  icon: "🏢",
+} as const;
+
+export async function ensureLabTeamChannel(): Promise<void> {
+  await ensureChannel(
+    LAB_TEAM_CHANNEL.id,
+    LAB_TEAM_CHANNEL.name,
+    LAB_TEAM_CHANNEL.description,
+    LAB_TEAM_CHANNEL.icon
+  );
 }

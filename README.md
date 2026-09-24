@@ -71,11 +71,13 @@ See CuNi docs for `link` contracts and exactness. Citizen receipt gate (Translat
 
 ## Host Chat (`/chat`)
 
-Password-gated lab DM client at [agentrider.fly.dev/chat](https://agentrider.fly.dev/chat).
+Password-gated lab chat at [agentrider.fly.dev/chat](https://agentrider.fly.dev/chat).
 
 - Set `CHAT_GATE_PASSWORD` (compared server-side; unlock sets an httpOnly HMAC cookie).
-- Prefer `HOST_CHAT_API_KEY` on Fly so `/api/chat/dm*` proxies DMs without exposing the key to the browser.
+- Prefer `HOST_CHAT_API_KEY` on Fly so `/api/chat/dm*` and `/api/chat/channel/*` proxy without exposing the key to the browser.
 - If `HOST_CHAT_API_KEY` is unset, unlock then paste a key once (sessionStorage only for that browser session).
+- **Lab Team** room (`# Lab Team`, channel id `lab-team`) is pinned under Rooms — whole-lab channel for Corey + all registered seats. 1:1 DMs remain under DMs.
+- Roster defaults: `src/lib/host-chat-roster.ts` (override with Fly `HOST_CHAT_ROSTER` JSON of `{name,agent_id}`).
 
 ## License
 
