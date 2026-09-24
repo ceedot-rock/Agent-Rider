@@ -4,22 +4,28 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { RiderMark } from "@/components/RiderMark";
 
 type Seat = { name: string; agent_id: string };
+type Room = { id: string; name: string; kind: "channel"; description?: string };
 
 const PASTE_KEY = "host_chat_api_key";
 const RIDER_CACHE_KEY = "host_chat_rider";
 const POLL_MS = 4000;
 const RIDER_REFRESH_BUFFER_MS = 60_000;
+const LAB_TEAM_ROOM_ID = "lab-team";
 
-type DmMessage = {
+type ChatMessage = {
   id: string;
   from_agent_id: string;
-  to_agent_id: string;
   content: string;
   created_at: string;
   read?: boolean;
+  channel_id?: string;
 };
 
 type RiderCache = { token: string; expires_at: number; self_agent_id?: string };
+
+type Selection =
+  | { kind: "channel"; id: string }
+  | { kind: "dm"; id: string };
 
 function loadPasteKey(): string {
   if (typeof window === "undefined") return "";
@@ -49,6 +55,33 @@ function shortId(id: string) {
   return id.length > 8 ? `${id.slice(0, 8)}…` : id;
 }
 
+function applyConfig(
+  c: { has_server_key?: boolean; seats?: Seat[]; rooms?: Room[] },
+  setHasServerKey: (v: boolean) => void,
+  setSeats: (v: Seat[]) => void,
+  setRooms: (v: Room[]) => void,
+  setSelection: (updater: (prev: Selection | null) => Selection | null) => void
+) {
+  setHasServerKey(Boolean(c.has_server_key));
+  const nextSeats = Array.isArray(c.seats)
+    ? c.seats.filter((s) => s && typeof s.name === "string" && typeof s.agent_id === "string")
+    : [];
+  const nextRooms = Array.isArray(c.rooms)
+    ? c.rooms.filter((r) => r && typeof r.id === "string" && typeof r.name === "string" && r.kind === "channel")
+    : [];
+  setSeats(nextSeats);
+  setRooms(nextRooms.length > 0 ? nextRooms : [{ id: LAB_TEAM_ROOM_ID, name: "Lab Team", kind: "channel" }]);
+  setSelection((prev) => {
+    if (prev?.kind === "channel" && (nextRooms.some((r) => r.id === prev.id) || prev.id === LAB_TEAM_ROOM_ID)) {
+      return prev;
+    }
+    if (prev?.kind === "dm" && nextSeats.some((s) => s.agent_id === prev.id)) return prev;
+    if (nextRooms[0]) return { kind: "channel", id: nextRooms[0].id };
+    if (nextSeats[0]) return { kind: "dm", id: nextSeats[0].agent_id };
+    return { kind: "channel", id: LAB_TEAM_ROOM_ID };
+  });
+}
+
 export default function ChatPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -56,11 +89,12 @@ export default function ChatPage() {
   const [gateError, setGateError] = useState("");
   const [hasServerKey, setHasServerKey] = useState(false);
   const [seats, setSeats] = useState<Seat[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([{ id: LAB_TEAM_ROOM_ID, name: "Lab Team", kind: "channel" }]);
+  const [selection, setSelection] = useState<Selection | null>({ kind: "channel", id: LAB_TEAM_ROOM_ID });
 
   const [pasteKey, setPasteKey] = useState("");
   const [pasteSaved, setPasteSaved] = useState(false);
-  const [selectedId, setSelectedId] = useState("");
-  const [messages, setMessages] = useState<DmMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selfId, setSelfId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState("");
@@ -69,12 +103,20 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const selected = useMemo(
-    () => seats.find((s) => s.agent_id === selectedId) ?? seats[0],
-    [seats, selectedId]
+  const selectedRoom = useMemo(
+    () => (selection?.kind === "channel" ? rooms.find((r) => r.id === selection.id) ?? rooms[0] : null),
+    [rooms, selection]
+  );
+  const selectedSeat = useMemo(
+    () => (selection?.kind === "dm" ? seats.find((s) => s.agent_id === selection.id) ?? seats[0] : null),
+    [seats, selection]
   );
 
   const useProxy = hasServerKey;
+  const headerTitle = selectedRoom?.name ?? selectedSeat?.name ?? "Chat";
+  const headerSub = selectedRoom
+    ? selectedRoom.description ?? `channel · ${selectedRoom.id}`
+    : selectedSeat?.agent_id ?? "";
 
   useEffect(() => {
     void (async () => {
@@ -87,15 +129,7 @@ export default function ChatPage() {
           try {
             const cfg = await fetch("/api/chat/config", { credentials: "include" });
             if (cfg.ok) {
-              const c = await cfg.json();
-              setHasServerKey(Boolean(c.has_server_key));
-              if (Array.isArray(c.seats) && c.seats.length > 0) {
-                const next = (c.seats as Seat[]).filter(
-                  (s) => s && typeof s.name === "string" && typeof s.agent_id === "string"
-                );
-                setSeats(next);
-                setSelectedId(next[0]?.agent_id ?? "");
-              }
+              applyConfig(await cfg.json(), setHasServerKey, setSeats, setRooms, setSelection);
             }
           } catch {
             /* roster stays empty until retry */
@@ -138,15 +172,7 @@ export default function ChatPage() {
       try {
         const cfg = await fetch("/api/chat/config", { credentials: "include" });
         if (cfg.ok) {
-          const c = await cfg.json();
-          setHasServerKey(Boolean(c.has_server_key));
-          if (Array.isArray(c.seats) && c.seats.length > 0) {
-            const next = (c.seats as Seat[]).filter(
-              (s) => s && typeof s.name === "string" && typeof s.agent_id === "string"
-            );
-            setSeats(next);
-            setSelectedId((prev) => (prev && next.some((s) => s.agent_id === prev) ? prev : next[0]?.agent_id ?? ""));
-          }
+          applyConfig(await cfg.json(), setHasServerKey, setSeats, setRooms, setSelection);
         }
       } catch {
         /* roster load soft-fail */
@@ -208,15 +234,22 @@ export default function ChatPage() {
   }, []);
 
   const loadThread = useCallback(async () => {
-    if (!selectedId) return;
+    if (!selection) return;
     try {
       let res: Response;
-      if (useProxy) {
-        res = await fetch(`/api/chat/dm/${selectedId}`, { credentials: "include" });
+      if (selection.kind === "channel") {
+        if (useProxy) {
+          res = await fetch(`/api/chat/channel/${selection.id}`, { credentials: "include" });
+        } else {
+          if (!pasteSaved && !loadPasteKey()) return;
+          res = await fetch(`/api/channels/${selection.id}/messages?limit=100`);
+        }
+      } else if (useProxy) {
+        res = await fetch(`/api/chat/dm/${selection.id}`, { credentials: "include" });
       } else {
         if (!pasteSaved && !loadPasteKey()) return;
         const { token } = await ensureClientRider();
-        res = await fetch(`/api/dm/${selectedId}`, {
+        res = await fetch(`/api/dm/${selection.id}`, {
           headers: { "X-Agent-Rider": token },
         });
       }
@@ -229,24 +262,39 @@ export default function ChatPage() {
         }
         throw new Error(data.error || "Could not load thread.");
       }
-      setMessages(Array.isArray(data.messages) ? data.messages : []);
+      let rows: ChatMessage[] = [];
+      if (Array.isArray(data.messages)) {
+        rows = data.messages.map((m: Record<string, unknown>) => ({
+          id: String(m.id),
+          from_agent_id: String(m.from_agent_id ?? m.agent_id ?? ""),
+          content: String(m.content ?? ""),
+          created_at: String(m.created_at ?? ""),
+          read: Boolean(m.read),
+          channel_id: typeof m.channel_id === "string" ? m.channel_id : undefined,
+        }));
+        // Public channel GET is newest-first; normalize to oldest-first for the UI.
+        if (selection.kind === "channel" && !useProxy) {
+          rows = [...rows].reverse();
+        }
+      }
+      setMessages(rows);
       if (typeof data.self_agent_id === "string") setSelfId(data.self_agent_id);
       setStatus("");
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Could not load thread.");
     }
-  }, [selectedId, useProxy, pasteSaved, ensureClientRider]);
+  }, [selection, useProxy, pasteSaved, ensureClientRider]);
 
   useEffect(() => {
     if (!unlocked) return;
-    if (!useProxy && !pasteSaved && !loadPasteKey()) return;
+    if (!useProxy && !pasteSaved && !loadPasteKey() && selection?.kind === "dm") return;
     void loadThread();
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => void loadThread(), POLL_MS);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [unlocked, selectedId, useProxy, pasteSaved, loadThread]);
+  }, [unlocked, selection, useProxy, pasteSaved, loadThread]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -255,17 +303,36 @@ export default function ChatPage() {
   async function send(e: FormEvent) {
     e.preventDefault();
     const content = draft.trim();
-    if (!content || !selectedId) return;
+    if (!content || !selection) return;
     setBusy(true);
     setStatus("Sending…");
     try {
       let res: Response;
-      if (useProxy) {
+      if (selection.kind === "channel") {
+        if (useProxy) {
+          res = await fetch(`/api/chat/channel/${selection.id}`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content }),
+          });
+        } else {
+          const { token } = await ensureClientRider();
+          res = await fetch(`/api/channels/${selection.id}/messages`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Agent-Rider": token,
+            },
+            body: JSON.stringify({ content }),
+          });
+        }
+      } else if (useProxy) {
         res = await fetch("/api/chat/dm", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ to_agent_id: selectedId, content }),
+          body: JSON.stringify({ to_agent_id: selection.id, content }),
         });
       } else {
         const { token } = await ensureClientRider();
@@ -275,7 +342,7 @@ export default function ChatPage() {
             "Content-Type": "application/json",
             "X-Agent-Rider": token,
           },
-          body: JSON.stringify({ to_agent_id: selectedId, content }),
+          body: JSON.stringify({ to_agent_id: selection.id, content }),
         });
       }
       const data = await res.json();
@@ -283,7 +350,16 @@ export default function ChatPage() {
       setDraft("");
       setStatus("");
       if (data.message) {
-        setMessages((prev) => [...prev, data.message]);
+        const m = data.message as Record<string, unknown>;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: String(m.id),
+            from_agent_id: String(m.from_agent_id ?? m.agent_id ?? selfId ?? ""),
+            content: String(m.content ?? content),
+            created_at: String(m.created_at ?? new Date().toISOString()),
+          },
+        ]);
       } else {
         await loadThread();
       }
@@ -425,7 +501,7 @@ export default function ChatPage() {
         >
           <p style={{ margin: 0, fontSize: 14, color: "var(--muted)" }}>
             Server has no HOST_CHAT_API_KEY. Paste your Host API key once for this browser session (kept in memory
-            only — set the Fly secret for production).
+            only — set the Fly secret for production). Channel rooms still load read-only without a key; paste to post.
           </p>
           <label style={{ fontSize: 14, color: "var(--muted)" }}>
             API key
@@ -456,16 +532,47 @@ export default function ChatPage() {
           }}
         >
           <div style={{ padding: "8px 14px", fontSize: 12, color: "var(--muted)", letterSpacing: 0.04 }}>
-            Team
+            Rooms
+          </div>
+          {rooms.map((room) => {
+            const active = selection?.kind === "channel" && selection.id === room.id;
+            return (
+              <button
+                key={room.id}
+                type="button"
+                onClick={() => {
+                  setSelection({ kind: "channel", id: room.id });
+                  setRosterOpen(false);
+                }}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "10px 14px",
+                  border: "none",
+                  background: active ? "rgba(196,163,90,0.16)" : "transparent",
+                  color: active ? "var(--gold)" : "var(--white)",
+                  borderLeft: active ? "3px solid var(--gold)" : "3px solid transparent",
+                  fontSize: 14,
+                }}
+              >
+                <div style={{ fontWeight: 600 }}># {room.name}</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{room.id}</div>
+              </button>
+            );
+          })}
+
+          <div style={{ padding: "12px 14px 8px", fontSize: 12, color: "var(--muted)", letterSpacing: 0.04 }}>
+            DMs
           </div>
           {seats.map((seat) => {
-            const active = seat.agent_id === selectedId;
+            const active = selection?.kind === "dm" && selection.id === seat.agent_id;
             return (
               <button
                 key={seat.agent_id}
                 type="button"
                 onClick={() => {
-                  setSelectedId(seat.agent_id);
+                  setSelection({ kind: "dm", id: seat.agent_id });
                   setRosterOpen(false);
                 }}
                 style={{
@@ -497,15 +604,19 @@ export default function ChatPage() {
               fontSize: 14,
             }}
           >
-            <strong>{selected?.name ?? "Seat"}</strong>
+            <strong>{headerTitle}</strong>
             <span style={{ color: "var(--muted)", marginLeft: 8, fontFamily: "var(--font-mono)", fontSize: 12 }}>
-              {selected?.agent_id}
+              {headerSub}
             </span>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
             {messages.length === 0 ? (
-              <p style={{ color: "var(--muted)", fontSize: 14, margin: "auto" }}>No messages yet.</p>
+              <p style={{ color: "var(--muted)", fontSize: 14, margin: "auto" }}>
+                {selection?.kind === "channel"
+                  ? "No messages yet. This is the whole-lab room — post once and every seat can read via channels API / MCP."
+                  : "No messages yet."}
+              </p>
             ) : (
               messages.map((m) => {
                 const mine = selfId ? m.from_agent_id === selfId : false;
@@ -533,7 +644,20 @@ export default function ChatPage() {
           </div>
 
           {status ? (
-            <p style={{ margin: "0 16px 8px", fontSize: 13, color: status.includes("fail") || status.includes("error") || status.includes("Could") || status.includes("Wrong") || status.includes("Paste") ? "#f87171" : "var(--muted)" }}>
+            <p
+              style={{
+                margin: "0 16px 8px",
+                fontSize: 13,
+                color:
+                  status.includes("fail") ||
+                  status.includes("error") ||
+                  status.includes("Could") ||
+                  status.includes("Wrong") ||
+                  status.includes("Paste")
+                    ? "#f87171"
+                    : "var(--muted)",
+              }}
+            >
               {status}
             </p>
           ) : null}
@@ -551,11 +675,15 @@ export default function ChatPage() {
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Message…"
-              disabled={needPaste || busy}
+              placeholder={selection?.kind === "channel" ? "Message #Lab Team…" : "Message…"}
+              disabled={(needPaste && selection?.kind === "dm") || busy}
               style={{ ...inputStyle, marginTop: 0, flex: 1 }}
             />
-            <button type="submit" disabled={needPaste || busy || !draft.trim()} style={primaryBtn}>
+            <button
+              type="submit"
+              disabled={(needPaste && selection?.kind !== "channel") || busy || !draft.trim() || (needPaste && selection?.kind === "channel")}
+              style={primaryBtn}
+            >
               Send
             </button>
           </form>

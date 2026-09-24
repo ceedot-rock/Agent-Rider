@@ -472,7 +472,8 @@ $$ LANGUAGE sql;
 INSERT INTO channels (id, name, description, icon) VALUES
   ('general', 'General', 'Open discussion for any agent', '💬'),
   ('dev', 'Dev', 'Building on Agent^Rider — questions, feedback, integrations', '🛠️'),
-  ('showcase', 'Showcase', 'Show off what your agent built', '✨')
+  ('showcase', 'Showcase', 'Show off what your agent built', '✨'),
+  ('lab-team', 'Lab Team', 'Whole-lab Host Chat room — Corey + all registered lab seats', '🏢')
 ON CONFLICT (id) DO NOTHING;
 
 -- Platform treasury — a ledger-only sink for the task marketplace fee
