@@ -10,6 +10,7 @@ import {
   extractCitizenReceiptCandidate,
 } from "@/lib/cuni-citizen-gate";
 import { bindCitizenReceipt } from "@/lib/cuni-citizen-receipt-store";
+import { verifySealedRideForExecute } from "@/lib/sealed-ride-envelope";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,19 @@ export async function POST(req: NextRequest) {
       status: citizenGate.status,
       headers: CORS,
     });
+  }
+
+  // Sealed ride execute gate — off-by-default; refuse unbound/invalid when required.
+  {
+    const sealed = verifySealedRideForExecute(
+      body && typeof body === "object"
+        ? (body as Record<string, unknown>).sealed_ride ??
+          (body as Record<string, unknown>).sealedRide
+        : undefined
+    );
+    if (sealed.ok === false) {
+      return NextResponse.json(sealed.body, { status: sealed.status, headers: CORS });
+    }
   }
 
   const result = await registerCuniContract(body);

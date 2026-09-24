@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkGate, isGateOk } from "@/lib/rider";
 import { isSandboxRider, sandboxForbiddenBody } from "@/lib/sandbox";
 import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
+import {
+  assertAttestationForSensitiveOp,
+  readAttestationEvidence,
+} from "@/lib/attestation-evidence";
+import { verifySealedRideForExecute } from "@/lib/sealed-ride-envelope";
 import { parseCuniSettle, parseKeyRail, settleX402, type SettleHop } from "@/lib/settle-hop";
 
 export async function POST(req: NextRequest) {
@@ -13,6 +18,17 @@ export async function POST(req: NextRequest) {
   // Sandbox riders may probe settle (402 accepts) but never complete a funded X-PAYMENT hop.
   if (isSandboxRider(gate.rider) && req.headers.get("x-payment")) {
     return NextResponse.json(sandboxForbiddenBody({ rail: "x402" }), { status: 403 });
+  }
+
+  // Host attestation fail-closed when ATTESTATION_REQUIRED=1 (default off — unchanged).
+  {
+    const evidence = readAttestationEvidence({
+      headerJson: req.headers.get("x-attestation-evidence"),
+    });
+    const att = assertAttestationForSensitiveOp(evidence);
+    if (att.ok === false) {
+      return NextResponse.json(att.body, { status: att.status });
+    }
   }
 
   const ctype = req.headers.get("content-type") || "";
@@ -29,6 +45,17 @@ export async function POST(req: NextRequest) {
   const citizenGate = checkCitizenReceiptGate(jsonBody);
   if (!isCitizenGateOk(citizenGate)) {
     return NextResponse.json(citizenGate.body, { status: citizenGate.status });
+  }
+
+  // Sealed ride: off-by-default; when SEALED_RIDE_REQUIRED=1 refuse unbound/invalid.
+  {
+    const sealed = verifySealedRideForExecute(
+      (jsonBody as Record<string, unknown>).sealed_ride ??
+        (jsonBody as Record<string, unknown>).sealedRide
+    );
+    if (sealed.ok === false) {
+      return NextResponse.json(sealed.body, { status: sealed.status });
+    }
   }
 
   if (!hop) {
