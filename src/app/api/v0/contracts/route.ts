@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   const result = await registerCuniContract(body);
 
-  if (!result.ok) {
+  if (result.ok === false) {
     return NextResponse.json(
       { ok: false, error: "error" in result ? result.error : "register_failed" },
       { status: "status" in result ? result.status : 400, headers: CORS }

@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     merchantOk,
     apiKeyResolved,
   });
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return NextResponse.json(
       {
         ok: false,
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
           : "studio_http",
   });
 
-  if (!result.ok) {
+  if (result.ok === false) {
     return NextResponse.json(
       {
         ok: false,
