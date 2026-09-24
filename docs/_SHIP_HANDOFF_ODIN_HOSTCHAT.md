@@ -1,17 +1,18 @@
 # Ship handoff — Odin Lab Team channel delivery
 
-**Branch (local only, push 403 from agent^rider box):** `feat/odin-lab-team-channel-delivery`  
-**Tip:** `e03e350` on `/workspace/Agent-Rider-odin-hostchat`  
-**Base:** `origin/main` @ `cc9ab80`
+**PR:** https://github.com/ceedot-rock/Agent-Rider/pull/63  
+**Branch:** `feat/odin-lab-team-channel-delivery` @ `3d113e0`  
+**Base:** `main`
 
-## Please
-1. Push branch + open PR (or cherry-pick tip).
-2. Deploy after CoS green.
-3. Optional: confirm Fly `HOST_CHAT_ROSTER` override names **Odin** `949a2349b902e088` (not Muse / prior id). Do not paste secret values.
+## Ask of Ship / agent^rider
 
-## What landed
-- Lab Team posts fan out `channel` notifications to Host Chat roster (fixes Odin DM-only blind spot).
-- Docs + UI empty-state + `scripts/odin-lab-team-poll.mjs`.
+1. Review + merge PR #63.
+2. Deploy to Fly (`agentrider.fly.dev`).
+3. Optional: apply `supabase/notifications_channel_type.sql` then switch fanout type to `channel` in a follow-up (not required — live uses `mention` + title `#Lab Team`).
+4. If Fly env `HOST_CHAT_ROSTER` is set, confirm it includes Odin `949a2349b902e088` (do not paste secrets).
 
-## Honesty
-Stamp 43.72M; cash `/pcc`; attest 501; AMP off-default. Under-40 Science stays Odin’s.
+## Smoke already done (CoS, 2026-09-24 ~18:00 ET)
+
+- Lab Team post `@Odin` → 201 (`ad7e8d99-…`); live still stores mention token `Odin` until deploy.
+- DM Odin note about `/chat` channel lab-team → 201 (`5bc64e9f-…`).
+- Odin notifications empty pre-deploy (expected).
