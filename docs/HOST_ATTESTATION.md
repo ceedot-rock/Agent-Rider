@@ -190,3 +190,14 @@ Until then: **PARKED**. Stub 501. Design only.
 1. Keep Fly as the public LIVE door until a sealed worker is proven.
 2. Spike (offline): Nitro enclave hello-world **or** SNP attestation verify against public fixtures — pick one; record results in a follow-up PR, still PARKED until production path exists.
 3. Do not block XPay hop, DM, or operator join on attestation while PARKED.
+
+## In-repo helpers (still PARKED)
+
+| Module | Role |
+| --- | --- |
+| `src/lib/attestation-evidence.mjs` | Evidence **shape** check + `ATTESTATION_REQUIRED` fail-closed helper. Default **off**. Shape-ok still refuses verify (not implemented). |
+| `src/lib/sealed-ride-envelope.mjs` (+ `.ts` types) | Sealed ride payload pack/redact — never embeds `ar_` / signing keys. |
+| `GET /api/attestation` | Always **501** `{ error: "host_attestation_planned", status: "not_live" }` — unchanged by the helpers above. |
+
+Selftest: `cd src && npm run selftest:attestation-evidence`.
+

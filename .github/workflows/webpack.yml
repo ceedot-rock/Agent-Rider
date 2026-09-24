@@ -69,6 +69,7 @@ jobs:
         npm run selftest:settle
         npm run selftest:live-status
         npm run selftest:host-attestation
+        npm run selftest:attestation-evidence
 
     - name: Build
       working-directory: src
