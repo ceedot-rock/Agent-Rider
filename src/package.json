@@ -18,7 +18,8 @@
     "selftest:live-status": "node lib/live-status.selftest.mjs",
     "selftest:host-attestation": "node lib/host-attestation.selftest.mjs",
     "selftest:attestation-evidence": "node lib/attestation-evidence.selftest.mjs",
-    "selftest:cuni-citizen-gate": "node lib/cuni-citizen-gate.selftest.mjs"
+    "selftest:cuni-citizen-gate": "node lib/cuni-citizen-gate.selftest.mjs",
+    "selftest:cuni-citizen-receipt-http": "node lib/cuni-citizen-receipt-http.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",

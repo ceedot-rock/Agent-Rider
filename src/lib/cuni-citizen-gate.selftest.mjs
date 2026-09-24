@@ -127,7 +127,7 @@ assert.match(doc, /CUNI_CITIZEN_RECEIPT_REQUIRED/);
 assert.match(doc, /never PCC|not PCC/i);
 assert.doesNotMatch(doc, /\bar_[A-Za-z0-9]{8,}/);
 assert.doesNotMatch(doc, /Studio is live|live Studio citizen gate is on|calls CuNi Studio to verify/i);
-assert.match(doc, /does \*\*not\*\* call Studio|PARKED \/ not implemented/i);
+assert.match(doc, /does \*\*not\*\* call Studio|does not call Studio|PARKED \/ not implemented|outbound still \*\*PARKED\*\*/i);
 
 for (const rel of [
   "../app/api/settle/route.ts",
@@ -138,5 +138,12 @@ for (const rel of [
   const r = readFileSync(join(__dirname, rel), "utf8");
   assert.match(r, /checkCitizenReceiptGate|isCitizenGateOk/);
 }
+
+const ingestRoute = readFileSync(
+  join(__dirname, "../app/api/v0/citizen-receipts/route.ts"),
+  "utf8"
+);
+assert.match(ingestRoute, /bindCitizenReceipt|validateCitizenReceiptShape/);
+assert.match(ingestRoute, /studio_roundtrip/);
 
 console.log("cuni-citizen-gate.selftest: ok (validate-when-present + strict + honesty)");

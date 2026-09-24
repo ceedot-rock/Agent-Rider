@@ -11,8 +11,9 @@
  *   2. Strict (optional): CUNI_CITIZEN_RECEIPT_REQUIRED=true → refuse when
  *      receipt is missing. Default OFF.
  *
- * Honesty: local shape gate only. Does NOT call CuNi Studio. Live Studio → Rider
- * citizen-receipt push remains PARKED/partial until a later PR wires it.
+ * Honesty: local shape gate only. Does NOT call CuNi Studio.
+ * Studio → Rider HTTP receive is separate (POST /api/v0/citizen-receipts).
+ * Rider → Studio outbound verify remains PARKED.
  * Fund path for hops = Rider settle / XPay (never PCC as money layer).
  * Never log or embed ar_ values.
  */

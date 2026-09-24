@@ -4,12 +4,18 @@ import {
   listCuniContracts,
   getCuniContract,
 } from "@/lib/cuni-contracts";
-import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
+import {
+  checkCitizenReceiptGate,
+  isCitizenGateOk,
+  extractCitizenReceiptCandidate,
+} from "@/lib/cuni-citizen-gate";
+import { bindCitizenReceipt } from "@/lib/cuni-citizen-receipt-store";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Agent-Rider",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Agent-Rider, X-Cuni-Studio, X-Cuni-Ingest-Key",
 };
 
 export async function OPTIONS() {
@@ -21,6 +27,8 @@ export async function OPTIONS() {
  * Accept verified CuNi publish metadata. Requires exactness.passed === true.
  * Idempotent on sourceHash.
  * Citizen receipt gate: validate-when-present; strict via CUNI_CITIZEN_RECEIPT_REQUIRED.
+ * When citizen_receipt (or publish-meta PASS) is present, also binds it for Execute lookup
+ * (compat with Studio publish push — preferred dedicated path is POST /api/v0/citizen-receipts).
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -45,6 +53,25 @@ export async function POST(req: NextRequest) {
   const c = result.contract;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
 
+  // Bind PASS receipt to this contract when present (Studio cutover compat).
+  let receiptBound: { receipt_id: string; source_hash: string } | null = null;
+  const receiptCandidate =
+    citizenGate.receipt ?? extractCitizenReceiptCandidate(body);
+  if (receiptCandidate) {
+    const bound = await bindCitizenReceipt({
+      receipt: receiptCandidate,
+      bind: { contract_id: c.id },
+      publisher: c.publisher ?? "studio",
+      ingress: "contracts_register",
+    });
+    if (bound.ok) {
+      receiptBound = {
+        receipt_id: bound.record.id,
+        source_hash: bound.record.source_hash,
+      };
+    }
+  }
+
   return NextResponse.json(
     {
       ok: true,
@@ -55,8 +82,18 @@ export async function POST(req: NextRequest) {
       endpoints: {
         self: `${base}/api/v0/contracts?id=${c.id}`,
         invoke: `${base}/api/v0/contracts/${c.id}/invoke`,
+        citizen_receipt: receiptBound
+          ? `${base}/api/v0/citizen-receipts?hash=${encodeURIComponent(receiptBound.source_hash)}`
+          : `${base}/api/v0/citizen-receipts`,
       },
       registeredAt: c.created_at ?? c.published_at,
+      ...(receiptBound
+        ? {
+            citizen_receipt_id: receiptBound.receipt_id,
+            citizen_receipt_bound: true,
+          }
+        : { citizen_receipt_bound: false }),
+      studio_roundtrip: "not_applicable",
     },
     { status: result.idempotent ? 200 : 201, headers: CORS }
   );
@@ -69,7 +106,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
-      { ok: false, error: "missing_supabase_service_role", hint: "fly secrets set SUPABASE_SERVICE_ROLE_KEY=... -a agentrider" },
+      {
+        ok: false,
+        error: "missing_supabase_service_role",
+        hint: "fly secrets set SUPABASE_SERVICE_ROLE_KEY=... -a agentrider",
+      },
       { status: 503, headers: CORS }
     );
   }
@@ -96,8 +137,6 @@ export async function GET(req: NextRequest) {
           publishedAt: c.published_at,
           status: c.status,
           createdAt: c.created_at,
-          // source intentionally omitted from list/detail by default for size;
-          // include with ?full=1
           ...(searchParams.get("full") === "1" ? { source: c.source } : {}),
         },
       },
