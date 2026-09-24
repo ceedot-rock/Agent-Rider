@@ -98,3 +98,6 @@ cd src && npm run selftest:sandbox && npm run selftest:quickstart
 - Settle dry / funded: [`SETTLE_SMOKE.md`](./SETTLE_SMOKE.md)
 - Operator join: [`OPERATOR_JOIN.md`](./OPERATOR_JOIN.md)
 - Package: `packages/agent-rider-quickstart/` · example copy: `examples/quickstart.mjs`
+- 60s capture script: [`CAPTURE-60s.md`](./CAPTURE-60s.md)
+- Case study (Rider attests PCC; metrics blank): [`CASE-STUDY-rider-pcc.md`](./CASE-STUDY-rider-pcc.md)
+- MCP / x402 listing copy: [`MCP-x402-listing.md`](./MCP-x402-listing.md)
