@@ -1,13 +1,14 @@
 /**
  * Attestation evidence shape check + ATTESTATION_REQUIRED fail-closed gate.
  *
- * PARKED / NOT LIVE: this does NOT verify Nitro, SEV-SNP, or any platform quote.
+ * PARKED / NOT LIVE: does NOT verify Nitro, SEV-SNP, or any platform quote.
  * Structure-only validation. When ATTESTATION_REQUIRED is on, sensitive ops refuse
  * (missing evidence, malformed shape, or shape-ok-but-verify-not-implemented).
  *
  * Never log or embed ar_ values, RIDER_PRIVATE_KEY, or JWTs.
  *
  * Env: ATTESTATION_REQUIRED — default off. Truthy: "1" | "true" | "yes" (case-insensitive).
+ * Also accepts HOST_ATTESTATION=1 / HOST_ATTESTATION_REQUIRED=true as aliases.
  */
 
 export const ATTESTATION_DOCS =
@@ -28,10 +29,13 @@ export const ATTESTATION_PLATFORMS = Object.freeze([
  * @returns {boolean}
  */
 export function isAttestationRequired(env = process.env) {
-  const raw = env.ATTESTATION_REQUIRED;
-  if (raw == null || raw === "") return false;
-  const v = String(raw).trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
+  for (const key of ["ATTESTATION_REQUIRED", "HOST_ATTESTATION", "HOST_ATTESTATION_REQUIRED"]) {
+    const raw = env[key];
+    if (raw == null || raw === "") continue;
+    const v = String(raw).trim().toLowerCase();
+    if (v === "1" || v === "true" || v === "yes") return true;
+  }
+  return false;
 }
 
 /**
@@ -203,6 +207,27 @@ export function assertAttestationForSensitiveOp(evidence, env = process.env) {
 }
 
 /**
+ * PARKED collect stub — returns honesty shape only. Never produces Nitro/SEV quotes.
+ * @param {{ nonce?: string | null }} [opts]
+ * @returns {object}
+ */
+export function collectAttestationEvidenceStub(opts = {}) {
+  return {
+    status: "not_live",
+    platform: "none",
+    measurement: null,
+    nonce: opts.nonce != null ? String(opts.nonce) : null,
+    issued_at: null,
+    evidence: null,
+    verify: {
+      required: false,
+      result: "skipped_not_live",
+    },
+    docs: ATTESTATION_DOCS,
+  };
+}
+
+/**
  * @param {string} error
  * @param {Record<string, unknown>} [extra]
  */
@@ -273,7 +298,6 @@ export function readAttestationEvidence(src) {
       return {
         __malformed_header: true,
         platform: "none",
-        // Force shape failure without looking like a real quote
       };
     }
   }

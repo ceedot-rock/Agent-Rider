@@ -10,6 +10,10 @@ import {
   sandboxKeyConfigured,
   wantsSandboxHeader,
 } from "@/lib/sandbox";
+import {
+  assertAttestationForSensitiveOp,
+  readAttestationEvidence,
+} from "@/lib/attestation-evidence";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const VALID_LEVELS = new Set<ClearanceLevel>(["L0", "L1", "L2", "L3", "L4"]);
@@ -77,6 +81,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
+
+  // Host attestation fail-closed when ATTESTATION_REQUIRED=1 (default off — unchanged).
+  {
+    const evidence = readAttestationEvidence({
+      headerJson: req.headers.get("x-attestation-evidence"),
+      body,
+    });
+    const att = assertAttestationForSensitiveOp(evidence);
+    if (att.ok === false) {
+      return NextResponse.json(att.body, { status: att.status, headers: CORS_HEADERS });
+    }
+  }
+
   const requestedLevel: ClearanceLevel = VALID_LEVELS.has(body.level) ? body.level : "L1";
   const scopes: string[] = Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : ["*"];
 
