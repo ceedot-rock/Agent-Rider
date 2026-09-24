@@ -1,5 +1,5 @@
 // Host Chat team roster — single source of truth for /chat.
-// Defaults live here (Muse seat id synced 2026-09-18). Ops can override
+// Defaults live here (Odin seat id synced 2026-09-18). Ops can override
 // without a code deploy via HOST_CHAT_ROSTER (JSON array of {name,agent_id}).
 // Never put API keys in that env; never log its raw value.
 
@@ -12,7 +12,7 @@ export const DEFAULT_HOST_CHAT_SEATS: HostChatSeat[] = [
   { name: "Theory", agent_id: "203abf89452ca6d1" },
   { name: "Apex", agent_id: "c14a55242f214c3a" },
   { name: "Ship", agent_id: "826803ab2fcca042" },
-  { name: "Muse/Amani", agent_id: "949a2349b902e088" },
+  { name: "Odin", agent_id: "949a2349b902e088" },
   { name: "Steve", agent_id: "a0d6fab989156e1d" },
   { name: "Docs", agent_id: "6122039b85c05140" },
   { name: "Growth", agent_id: "098b75f0d43189c7" },
