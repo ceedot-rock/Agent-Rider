@@ -6,7 +6,7 @@
  *
  * Honesty:
  *   - This is the Rider RECEIVE path (Studio POSTs here). Rider does NOT call Studio.
- *   - Outbound Rider→Studio verify remains PARKED.
+ *   - Outbound Rider→Studio verify is env-gated in cuni-studio-pass (not this store).
  *   - Fund path = Rider settle / XPay (never PCC as money layer).
  *   - Never log or embed ar_ values.
  *

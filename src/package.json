@@ -22,7 +22,8 @@
     "selftest:cuni-citizen-receipt-http": "node lib/cuni-citizen-receipt-http.selftest.mjs",
     "selftest:sandbox": "node lib/sandbox.selftest.mjs",
     "selftest:quickstart": "node lib/quickstart.selftest.mjs",
-    "selftest:sealed-ride": "node lib/sealed-ride-envelope.selftest.mjs"
+    "selftest:sealed-ride": "node lib/sealed-ride-envelope.selftest.mjs",
+    "selftest:cuni-studio-pass": "node lib/cuni-studio-pass.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
