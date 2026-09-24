@@ -282,6 +282,56 @@ if (PROBE_FUNDED) {
   });
 }
 
+
+await check("facilitator_timeout_helper", async () => {
+  // Mirror settle-hop.ts facilitatorTimeoutMs — keep in sync.
+  function facilitatorTimeoutMs(env = {}) {
+    const raw = env.X402_FACILITATOR_TIMEOUT_MS;
+    if (raw == null || raw === "") return 25_000;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 1_000) return 25_000;
+    return Math.min(Math.floor(n), 120_000);
+  }
+  assert(facilitatorTimeoutMs({}) === 25_000, "default 25s");
+  assert(facilitatorTimeoutMs({ X402_FACILITATOR_TIMEOUT_MS: "10000" }) === 10_000, "env wins");
+  assert(facilitatorTimeoutMs({ X402_FACILITATOR_TIMEOUT_MS: "50" }) === 25_000, "too-small falls back");
+  assert(facilitatorTimeoutMs({ X402_FACILITATOR_TIMEOUT_MS: "999999" }) === 120_000, "cap 120s");
+});
+
+await check("settle_source_harden_honesty", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const here = dirname(fileURLToPath(import.meta.url));
+  const src = readFileSync(join(here, "settle-hop.ts"), "utf8");
+  assert(/reject\.facilitator_timeout/.test(src), "timeout error code");
+  assert(/reject\.facilitator_unreachable/.test(src), "unreachable error code");
+  assert(/AbortSignal\.timeout/.test(src), "AbortSignal.timeout on facilitator fetch");
+  assert(/bad_amount/.test(src), "bad_amount guard");
+  assert(!/attemptAmpSettle/.test(src), "settle-hop must not call AMP");
+  const route = readFileSync(join(here, "../app/api/settle/route.ts"), "utf8");
+  assert(!/attemptAmpSettle|amp-settle-adapter/.test(route), "settle route must not call AMP");
+  assert(/rail === "credits"/.test(route) && /status:\s*410/.test(route), "credits 410 intact");
+});
+
+await check("facilitator_fetch_error_mapping", async () => {
+  // Offline: map AbortError → timeout code; TypeError → unreachable (mirror settleX402).
+  function mapFacilErr(err) {
+    const isAbort =
+      err &&
+      typeof err === "object" &&
+      (err.name === "AbortError" || err.name === "TimeoutError" || err.code === "ABORT_ERR");
+    if (isAbort) {
+      return { status: 504, error: "reject.facilitator_timeout" };
+    }
+    return { status: 502, error: "reject.facilitator_unreachable" };
+  }
+  const t = mapFacilErr({ name: "AbortError", message: "This operation was aborted" });
+  assert(t.status === 504 && t.error === "reject.facilitator_timeout", "abort → 504 timeout");
+  const u = mapFacilErr(new TypeError("fetch failed"));
+  assert(u.status === 502 && u.error === "reject.facilitator_unreachable", "network → 502");
+});
+
 console.log("");
 console.log(`settle-hop smoke: ${passed} passed, ${failed} failed`);
 if (failed > 0) {
