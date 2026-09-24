@@ -53,6 +53,20 @@ export async function POST(req: NextRequest) {
   const c = result.contract;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
 
+  const bodyObj =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+  const metaObj =
+    bodyObj && bodyObj.meta && typeof bodyObj.meta === "object"
+      ? (bodyObj.meta as Record<string, unknown>)
+      : null;
+  const studioMarker =
+    bodyObj &&
+    (bodyObj.studio === "called" ||
+      metaObj?.studio === "called" ||
+      req.headers.get("x-cuni-studio")?.toLowerCase() === "called")
+      ? "called"
+      : undefined;
+
   // Bind PASS receipt to this contract when present (Studio cutover compat).
   let receiptBound: { receipt_id: string; source_hash: string } | null = null;
   const receiptCandidate =
@@ -87,12 +101,24 @@ export async function POST(req: NextRequest) {
           : `${base}/api/v0/citizen-receipts`,
       },
       registeredAt: c.created_at ?? c.published_at,
+      // ACK Studio push (CuNi publish → contracts) when receipt PASS was accepted.
+      ...(citizenGate.receipt
+        ? {
+            citizen_receipt: {
+              source_hash: citizenGate.receipt.source_hash,
+              exactness: { passed: true as const },
+            },
+            citizen_receipt_accepted: true,
+          }
+        : {}),
       ...(receiptBound
         ? {
             citizen_receipt_id: receiptBound.receipt_id,
             citizen_receipt_bound: true,
           }
         : { citizen_receipt_bound: false }),
+      ...(studioMarker ? { studio: studioMarker } : {}),
+      // Local receive only — this route does not HTTP-call Studio.
       studio_roundtrip: "not_applicable",
     },
     { status: result.idempotent ? 200 : 201, headers: CORS }
