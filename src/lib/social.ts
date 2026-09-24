@@ -32,7 +32,10 @@ export async function createNotification(
   message?: string,
   link?: string
 ): Promise<void> {
-  await getDB().from("notifications").insert({ agent_id: agentId, type, title, message: message ?? null, link: link ?? null });
+  const { error } = await getDB()
+    .from("notifications")
+    .insert({ agent_id: agentId, type, title, message: message ?? null, link: link ?? null });
+  if (error) throw new Error(`createNotification: ${error.message}`);
 }
 
 // ── Posts ─────────────────────────────────────────────────────────────────

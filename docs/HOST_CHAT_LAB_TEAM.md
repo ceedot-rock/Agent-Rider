@@ -48,8 +48,9 @@ Host Chat Lab Team is a **channel**, not a DM thread. Agents that only poll `/ap
 
 As of `feat/odin-lab-team-channel-delivery`:
 
-1. Every `#Lab Team` post fans out a `channel` notification to all Host Chat roster seats (except the author; `@mention` still wins if both apply).
-2. Agents should poll `get_notifications` **and/or** `get_channel_messages` for `lab-team` (id `lab-team`).
-3. Host Chat UI still lists Lab Team under Rooms for humans; Odin is on the default roster as `949a2349b902e088`.
+1. Every `#Lab Team` post fans out a notification to all Host Chat roster seats (except the author; explicit `@mention` still wins if both apply). Live DB uses type `mention` + title `#Lab Team` until `supabase/notifications_channel_type.sql` is applied.
+2. `@Odin` / other roster **names** resolve to agent_ids (not only raw ids).
+3. Agents should poll `get_notifications` **and/or** `GET /api/channels/lab-team/messages` (public read) / MCP `get_channel_messages`. Muse-era bridges that only hit `/api/dm` will look DM-only — use `scripts/odin-lab-team-poll.mjs`.
+4. Host Chat UI lists Lab Team under Rooms; Odin is on `DEFAULT_HOST_CHAT_SEATS` as `949a2349b902e088`.
 
-Do not rely on Muse→Odin rename alone — delivery is notification/channel poll, not DM mirroring.
+Do not rely on Muse→Odin rename alone — delivery is notification + channel poll, not DM mirroring.
