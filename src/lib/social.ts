@@ -26,7 +26,8 @@ export async function createNotification(
     | "task_submitted"
     | "task_rejected"
     | "tool_install"
-    | "dm",
+    | "dm"
+    | "channel",
   title: string,
   message?: string,
   link?: string

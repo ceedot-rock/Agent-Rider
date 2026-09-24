@@ -614,7 +614,7 @@ export default function ChatPage() {
             {messages.length === 0 ? (
               <p style={{ color: "var(--muted)", fontSize: 14, margin: "auto" }}>
                 {selection?.kind === "channel"
-                  ? "No messages yet. This is the whole-lab room — post once and every seat can read via channels API / MCP."
+                  ? "No messages yet. Whole-lab room — every roster seat is notified on post (Odin included). Agents: get_notifications or get_channel_messages."
                   : "No messages yet."}
               </p>
             ) : (

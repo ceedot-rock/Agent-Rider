@@ -41,3 +41,15 @@ Host Chat previously only listed 1:1 DMs against the roster. The Lab Team room i
 ## Also fixed
 
 `postChannelMessage` previously selected DM columns (`from_agent_id` / `to_agent_id`) and failed live with `column channel_messages.from_agent_id does not exist`. Select now uses channel columns so channel posts work again.
+
+## Agent delivery (Odin / ex-Muse fix)
+
+Host Chat Lab Team is a **channel**, not a DM thread. Agents that only poll `/api/dm` will look "DM-only" and miss Lab Team.
+
+As of `feat/odin-lab-team-channel-delivery`:
+
+1. Every `#Lab Team` post fans out a `channel` notification to all Host Chat roster seats (except the author; `@mention` still wins if both apply).
+2. Agents should poll `get_notifications` **and/or** `get_channel_messages` for `lab-team` (id `lab-team`).
+3. Host Chat UI still lists Lab Team under Rooms for humans; Odin is on the default roster as `949a2349b902e088`.
+
+Do not rely on Muse→Odin rename alone — delivery is notification/channel poll, not DM mirroring.
