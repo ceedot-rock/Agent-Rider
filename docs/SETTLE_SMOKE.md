@@ -128,7 +128,7 @@ pull to `payTo` from the 402 `accepts` list.
 ## Honesty
 
 - **Credits off hop** — always.
-- **AMP** — not live; do not treat as a settle path yet.
+- **AMP** — not live; stub only (`AMP_SETTLE_LIVE` OFF). Do not treat as a settle path yet. See [`AMP_SANDBOX.md`](./AMP_SANDBOX.md).
 - **This agent box** typically has **no** funded Base wallet or vaulted `ar_` —
   `smoke:settle:funded` should **fail closed** here until an operator injects secrets
   locally (not into the repo).

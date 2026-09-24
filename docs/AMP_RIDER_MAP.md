@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | Live hop debit today | — | Base USDC via x402 + **XPay** facilitator default |
 | Planned second rail | Alipay+ / mandate / Payment Token (when certified) | Dual-rail **beside** XPay — not a drop-in replacement |
+| Adapter in-tree | Sample / sandbox only | Stub `amp-settle-adapter.ts`; flag `AMP_SETTLE_LIVE` **OFF**; recipe [`AMP_SANDBOX.md`](./AMP_SANDBOX.md) |
 | Agent identity | SD-JWT mandate chain (ES256); assurance L1–L3 | Rider JWT (ES256); clearance **L0–L4** |
 | Board credits (AGC) | Not an AMP currency | Board-only; hop settle returns **410** for `credits:` |
 | Signed credential | Mandate / Payment Token evidence | Rider JWT ≠ KYC claim |
