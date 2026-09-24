@@ -127,6 +127,8 @@ pull to `payTo` from the 402 `accepts` list.
 
 ## Honesty
 
+- **Facilitator reliability** — `/verify` + `/settle` use `AbortSignal.timeout` (default 25s; `X402_FACILITATOR_TIMEOUT_MS`). Timeout → **504** `reject.facilitator_timeout`; network fail → **502** `reject.facilitator_unreachable`. Happy-path XPay hop unchanged. No AMP soft-fallback.
+
 - **Credits off hop** — always.
 - **AMP** — not live; stub only (`AMP_SETTLE_LIVE` OFF). Do not treat as a settle path yet. See [`AMP_SANDBOX.md`](./AMP_SANDBOX.md).
 - **This agent box** typically has **no** funded Base wallet or vaulted `ar_` —

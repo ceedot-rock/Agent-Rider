@@ -81,6 +81,22 @@ export function resolveFacilitator(fallback = LIVE.facilitator): string {
   return raw.replace(/\/+$/, "");
 }
 
+/** Facilitator HTTP timeout (ms). Env X402_FACILITATOR_TIMEOUT_MS wins; default 25s. */
+export function facilitatorTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.X402_FACILITATOR_TIMEOUT_MS;
+  if (raw == null || raw === "") return 25_000;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1_000) return 25_000;
+  return Math.min(Math.floor(n), 120_000);
+}
+
+function isAbortError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { name?: string; code?: string };
+  return e.name === "AbortError" || e.name === "TimeoutError" || e.code === "ABORT_ERR";
+}
+
+
 /** True when this facilitator expects a Coinbase CDP JWT. */
 export function usesCdpAuth(facilitatorUrl: string): boolean {
   try {
@@ -204,7 +220,20 @@ export async function settleX402(opts: {
 }): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
   const chosen = rails();
   const facilitator = resolveFacilitator(chosen[0].facilitator);
+  const timeoutMs = facilitatorTimeoutMs();
   const accepts = chosen.map((r) => requirement(opts.resource, opts.amountUsd, r));
+
+  if (!Number.isFinite(opts.amountUsd) || opts.amountUsd < 0) {
+    return {
+      ok: false,
+      status: 400,
+      body: {
+        error: "bad_amount",
+        message: "amount_usd must be a finite number >= 0",
+        docs_url: SETTLE_SMOKE_DOCS_URL,
+      },
+    };
+  }
 
   if (!opts.paymentHeader) {
     return {
@@ -263,22 +292,64 @@ export async function settleX402(opts: {
     ) || chosen[0];
   const reqs = requirement(opts.resource, opts.amountUsd, rail);
 
-  const post = async (path: string) => {
+  type FacilResult =
+    | { ok: true; body: any; httpStatus: number }
+    | { ok: false; kind: "timeout" | "unreachable"; detail: string };
+
+  const post = async (path: string): Promise<FacilResult> => {
     const payload = JSON.stringify({
       x402Version: 1,
       paymentPayload: payment,
       paymentRequirements: reqs,
     });
-    const headers = await facilitatorHeaders(facilitator, "POST", path);
-    const res = await fetch(`${facilitator}${path}`, {
-      method: "POST",
-      headers,
-      body: payload,
-    });
-    return res.json().catch(() => ({ isValid: false, success: false, status: res.status }));
+    try {
+      const headers = await facilitatorHeaders(facilitator, "POST", path);
+      const res = await fetch(`${facilitator}${path}`, {
+        method: "POST",
+        headers,
+        body: payload,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const body = await res.json().catch(() => ({
+        isValid: false,
+        success: false,
+        status: res.status,
+        parse_error: "facilitator_non_json",
+      }));
+      return { ok: true, body, httpStatus: res.status };
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      if (isAbortError(err)) {
+        return { ok: false, kind: "timeout", detail };
+      }
+      return { ok: false, kind: "unreachable", detail };
+    }
   };
 
-  const verified = await post("/verify");
+  const verifiedRes = await post("/verify");
+  if (verifiedRes.ok === false) {
+    const timedOut = verifiedRes.kind === "timeout";
+    return {
+      ok: false,
+      status: timedOut ? 504 : 502,
+      body: {
+        error: timedOut ? "reject.facilitator_timeout" : "reject.facilitator_unreachable",
+        rail: "stablecoin",
+        live: !isTestnet(),
+        hop_default: "xpay",
+        facilitator,
+        facilitator_path: "/verify",
+        timeout_ms: timeoutMs,
+        detail: verifiedRes.detail,
+        accepts,
+        hint: timedOut
+          ? "XPay facilitator /verify timed out. Retry; check network path to facilitator.xpay.sh. AMP_SETTLE_LIVE stays OFF — hop remains XPay."
+          : "XPay facilitator /verify unreachable. Retry; confirm X402_FACILITATOR and egress. Live hop stays XPay (no AMP soft-fallback).",
+        docs_url: SETTLE_SMOKE_DOCS_URL,
+      },
+    };
+  }
+  const verified = verifiedRes.body;
   if (!verified?.isValid) {
     return {
       ok: false,
@@ -288,6 +359,7 @@ export async function settleX402(opts: {
         rail: "stablecoin",
         live: !isTestnet(),
         verified,
+        facilitator_http_status: verifiedRes.httpStatus,
         accepts,
         hint:
           "Facilitator /verify failed. Check Base USDC balance, payTo matches accepts, authorization validAfter/validBefore window, asset address, and X-PAYMENT encoding.",
@@ -296,7 +368,30 @@ export async function settleX402(opts: {
       },
     };
   }
-  const settled = await post("/settle");
+  const settledRes = await post("/settle");
+  if (settledRes.ok === false) {
+    const timedOut = settledRes.kind === "timeout";
+    return {
+      ok: false,
+      status: timedOut ? 504 : 502,
+      body: {
+        error: timedOut ? "reject.facilitator_timeout" : "reject.facilitator_unreachable",
+        rail: "stablecoin",
+        live: !isTestnet(),
+        hop_default: "xpay",
+        facilitator,
+        facilitator_path: "/settle",
+        timeout_ms: timeoutMs,
+        detail: settledRes.detail,
+        accepts,
+        hint: timedOut
+          ? "XPay facilitator /settle timed out after verify. Do not assume debit; check facilitator + nonce before retry."
+          : "XPay facilitator /settle unreachable after verify. Do not assume debit; retry carefully (nonce).",
+        docs_url: SETTLE_SMOKE_DOCS_URL,
+      },
+    };
+  }
+  const settled = settledRes.body;
   if (!settled?.success) {
     return {
       ok: false,
@@ -306,6 +401,7 @@ export async function settleX402(opts: {
         rail: "stablecoin",
         live: !isTestnet(),
         settled,
+        facilitator_http_status: settledRes.httpStatus,
         accepts,
         hint:
           "Facilitator /settle failed after verify. Re-check nonce reuse, authorization expiry, and payTo. See SETTLE_SMOKE.md funded path.",
