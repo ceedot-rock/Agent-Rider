@@ -327,7 +327,7 @@ export async function settleX402(opts: {
   };
 
   const verifiedRes = await post("/verify");
-  if (!verifiedRes.ok) {
+  if (verifiedRes.ok === false) {
     const timedOut = verifiedRes.kind === "timeout";
     return {
       ok: false,
@@ -369,7 +369,7 @@ export async function settleX402(opts: {
     };
   }
   const settledRes = await post("/settle");
-  if (!settledRes.ok) {
+  if (settledRes.ok === false) {
     const timedOut = settledRes.kind === "timeout";
     return {
       ok: false,
