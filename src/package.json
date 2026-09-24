@@ -16,6 +16,7 @@
     "selftest:amp": "node lib/amp-mandate.selftest.mjs",
     "selftest:live-status": "node lib/live-status.selftest.mjs",
     "selftest:host-attestation": "node lib/host-attestation.selftest.mjs",
+    "selftest:attestation-evidence": "node lib/attestation-evidence.selftest.mjs",
     "selftest:cuni-citizen-gate": "node lib/cuni-citizen-gate.selftest.mjs"
   },
   "dependencies": {
