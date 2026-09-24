@@ -127,11 +127,19 @@ export function bindSealedRideSeat(
   return bindSealedRideSeatJs(envelope, seat) as SealedRideEnvelope;
 }
 
+export type SealedRideGateOk = { ok: true };
+export type SealedRideGateRefuse = {
+  ok: false;
+  status: number;
+  body: Record<string, unknown>;
+};
+export type SealedRideGateResult = SealedRideGateOk | SealedRideGateRefuse;
+
 export function verifySealedRideForExecute(
   envelope: unknown,
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>
-) {
-  return verifySealedRideForExecuteJs(envelope, env);
+): SealedRideGateResult {
+  return verifySealedRideForExecuteJs(envelope, env) as SealedRideGateResult;
 }
 
 export function isSealedRideRequired(

@@ -50,14 +50,53 @@ export type AttestationGateRefuse = {
 export type AttestationGateResult = AttestationGateOk | AttestationGateRefuse;
 
 // Re-export runtime from .mjs (Next/webpack resolves; selftests import .mjs directly).
-export {
-  ATTESTATION_DOCS,
-  ATTESTATION_REQUIRED_HTTP_STATUS,
-  ATTESTATION_PLATFORMS,
-  isAttestationRequired,
-  validateAttestationEvidenceShape,
-  assertAttestationForSensitiveOp,
-  attestationRefuseBody,
-  readAttestationEvidence,
-  collectAttestationEvidenceStub,
+import {
+  ATTESTATION_DOCS as ATTESTATION_DOCS_JS,
+  ATTESTATION_REQUIRED_HTTP_STATUS as ATTESTATION_REQUIRED_HTTP_STATUS_JS,
+  ATTESTATION_PLATFORMS as ATTESTATION_PLATFORMS_JS,
+  isAttestationRequired as isAttestationRequiredJs,
+  validateAttestationEvidenceShape as validateAttestationEvidenceShapeJs,
+  assertAttestationForSensitiveOp as assertAttestationForSensitiveOpJs,
+  attestationRefuseBody as attestationRefuseBodyJs,
+  readAttestationEvidence as readAttestationEvidenceJs,
+  collectAttestationEvidenceStub as collectAttestationEvidenceStubJs,
 } from "./attestation-evidence.mjs";
+
+export const ATTESTATION_DOCS = ATTESTATION_DOCS_JS;
+export const ATTESTATION_REQUIRED_HTTP_STATUS = ATTESTATION_REQUIRED_HTTP_STATUS_JS;
+export const ATTESTATION_PLATFORMS = ATTESTATION_PLATFORMS_JS;
+
+export function isAttestationRequired(env?: NodeJS.ProcessEnv): boolean {
+  return isAttestationRequiredJs(env);
+}
+
+export function validateAttestationEvidenceShape(input: unknown): AttestationShapeResult {
+  return validateAttestationEvidenceShapeJs(input) as AttestationShapeResult;
+}
+
+export function assertAttestationForSensitiveOp(
+  evidence: unknown,
+  env?: NodeJS.ProcessEnv
+): AttestationGateResult {
+  return assertAttestationForSensitiveOpJs(evidence, env) as AttestationGateResult;
+}
+
+export function attestationRefuseBody(
+  error: string,
+  extra?: Record<string, unknown>
+): Record<string, unknown> {
+  return attestationRefuseBodyJs(error, extra);
+}
+
+export function readAttestationEvidence(src: {
+  headerJson?: string | null;
+  body?: unknown;
+}): unknown {
+  return readAttestationEvidenceJs(src);
+}
+
+export function collectAttestationEvidenceStub(opts?: {
+  nonce?: string | null;
+}): Record<string, unknown> {
+  return collectAttestationEvidenceStubJs(opts);
+}
