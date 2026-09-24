@@ -50,6 +50,8 @@ export const HONESTY_LOCKS = {
   kyc: "Signed rider ≠ KYC-verified",
   credits: "Board credits are not hop currency (credits: → 410)",
   no_gc: "No gift-card / GC marketing on hop",
+  cash_face: "Public lab cash is https://www.slidphilabs.com/pcc — Rider is not a cash door",
+  sandbox: "Optional RIDER_SANDBOX_API_KEY — dry mint/verify only; no funded settle",
 } as const;
 
 /** Machine-readable block for /api/discovery and agent manifests. */
@@ -79,6 +81,8 @@ export function liveVsParkedCatalog() {
         "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/OPERATOR_JOIN.md",
       host_attestation:
         "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/HOST_ATTESTATION.md",
+      quickstart:
+        "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/QUICKSTART.md",
     },
   };
 }

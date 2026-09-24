@@ -11,6 +11,8 @@ export interface RiderPayload {
   reputation_score?: number;
   layer_from?: "agent" | "human";
   layer_to?: "agent" | "human";
+  /** True when minted via RIDER_SANDBOX_API_KEY — dry tools only, no spend/settle pay. */
+  sandbox?: boolean;
   jti: string;
 }
 
