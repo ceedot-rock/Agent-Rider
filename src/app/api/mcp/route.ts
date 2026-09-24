@@ -1,8 +1,18 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { checkGateForToken, isGateOk } from "@/lib/rider";
-import { registerParticipant, resolveById } from "@/lib/agents";
+import { checkGateForToken, isGateOk, issueRider, verifyRider } from "@/lib/rider";
+import { registerParticipant, resolveById, resolveByApiKey } from "@/lib/agents";
+import {
+  DOCUMENTED_SANDBOX_API_KEY,
+  isSandboxApiKey,
+  isSandboxRider,
+  sandboxForbiddenBody,
+  sandboxIssuePayload,
+  sandboxKeyConfigured,
+  scopeBlockedForSandbox,
+  SANDBOX_CASH_FACE,
+} from "@/lib/sandbox";
 import {
   transferCredits,
   spendCredits,
@@ -96,6 +106,11 @@ export const dynamic = "force-dynamic";
 async function requireRider(riderToken: string | undefined, scope: string) {
   const gate = await checkGateForToken(riderToken ?? null, "L1", scope);
   if (!isGateOk(gate)) throw new Error(gate.body.error ?? "unauthorized");
+  if (isSandboxRider(gate.rider) && scopeBlockedForSandbox(scope)) {
+    throw new Error(
+      `${sandboxForbiddenBody().error}: sandbox riders cannot spend or mutate. Flip to a real ar_ key. Cash: ${SANDBOX_CASH_FACE}`
+    );
+  }
   return gate.rider;
 }
 
@@ -139,7 +154,123 @@ function createServer() {
           referralCode,
           capabilities,
         });
-        return textResult({ agent_id: participant.id, api_key: apiKey, credits: participant.credits });
+        return textResult({
+          agent_id: participant.id,
+          api_key: apiKey,
+          credits: participant.credits,
+          next: {
+            issue_rider: "MCP tool issue_rider with api_key, or POST /api/rider/issue",
+            quickstart: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/QUICKSTART.md",
+            cash_face: "https://www.slidphilabs.com/pcc",
+          },
+          note: "Vault api_key once. Board credits are not hop currency. Cash face: https://www.slidphilabs.com/pcc",
+        });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "issue_rider",
+    {
+      description:
+        "Mint a 15-minute rider JWT. Pass api_key = vaulted ar_ from register (LIVE seat), OR the public sandbox key when RIDER_SANDBOX_API_KEY is set on the host (dry mode). Sandbox cannot spend or complete funded settle. Cash face: https://www.slidphilabs.com/pcc",
+      inputSchema: {
+        api_key: z
+          .string()
+          .describe(
+            "Vaulted ar_ key from register, or public sandbox key (documented ar_sandbox_demo when Fly matches RIDER_SANDBOX_API_KEY)"
+          ),
+        scopes: z
+          .array(z.string())
+          .optional()
+          .describe('Optional scopes; sandbox ignores and uses read-only set. Default ["*"] for live seats.'),
+      },
+    },
+    async ({ api_key, scopes }) => {
+      try {
+        if (typeof api_key !== "string" || !api_key.startsWith("ar_")) {
+          throw new Error("invalid_api_key");
+        }
+        if (isSandboxApiKey(api_key)) {
+          const issued = await issueRider(sandboxIssuePayload());
+          return textResult({
+            ok: true,
+            rider: issued.token,
+            jti: issued.jti,
+            expires_in: issued.expires_in,
+            header_to_send: "X-Agent-Rider",
+            mode: "sandbox",
+            agent_id: "rider-sandbox",
+            cash_face: SANDBOX_CASH_FACE,
+            documented_key_hint: DOCUMENTED_SANDBOX_API_KEY,
+            next: {
+              use: "Pass rider as rider_token on dry/read MCP tools; verify_rider to check signature",
+              flip_to_paid:
+                "Register a real seat then issue_rider with that ar_ key; funded USDC settle is optional SETTLE_FUNDED — docs/SETTLE_SMOKE.md. Cash CTA remains /pcc.",
+              cash_face: SANDBOX_CASH_FACE,
+            },
+          });
+        }
+        if (api_key === DOCUMENTED_SANDBOX_API_KEY && !sandboxKeyConfigured()) {
+          throw new Error(
+            "sandbox_not_configured — host RIDER_SANDBOX_API_KEY unset. Use MCP register for an ephemeral free seat, or ask ops to set the sandbox key."
+          );
+        }
+        const participant = await resolveByApiKey(api_key);
+        if (!participant) throw new Error("invalid_api_key");
+        const issued = await issueRider({
+          agent_id: participant.id,
+          operator_id: participant.operatorId ?? "self",
+          level: "L1",
+          scopes: scopes && scopes.length ? scopes : ["*"],
+          layer_from: participant.type,
+          layer_to: "human",
+        });
+        return textResult({
+          ok: true,
+          rider: issued.token,
+          jti: issued.jti,
+          expires_in: issued.expires_in,
+          header_to_send: "X-Agent-Rider",
+          mode: "live",
+          agent_id: participant.id,
+          next: { use: "Pass rider as rider_token on gated MCP tools", cash_face: SANDBOX_CASH_FACE },
+        });
+      } catch (err) {
+        return errorResult(err);
+      }
+    }
+  );
+
+  server.registerTool(
+    "verify_rider",
+    {
+      description:
+        "Verify a rider JWT (sandbox or live). Returns ok + valid. No spend. Offline alternative: GET /.well-known/jwks.json (ES256).",
+      inputSchema: {
+        rider_token: z.string().describe("Rider JWT to verify"),
+      },
+    },
+    async ({ rider_token }) => {
+      try {
+        const result = await verifyRider(rider_token);
+        return textResult({
+          ok: result.valid === true,
+          valid: result.valid,
+          reason: result.reason,
+          rider: result.rider
+            ? {
+                agent_id: result.rider.agent_id,
+                level: result.rider.level,
+                scopes: result.rider.scopes,
+                sandbox: result.rider.sandbox === true,
+                jti: result.rider.jti,
+              }
+            : undefined,
+          cash_face: SANDBOX_CASH_FACE,
+        });
       } catch (err) {
         return errorResult(err);
       }
@@ -546,7 +677,7 @@ function createServer() {
   server.registerTool(
     "purchase_credits",
     {
-      description: `Buy AGC with real money ($1 = ${usdCentsToCredits(100)} AGC, $${MIN_PURCHASE_USD_CENTS / 100}–$${MAX_PURCHASE_USD_CENTS / 100} per purchase). Returns a Stripe Checkout URL — open it (or hand it to your operator) to pay by card; credits land in your balance once payment completes.`,
+      description: `Buy board AGC via Stripe (NOT the public lab cash face — that is https://www.slidphilabs.com/pcc). Board AGC ($1 = ${usdCentsToCredits(100)} AGC, $${MIN_PURCHASE_USD_CENTS / 100}–$${MAX_PURCHASE_USD_CENTS / 100} per purchase). Returns a Stripe Checkout URL — open it (or hand it to your operator) to pay by card; credits land in your balance once payment completes.`,
       inputSchema: {
         rider_token: riderTokenField,
         usdCents: z.number().describe(`Amount to charge, in USD cents (${MIN_PURCHASE_USD_CENTS}–${MAX_PURCHASE_USD_CENTS})`),
@@ -992,7 +1123,7 @@ function createServer() {
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, mcp-session-id",
+  "Access-Control-Allow-Headers": "Content-Type, mcp-session-id, Authorization, X-Rider-Sandbox, X-Agent-Rider",
 };
 
 export async function OPTIONS() {

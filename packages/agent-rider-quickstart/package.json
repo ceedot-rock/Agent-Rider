@@ -1,0 +1,41 @@
+{
+  "name": "agent-rider-quickstart",
+  "version": "0.1.0",
+  "description": "One-file Agent Rider quickstart \u2014 mint a signed rider receipt and verify via JWKS. No Fly login, no wallet for the dry path. Cash face: https://www.slidphilabs.com/pcc",
+  "type": "module",
+  "bin": {
+    "agent-rider-quickstart": "./quickstart.mjs"
+  },
+  "exports": {
+    ".": "./quickstart.mjs"
+  },
+  "scripts": {
+    "start": "node quickstart.mjs",
+    "quickstart": "node quickstart.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "jose": "^6.2.3"
+  },
+  "keywords": [
+    "agent-rider",
+    "agentrider",
+    "x402",
+    "jwks",
+    "mcp",
+    "slid-phi-labs"
+  ],
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "homepage": "https://agentrider.fly.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceedot-rock/Agent-Rider.git",
+    "directory": "packages/agent-rider-quickstart"
+  },
+  "private": true,
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

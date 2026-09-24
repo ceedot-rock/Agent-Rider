@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkGate, isGateOk } from "@/lib/rider";
+import { isSandboxRider, sandboxForbiddenBody } from "@/lib/sandbox";
 import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
 import { parseCuniSettle, parseKeyRail, settleX402, type SettleHop } from "@/lib/settle-hop";
 
@@ -7,6 +8,11 @@ export async function POST(req: NextRequest) {
   const gate = await checkGate(req, "L1");
   if (!isGateOk(gate)) {
     return NextResponse.json(gate.body, { status: gate.status, headers: gate.headers });
+  }
+
+  // Sandbox riders may probe settle (402 accepts) but never complete a funded X-PAYMENT hop.
+  if (isSandboxRider(gate.rider) && req.headers.get("x-payment")) {
+    return NextResponse.json(sandboxForbiddenBody({ rail: "x402" }), { status: 403 });
   }
 
   const ctype = req.headers.get("content-type") || "";

@@ -19,7 +19,9 @@
     "selftest:host-attestation": "node lib/host-attestation.selftest.mjs",
     "selftest:attestation-evidence": "node lib/attestation-evidence.selftest.mjs",
     "selftest:cuni-citizen-gate": "node lib/cuni-citizen-gate.selftest.mjs",
-    "selftest:cuni-citizen-receipt-http": "node lib/cuni-citizen-receipt-http.selftest.mjs"
+    "selftest:cuni-citizen-receipt-http": "node lib/cuni-citizen-receipt-http.selftest.mjs",
+    "selftest:sandbox": "node lib/sandbox.selftest.mjs",
+    "selftest:quickstart": "node lib/quickstart.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
@@ -83,7 +85,10 @@
     ],
     "payment_header": "X-PAYMENT",
     "one_liner": "Agent^Rider: GET https://agentrider.fly.dev/.well-known/agent.json \u00b7 MCP https://agentrider.fly.dev/api/mcp \u00b7 Lab commerce https://www.slidphilabs.com/api/agent",
-    "site": "https://agentrider.fly.dev"
+    "site": "https://agentrider.fly.dev",
+    "quickstart": "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/QUICKSTART.md",
+    "sandbox": "RIDER_SANDBOX_API_KEY on host; dry issue_rider/verify_rider \u2014 no spend. Cash face https://www.slidphilabs.com/pcc",
+    "cash_face": "https://www.slidphilabs.com/pcc"
   },
   "x402": {
     "discovery": "https://www.slidphilabs.com/api/agent",

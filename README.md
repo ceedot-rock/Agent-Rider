@@ -52,9 +52,20 @@ AMP dual-rail (status / sketch / map — AMP **not** live settle): [docs/AMP_MIL
 
 Host attestation / sealed runtime (**PARKED** until proven — not live Nitro): [docs/HOST_ATTESTATION.md](docs/HOST_ATTESTATION.md)
 
-## Quickstart (live try)
+## Quickstart (live try + agent sandbox)
 
 Human + agent minutes on Fly: **[docs/QUICKSTART.md](docs/QUICKSTART.md)** · thin client surface: `packages/agent-rider` (`@slidphi/agent-rider`, publish held).
+
+```bash
+cd packages/agent-rider-quickstart && npm install && node quickstart.mjs
+```
+
+Dry path against live https://agentrider.fly.dev — sandbox key **or** ephemeral seat → JWKS-verified receipt (`ok: true`).  
+**Rider = identity / settle / attest.** Cash face stays [https://www.slidphilabs.com/pcc](https://www.slidphilabs.com/pcc).  
+npm publish **HOLD** until CoS greens (`private: true`).
+
+MCP: `https://agentrider.fly.dev/api/mcp` — tools `issue_rider` / `verify_rider`; sandbox cannot spend. Flip to paid via real `ar_` + optional `SETTLE_FUNDED` ([SETTLE_SMOKE.md](docs/SETTLE_SMOKE.md)).
+
 
 ## Quickstart (local)
 

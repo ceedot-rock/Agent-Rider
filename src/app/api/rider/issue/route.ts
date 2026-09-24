@@ -4,6 +4,12 @@ import { findSubscriptionByMerchantKey } from "@/lib/stripe";
 import { resolveById, resolveByApiKey } from "@/lib/agents";
 import { getBlendedTrustScore } from "@/lib/reputation";
 import { checkRiderIssueLimit, getClientIp } from "@/lib/rate-limit";
+import {
+  isSandboxApiKey,
+  sandboxIssuePayload,
+  sandboxKeyConfigured,
+  wantsSandboxHeader,
+} from "@/lib/sandbox";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const VALID_LEVELS = new Set<ClearanceLevel>(["L0", "L1", "L2", "L3", "L4"]);
@@ -13,7 +19,7 @@ const LEVEL_RANK: Record<ClearanceLevel, number> = { L0: 0, L1: 1, L2: 2, L3: 3,
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-Merchant-Key, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, X-Merchant-Key, Authorization, X-Rider-Sandbox",
 };
 
 export async function OPTIONS() {
@@ -73,6 +79,39 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const requestedLevel: ClearanceLevel = VALID_LEVELS.has(body.level) ? body.level : "L1";
   const scopes: string[] = Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : ["*"];
+
+  // Free sandbox mint — dry identity only (no spend / no funded settle).
+  if (apiKey && isSandboxApiKey(apiKey)) {
+    const ip = getClientIp(req);
+    const rl = await checkRiderIssueLimit(`sandbox:${ip}`);
+    if (!rl.ok) return rateLimited(rl.retryAfter);
+    const { token, jti, expires_in } = await issueRider(sandboxIssuePayload());
+    return NextResponse.json(
+      {
+        rider: token,
+        jti,
+        expires_in,
+        header_to_send: "X-Agent-Rider",
+        mode: "sandbox",
+        cash_face: "https://www.slidphilabs.com/pcc",
+        hint: "Sandbox rider is dry-only. Funded settle needs a real ar_ key. Cash face is PCC, not Rider.",
+        sandbox_header: wantsSandboxHeader(req) ? "1" : undefined,
+      },
+      { headers: CORS_HEADERS }
+    );
+  }
+
+  if (apiKey && wantsSandboxHeader(req) && !sandboxKeyConfigured()) {
+    return NextResponse.json(
+      {
+        error: "sandbox_not_configured",
+        hint: "Server RIDER_SANDBOX_API_KEY is unset. Use ephemeral register (POST /api/agents) for free dry path, or ask ops to set the sandbox key.",
+        docs_url: "https://github.com/ceedot-rock/Agent-Rider/blob/main/docs/QUICKSTART.md",
+        cash_face: "https://www.slidphilabs.com/pcc",
+      },
+      { status: 503, headers: CORS_HEADERS }
+    );
+  }
 
   if (merchantKey) {
     const ip = getClientIp(req);
