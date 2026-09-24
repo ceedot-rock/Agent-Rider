@@ -45,6 +45,16 @@ export async function POST(req: NextRequest) {
   const c = result.contract;
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://agentrider.fly.dev";
 
+  const studioMarker =
+    body &&
+    typeof body === "object" &&
+    ((body as Record<string, unknown>).studio === "called" ||
+      (typeof (body as Record<string, unknown>).meta === "object" &&
+        ((body as Record<string, unknown>).meta as Record<string, unknown>)?.studio ===
+          "called"))
+      ? "called"
+      : undefined;
+
   return NextResponse.json(
     {
       ok: true,
@@ -57,6 +67,17 @@ export async function POST(req: NextRequest) {
         invoke: `${base}/api/v0/contracts/${c.id}/invoke`,
       },
       registeredAt: c.created_at ?? c.published_at,
+      // Acknowledge Studio citizen_receipt push when present (local gate already validated).
+      ...(citizenGate.receipt
+        ? {
+            citizen_receipt: {
+              source_hash: citizenGate.receipt.source_hash,
+              exactness: { passed: true as const },
+            },
+            citizen_receipt_accepted: true,
+          }
+        : {}),
+      ...(studioMarker ? { studio: studioMarker } : {}),
     },
     { status: result.idempotent ? 200 : 201, headers: CORS }
   );

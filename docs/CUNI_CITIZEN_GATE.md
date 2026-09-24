@@ -1,16 +1,16 @@
 # CuNi citizen receipt gate — Translate → Fund → Execute
 
-**Date stamp:** 2026-09-19 (America/New_York)  
-**Status:** **Partial** — local Rider shape gate is wired; **live CuNi Studio → Rider citizen-receipt push is PARKED** (this code does **not** call Studio).  
+**Date stamp:** 2026-09-24 (America/New_York)  
+**Status:** **Wired** — local Rider shape gate is live; **Studio → Rider citizen-receipt HTTP push** is implemented on CuNi Studio publish (`POST /api/publish` → this host `POST /api/v0/contracts` with `citizen_receipt`) when Studio has `CUNI_RIDER_URL` set. Live Fly reflects that after the paired CuNi PR deploys.  
 **Locks:** XPay = default live hop · AMP = when certified · signed ≠ KYC · no `ar_` secrets in docs/PRs/logs · **Fund path = Rider settle / XPay hop (never PCC as the money layer)**.
 
-Related: [`CUNI_INTEGRATION.md`](./CUNI_INTEGRATION.md) · [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md) · [`AMP_MILESTONE.md`](./AMP_MILESTONE.md) · [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md)
+Related: [`CUNI_INTEGRATION.md`](./CUNI_INTEGRATION.md) · [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md) · [`AMP_MILESTONE.md`](./AMP_MILESTONE.md) · [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md) · CuNi [`PASS_GATE.md`](https://github.com/ceedot-rock/cuni/blob/master/docs/PASS_GATE.md)
 
 ---
 
 ## What this is
 
-CuNi **Translate** (check / bank) produces a **citizen receipt**. Rider **Fund** (hop settle via XPay) and **Execute** (contract register / job accept) should refuse when that receipt does not PASS.
+CuNi **Translate** (check / bank / Studio pass) produces a **citizen receipt**. Rider **Fund** (hop settle via XPay) and **Execute** (contract register / job accept) should refuse when that receipt does not PASS.
 
 PASS fields (required when a receipt object is present, or always when strict env is on):
 
@@ -36,7 +36,7 @@ Default is **off** (strict mode not enabled).
 
 | Path | Role in T→F→E |
 | --- | --- |
-| `POST /api/v0/contracts` | Execute — register verified CuNi publish (publish meta may serve as receipt-equivalent) |
+| `POST /api/v0/contracts` | Execute — register verified CuNi publish (**Studio push target** for `citizen_receipt`) |
 | `POST /api/settle` | Fund — Rider **XPay** hop settle (not PCC) |
 | `POST /api/tasks/claim` | Execute — job accept |
 | `POST /api/first-job` `action=claim` | Execute — practice job accept |
@@ -60,25 +60,44 @@ Aliases for the envelope: `citizenReceipt`, `receipt`.
 Hash alias: `sourceHash`.  
 Contract register may also use top-level / `meta` publish fields (`sourceHash` + `exactness`) as the receipt-equivalent — same PASS rules. Existing `registerCuniContract` still refuses `exactness.passed !== true`.
 
-Error bodies include `studio: "not_called"` so clients do not mistake a local refuse for a live Studio round-trip.
+### Studio publish push body (CuNi → Rider)
+
+When CuNi Studio publish PASSes and `CUNI_RIDER_URL` points here:
+
+```json
+{
+  "meta": { "source": "...", "sourceHash": "<sha256>", "exactness": { "passed": true } },
+  "citizen_receipt": {
+    "source_hash": "<sha256>",
+    "exactness": { "passed": true }
+  },
+  "studio": "called"
+}
+```
+
+Header: `X-Cuni-Studio: called` (optional signal).
+
+### Rider-callable Studio verify (optional second door)
+
+Rider Execute may call Studio **before** a sealed ride:
+
+`POST https://cuni-studio.fly.dev/api/pass` with `{ "source": "..." }`  
+→ PASS returns `citizen_receipt` + `studio: "called"` · REFUSE returns 400 with `studio: "called"`.
+
+Local Rider gate refuses still include `studio: "not_called"` so clients do not mistake a **local** shape refuse for a Studio round-trip.
 
 ---
 
 ## Honesty — Studio wire
 
-| Claim | Truth today |
+| Claim | Truth after paired CuNi + this docs PR |
 | --- | --- |
-| Local PASS-field gate on Rider | **Wired** (this PR) |
-| Rider calls CuNi Studio to mint/verify citizen receipts | **No** — PARKED / not implemented |
-| Soft “live Studio citizen gate” copy | **Forbidden** until Studio HTTP is actually called |
+| Local PASS-field gate on Rider | **Wired** |
+| Studio → Rider citizen-receipt HTTP push on publish | **Implemented** (CuNi `rider_client.register_remote` → `POST /api/v0/contracts`) — live after Studio deploy |
+| Rider calls Studio `/api/pass` automatically on every settle | **No** — optional pre-execute; local gate does not HTTP-call Studio |
+| Soft “live Studio citizen gate” without an HTTP path | **Forbidden** |
 
-When Studio cutover lands, update this doc in the **same** PR that adds the client call.
-
----
-
-## Fund path reminder
-
-Hop **Fund** is **Rider `POST /api/settle` → XPay** (Base USDC / x402). Do **not** describe PCC as the money layer. Board credits remain non-hop (**410**). AMP dual-rail stays tracked in [`AMP_MILESTONE.md`](./AMP_MILESTONE.md) until certified.
+Fund path reminder: hop **Fund** is **Rider `POST /api/settle` → XPay**. Do **not** describe PCC as the money layer.
 
 ---
 
