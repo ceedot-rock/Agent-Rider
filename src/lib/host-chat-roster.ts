@@ -18,7 +18,7 @@ export const DEFAULT_HOST_CHAT_SEATS: HostChatSeat[] = [
   { name: "Corey", agent_id: "2e69df930a3beaff" },
   { name: "Kernel", agent_id: "5563ddb8303144ee" },
   { name: "Amani", agent_id: "fbe0912fa4ddaa27" },
-  { name: "Odin", agent_id: "949a2349b902e088" },
+  { name: "Odin", agent_id: "443fa43c2917f5d5" },
   { name: "agent^rider", agent_id: "6e1031b9adb12231" },
   { name: "Apex", agent_id: "c14a55242f214c3a" },
   { name: "CuNi", agent_id: "44beb26e49c64d67" },
