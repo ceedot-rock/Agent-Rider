@@ -54,17 +54,28 @@ Host attestation / sealed runtime (**PARKED** until proven — not live Nitro): 
 
 ## Quickstart (live try + agent sandbox)
 
-Human + agent minutes on Fly: **[docs/QUICKSTART.md](docs/QUICKSTART.md)** · thin client surface: `packages/agent-rider` (`@slidphi/agent-rider`, publish held).
+Human + agent minutes on Fly: **[docs/QUICKSTART.md](docs/QUICKSTART.md)** · thin client surface: `packages/agent-rider` (`@slidphi/agent-rider`, git surface — npm registry held until tip lifts).
 
 ```bash
 cd packages/agent-rider-quickstart && npm install && node quickstart.mjs
 ```
 
 Dry path against live https://agentrider.fly.dev — sandbox key **or** ephemeral seat → JWKS-verified receipt (`ok: true`).  
-**Rider = identity / settle / attest.** Cash face stays [https://www.slidphilabs.com/pcc](https://www.slidphilabs.com/pcc).  
-npm publish **HOLD** until CoS greens (`private: true`).
+**Rider = identity / settle / attest.** Cash face stays [https://www.slidphilabs.com/pcc](https://www.slidphilabs.com/pcc) (lossless compressor only — not a payment setting).  
+npm publish **HOLD** until tip lifts (`private: true`).
 
 MCP: `https://agentrider.fly.dev/api/mcp` — tools `issue_rider` / `verify_rider`; sandbox cannot spend. Flip to paid via real `ar_` + optional `SETTLE_FUNDED` ([SETTLE_SMOKE.md](docs/SETTLE_SMOKE.md)).
+
+### Try / monetize docs (published 2026-09-24)
+
+| Doc | What it is |
+| --- | --- |
+| [QUICKSTART.md](docs/QUICKSTART.md) | Live try — register, mint rider, verify receipt |
+| [CAPTURE-60s.md](docs/CAPTURE-60s.md) | ≤60s screen-capture script (register → mint → MCP → verify) |
+| [CASE-STUDY-rider-pcc.md](docs/CASE-STUDY-rider-pcc.md) | Rider attests a PCC result — metrics table blank on purpose |
+| [MCP-x402-listing.md](docs/MCP-x402-listing.md) | MCP registry + x402 listing copy (in-repo; external submit is follow-up) |
+
+Honesty: board stamp **43.72M** · cash face `/pcc` only · `402 OK; live settle via XPay in flight` · file share planned / not live.
 
 
 ## Quickstart (local)
