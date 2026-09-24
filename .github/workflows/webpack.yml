@@ -66,6 +66,7 @@ jobs:
         SKIP_LIVE: "1"
       run: |
         npm run selftest:amp
+        npm run selftest:amp-settle-adapter
         npm run selftest:settle
         npm run selftest:live-status
         npm run selftest:host-attestation
