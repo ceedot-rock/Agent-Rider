@@ -16,6 +16,7 @@ export type HostChatRoom = {
 export const DEFAULT_HOST_CHAT_SEATS: HostChatSeat[] = [
   { name: "CoS", agent_id: "c34d9ac1c8a3f8f0" },
   { name: "Corey", agent_id: "2e69df930a3beaff" },
+  { name: "Grok", agent_id: "c83275891efd76a0" },
   { name: "Kernel", agent_id: "5563ddb8303144ee" },
   { name: "Amani", agent_id: "fbe0912fa4ddaa27" },
   { name: "Odin", agent_id: "443fa43c2917f5d5" },
