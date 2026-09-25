@@ -110,24 +110,25 @@ assert.match(src, /CUNI_CITIZEN_RECEIPT_REQUIRED/);
 assert.match(src, /exactness\.passed/);
 assert.match(src, /source_hash/);
 assert.match(src, /studio:\s*"not_called"/);
-assert.match(src, /PARKED/);
-assert.match(src, /Does NOT call CuNi Studio|does \*\*not\*\* call Studio|not_called/i);
+assert.match(src, /Does NOT call CuNi Studio|not_called/i);
+assert.match(src, /cuni-studio-pass|env-gated|WIRED/i);
 assert.match(src, /XPay/);
 assert.match(src, /never PCC|PCC as money|never PCC as the money/i);
 assert.doesNotMatch(src, /\bar_[A-Za-z0-9]{8,}/);
 assert.doesNotMatch(src, /Studio is live|live Studio citizen gate is on/i);
 
 const doc = readFileSync(join(__dirname, "../../docs/CUNI_CITIZEN_GATE.md"), "utf8");
-assert.match(doc, /PARKED/);
 assert.match(doc, /Translate/);
 assert.match(doc, /Fund path = Rider settle \/ XPay|Rider settle \/ XPay hop/i);
 assert.match(doc, /HOST_ATTESTATION\.md/);
 assert.match(doc, /AMP_MILESTONE\.md/);
 assert.match(doc, /CUNI_CITIZEN_RECEIPT_REQUIRED/);
+assert.match(doc, /CUNI_STUDIO_PASS_REQUIRED|env-gated|WIRED/i);
 assert.match(doc, /never PCC|not PCC/i);
 assert.doesNotMatch(doc, /\bar_[A-Za-z0-9]{8,}/);
-assert.doesNotMatch(doc, /Studio is live|live Studio citizen gate is on|calls CuNi Studio to verify/i);
-assert.match(doc, /does \*\*not\*\* call Studio|does not call Studio|PARKED \/ not implemented|outbound still \*\*PARKED\*\*/i);
+assert.doesNotMatch(doc, /Studio is live|live Studio citizen gate is on|always calls Studio/i);
+assert.doesNotMatch(doc, /outbound still \*\*PARKED\*\*/i);
+assert.match(doc, /WIRED \(env-gated\)|env-gated/i);
 
 for (const rel of [
   "../app/api/settle/route.ts",

@@ -4,6 +4,7 @@ import { postTask, claimTask, submitTask, approveTask, getTask } from "@/lib/tas
 import { ensurePracticePoster, PRACTICE_POSTER_ID, PRACTICE_REWARD } from "@/lib/practice-poster";
 import { resolveById } from "@/lib/agents";
 import { checkCitizenReceiptGate, isCitizenGateOk } from "@/lib/cuni-citizen-gate";
+import { checkStudioPassGate, isStudioPassGateOk } from "@/lib/cuni-studio-pass";
 
 const ERROR_STATUS: Record<string, number> = {
   invalid_category: 400,
@@ -66,10 +67,20 @@ export async function POST(req: NextRequest) {
       if (!isCitizenGateOk(citizenGate)) {
         return NextResponse.json(citizenGate.body, { status: citizenGate.status });
       }
+      const studioGate = await checkStudioPassGate(body);
+      if (!isStudioPassGateOk(studioGate)) {
+        return NextResponse.json(studioGate.body, { status: studioGate.status });
+      }
       if (typeof body.taskId !== "string") {
         return NextResponse.json({ error: "missing_fields", need: ["taskId"] }, { status: 400 });
       }
       const result = await claimTask(body.taskId, caller.participant.id);
+      const studioReceipt =
+        !studioGate.skipped &&
+        studioGate.citizen_receipt &&
+        typeof studioGate.citizen_receipt === "object"
+          ? (studioGate.citizen_receipt as { source_hash?: string })
+          : null;
       return NextResponse.json({
         ok: true,
         action: "claim",
@@ -77,9 +88,12 @@ export async function POST(req: NextRequest) {
         expiresAt: result.expiresAt,
         creditsRemaining: result.creditsRemaining,
         next: { submit: "POST /api/first-job { action: \"submit\", taskId, result }" },
+        studio: studioGate.studio,
         ...(citizenGate.receipt
           ? { citizen_receipt_source_hash: citizenGate.receipt.source_hash }
-          : {}),
+          : studioReceipt?.source_hash
+            ? { citizen_receipt_source_hash: studioReceipt.source_hash }
+            : {}),
       });
     }
 

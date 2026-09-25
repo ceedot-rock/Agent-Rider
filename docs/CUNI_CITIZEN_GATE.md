@@ -1,8 +1,8 @@
 # CuNi citizen receipt gate — Translate → Fund → Execute
 
 **Date stamp:** 2026-09-24 (America/New_York)  
-**Status:** **Partial cutover** — local Rider shape gate **wired**; Rider **HTTP receive** for Studio citizen receipts **wired** (`POST /api/v0/citizen-receipts`); **Rider does not call Studio** (outbound verify still **PARKED**). Live Studio→Rider push on Fly depends on CuNi `CUNI_RIDER_URL` + Studio deploy — do not claim live Studio round-trips from Rider.  
-**Locks:** XPay = default live hop · AMP = when certified · signed ≠ KYC · no `ar_` secrets in docs/PRs/logs · **Fund path = Rider settle / XPay hop (never PCC as the money layer)**.
+**Status:** **Partial cutover** — local Rider shape gate **wired**; Rider **HTTP receive** for Studio citizen receipts **wired** (`POST /api/v0/citizen-receipts`); Rider → Studio Execute verify (`POST /api/pass`) **WIRED (env-gated)** — default **off** (`CUNI_STUDIO_PASS_REQUIRED` unset/false). Do **not** claim soft “always live” Studio round-trips from Rider; enable only after Cos GREEN + Fly env. Live Studio→Rider push depends on CuNi `CUNI_RIDER_URL` + Studio deploy.  
+**Locks:** XPay = default live hop · AMP = when certified · signed ≠ KYC · no `ar_` secrets in docs/PRs/logs · **Fund path = Rider settle / XPay hop (never PCC as the money layer)** · **PCC = lossless compressor only (never fund/paywall)**.
 
 Related: [`CUNI_INTEGRATION.md`](./CUNI_INTEGRATION.md) · [`HOST_ATTESTATION.md`](./HOST_ATTESTATION.md) · [`AMP_MILESTONE.md`](./AMP_MILESTONE.md) · [`PAYMENT_PATHS.md`](./PAYMENT_PATHS.md) · Coord: [`_CUNI_COORD_PASS_GATE.md`](./_CUNI_COORD_PASS_GATE.md)
 
@@ -88,8 +88,8 @@ Schema (optional durable store): `supabase/cuni_citizen_receipts.sql` (in-proces
 | `POST /api/tasks/claim` | Execute — job accept |
 | `POST /api/first-job` `action=claim` | Execute — practice job accept |
 
-Modules: `src/lib/cuni-citizen-gate.ts`, `src/lib/cuni-citizen-receipt-store.ts`.  
-Selftests: `npm run selftest:cuni-citizen-gate` · `npm run selftest:cuni-citizen-receipt-http` (from `src/`).
+Modules: `src/lib/cuni-citizen-gate.ts`, `src/lib/cuni-citizen-receipt-store.ts`, `src/lib/cuni-studio-pass.ts`.  
+Selftests: `npm run selftest:cuni-citizen-gate` · `npm run selftest:cuni-citizen-receipt-http` · `npm run selftest:cuni-studio-pass` (from `src/`).
 
 ---
 
@@ -118,11 +118,11 @@ Ingest responses use `studio_roundtrip: "not_applicable"` (Rider receive only).
 | Claim | Truth today |
 | --- | --- |
 | Local PASS-field gate on Rider | **Wired** |
-| Rider HTTP **receive** for Studio citizen receipts (`POST /api/v0/citizen-receipts`) | **Wired** (this cutover) |
-| Contracts register binds `citizen_receipt` when present | **Wired** |
-| Rider **calls** CuNi Studio to mint/verify citizen receipts | **No** — outbound still **PARKED** / not implemented |
-| Live Studio→Rider push observed on Fly | **Only if** CuNi Studio has `CUNI_RIDER_URL` set and is deployed with push code — Rider is ready to receive; do not soft-claim “live Studio gate” from Rider alone |
-| Soft “live Studio citizen gate” copy | **Forbidden** until a proven Studio round-trip exists |
+| Rider HTTP **receive** for Studio citizen receipts (`POST /api/v0/citizen-receipts`) | **Wired** (unchanged — #57) |
+| Contracts register binds `citizen_receipt` when present | **Wired** (receive; does **not** re-call Studio `/api/pass`) |
+| Rider → Studio Execute verify (`POST /api/pass`) | **WIRED (env-gated)** — default off; `CUNI_STUDIO_PASS_REQUIRED=true` or `studio_pass: true` |
+| Soft “always live” Studio gate from Rider | **Forbidden** while default is off — honesty = env-gated |
+| Live Studio→Rider push observed on Fly | **Only if** CuNi Studio has `CUNI_RIDER_URL` set and is deployed with push code — Rider is ready to receive |
 
 PCC cash face remains https://www.slidphilabs.com/pcc — **never** fund/pay. Rider = identity / settle / attest.
 
@@ -139,6 +139,12 @@ Hop **Fund** is **Rider `POST /api/settle` → XPay** (Base USDC / x402). Do **n
 ```
 # Optional strict citizen receipt gate on settle/claim/contracts body. Default off.
 CUNI_CITIZEN_RECEIPT_REQUIRED=false
+
+# Rider → Studio Execute verify (POST /api/pass). Default off for safe merge.
+# After Cos GREEN: fly secrets set CUNI_STUDIO_PASS_REQUIRED=true -a agentrider
+CUNI_STUDIO_PASS_REQUIRED=false
+# Optional override (no trailing slash). Default https://cuni-studio.fly.dev
+CUNI_STUDIO_URL=https://cuni-studio.fly.dev
 
 # Shared secret for Studio → Rider receipt ingest (preferred).
 # Never commit the real value. fly secrets set CUNI_STUDIO_INGEST_KEY=... -a agentrider

@@ -233,11 +233,12 @@ assert.match(doc, /\/api\/v0\/citizen-receipts/);
 assert.match(doc, /CUNI_STUDIO_INGEST_KEY/);
 assert.match(doc, /CUNI_CITIZEN_RECEIPT_REQUIRED/);
 assert.match(doc, /never PCC|not PCC/i);
-assert.match(doc, /PARKED/);
 assert.match(doc, /receive|RECEIVE|HTTP receive/i);
+assert.match(doc, /WIRED|env-gated|CUNI_STUDIO_PASS_REQUIRED/i);
 assert.doesNotMatch(doc, /\bar_[A-Za-z0-9]{8,}/);
-// Must not claim Rider outbound-calls Studio as live
-assert.doesNotMatch(doc, /Rider calls CuNi Studio to mint\/verify.*\*\*Yes\*\*/i);
+// Must not claim soft always-live outbound
+assert.doesNotMatch(doc, /always live Studio|always calls Studio/i);
+assert.doesNotMatch(doc, /outbound still \*\*PARKED\*\*/i);
 
 const coord = readFileSync(join(__dirname, "../../docs/_CUNI_COORD_PASS_GATE.md"), "utf8");
 assert.match(coord, /\/api\/v0\/citizen-receipts/);
