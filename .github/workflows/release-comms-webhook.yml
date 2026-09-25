@@ -1,0 +1,30 @@
+# On published GitHub releases, ping the CoS release→press/posts routine (draft-only).
+# Secrets (repo Settings → Secrets and variables → Actions):
+#   RIDER_RELEASE_COMMS_WEBHOOK_URL  — Grok Bot routine webhook URL
+#   RIDER_RELEASE_COMMS_WEBHOOK_KEY  — routine sender key (Authorization Bearer)
+name: Rider release → press/posts webhook
+on:
+  release:
+    types: [published]
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify CoS release-comms routine
+        env:
+          URL: ${{ secrets.RIDER_RELEASE_COMMS_WEBHOOK_URL }}
+          KEY: ${{ secrets.RIDER_RELEASE_COMMS_WEBHOOK_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${URL:-}" || { echo "missing RIDER_RELEASE_COMMS_WEBHOOK_URL"; exit 1; }
+          payload=$(jq -n \
+            --arg tag "${{ github.event.release.tag_name }}" \
+            --arg name "${{ github.event.release.name }}" \
+            --arg url "${{ github.event.release.html_url }}" \
+            --arg body "${{ github.event.release.body }}" \
+            --arg published "${{ github.event.release.published_at }}" \
+            '{source:"github-release",repo:"ceedot-rock/Agent-Rider",tag:$tag,name:$name,url:$url,body:$body,published_at:$published}')
+          curl -fsS -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${KEY}" \
+            -d "$payload"
