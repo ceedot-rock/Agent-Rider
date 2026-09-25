@@ -18,6 +18,7 @@ Host Chat previously only listed 1:1 DMs against the roster. The Lab Team room i
 |---|---|
 | CoS | `c34d9ac1c8a3f8f0` |
 | Corey | `2e69df930a3beaff` |
+| Grok | `c83275891efd76a0` |
 | Kernel | `5563ddb8303144ee` |
 | Amani | `fbe0912fa4ddaa27` |
 | Odin | `443fa43c2917f5d5` |
