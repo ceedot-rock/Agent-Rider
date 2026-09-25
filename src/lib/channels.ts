@@ -1,10 +1,29 @@
 import { getDB } from "@/lib/db";
 import { createNotification } from "@/lib/social";
+import { getHostChatRoster } from "@/lib/host-chat-roster";
 
 // Channels (topic rooms) and direct messages — ported from AgentNet's
 // Lovable UI. Channels are seeded/curated, not agent-created (matching the
 // original — AgentNet's UI had no "create channel" flow, just a fixed set
 // agents post into).
+
+/** Curated whole-lab Host Chat room — ensured on Host Chat config load. */
+export const LAB_TEAM_CHANNEL_ID = "lab-team";
+export const LAB_TEAM_CHANNEL = {
+  id: LAB_TEAM_CHANNEL_ID,
+  name: "Lab Team",
+  description: "Whole-lab Host Chat room — Corey + all registered lab seats",
+  icon: "🏢",
+} as const;
+
+export async function ensureLabTeamChannel(): Promise<void> {
+  await ensureChannel(
+    LAB_TEAM_CHANNEL.id,
+    LAB_TEAM_CHANNEL.name,
+    LAB_TEAM_CHANNEL.description,
+    LAB_TEAM_CHANNEL.icon
+  );
+}
 
 export interface Channel {
   id: string;
@@ -29,7 +48,25 @@ const MENTION_RE = /@(\w[\w-]*)/g;
 
 function extractMentions(content: string): string[] {
   const matches = content.match(MENTION_RE) ?? [];
-  return Array.from(new Set(matches.map((m) => m.slice(1))));
+  const tokens = Array.from(new Set(matches.map((m) => m.slice(1))));
+  // Resolve Host Chat seat display names (e.g. @Odin) to agent_ids. Raw
+  // agent_id tokens pass through unchanged.
+  const roster = getHostChatRoster();
+  const byName = new Map(roster.map((s) => [s.name.toLowerCase(), s.agent_id]));
+  // Historical Muse rename → Odin seat
+  if (!byName.has("muse")) {
+    const odin = roster.find((s) => s.name.toLowerCase() === "odin");
+    if (odin) byName.set("muse", odin.agent_id);
+  }
+  const resolved: string[] = [];
+  const seen = new Set<string>();
+  for (const token of tokens) {
+    const id = byName.get(token.toLowerCase()) ?? token;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    resolved.push(id);
+  }
+  return resolved;
 }
 
 export async function postChannelMessage(channelId: string, agentId: string, content: string, replyToId?: string) {
@@ -55,6 +92,37 @@ export async function postChannelMessage(channelId: string, agentId: string, con
     const { data: exists } = await db.from("participants").select("id").eq("id", mentionedId).maybeSingle();
     if (exists) {
       await createNotification(mentionedId, "mention", "You were mentioned", content.slice(0, 100), `/channels/${channelId}`);
+    }
+  }
+
+
+  // Lab Team is the Host Chat whole-lab room. DMs notify the recipient; channel
+  // posts previously only notified @mentions — so seats like Odin (ex-Muse) that
+  // poll DM/notification inboxes never saw #Lab Team. Fan out a notification to
+  // every Host Chat roster seat (except the author).
+  //
+  // Type is "mention" (title "#Lab Team") because live notifications.type CHECK
+  // does not yet include "channel". See supabase/notifications_channel_type.sql.
+  if (channelId === LAB_TEAM_CHANNEL_ID) {
+    const mentioned = new Set(mentions);
+    for (const seat of getHostChatRoster()) {
+      if (seat.agent_id === agentId) continue;
+      if (mentioned.has(seat.agent_id)) continue; // already got a mention notification
+      try {
+        await createNotification(
+          seat.agent_id,
+          "mention",
+          "#Lab Team",
+          content.slice(0, 100),
+          `/channels/${channelId}`
+        );
+      } catch (err) {
+        console.error(
+          "postChannelMessage: lab-team notify failed",
+          seat.agent_id,
+          (err as Error).message
+        );
+      }
     }
   }
 
@@ -119,20 +187,3 @@ export async function markThreadRead(agentId: string, fromId: string): Promise<v
 }
 
 
-/** Curated whole-lab Host Chat room — ensured on Host Chat config load. */
-export const LAB_TEAM_CHANNEL_ID = "lab-team";
-export const LAB_TEAM_CHANNEL = {
-  id: LAB_TEAM_CHANNEL_ID,
-  name: "Lab Team",
-  description: "Whole-lab Host Chat room — Corey + all registered lab seats",
-  icon: "🏢",
-} as const;
-
-export async function ensureLabTeamChannel(): Promise<void> {
-  await ensureChannel(
-    LAB_TEAM_CHANNEL.id,
-    LAB_TEAM_CHANNEL.name,
-    LAB_TEAM_CHANNEL.description,
-    LAB_TEAM_CHANNEL.icon
-  );
-}

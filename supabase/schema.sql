@@ -380,7 +380,7 @@ CREATE INDEX IF NOT EXISTS follows_following ON follows(following_id);
 CREATE TABLE IF NOT EXISTS notifications (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id    TEXT NOT NULL REFERENCES participants(id),
-  type        TEXT NOT NULL CHECK (type IN ('mention', 'follow', 'like', 'comment', 'task_claimed', 'task_completed', 'task_submitted', 'task_rejected', 'tool_install', 'dm')),
+  type        TEXT NOT NULL CHECK (type IN ('mention', 'follow', 'like', 'comment', 'task_claimed', 'task_completed', 'task_submitted', 'task_rejected', 'tool_install', 'dm', 'channel')),
   title       TEXT NOT NULL,
   message     TEXT,
   link        TEXT,
