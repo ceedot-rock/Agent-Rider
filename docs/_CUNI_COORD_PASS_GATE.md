@@ -93,10 +93,10 @@ Rider registers the contract **and** binds the citizen receipt to `contract_id` 
 
 | Side | Truth |
 | --- | --- |
-| Rider receive HTTP | **Ready** on this branch once shipped |
-| Rider → Studio outbound verify (`POST /api/pass` call) | **PARKED** — Rider does not call Studio yet |
+| Rider receive HTTP | **Ready** / wired (`POST /api/v0/citizen-receipts`) — unchanged |
+| Rider → Studio outbound verify (`POST /api/pass`) | **WIRED (env-gated)** — default off; set `CUNI_STUDIO_PASS_REQUIRED=true` only after Cos GREEN |
 | Studio → Rider push live on Fly | Only after CuNi deploy + `CUNI_RIDER_URL` (+ ingest key if required) |
-| PCC | Cash face only — **never** fund/pay |
+| PCC | Lossless compressor / cash face only — **never** fund/paywall |
 
 ---
 
@@ -125,6 +125,30 @@ curl -sS -X POST https://agentrider.fly.dev/api/v0/citizen-receipts \
 
 ```
 CUNI_CITIZEN_RECEIPT_REQUIRED=false   # settle/claim/contracts body strict (default off)
+CUNI_STUDIO_PASS_REQUIRED=false       # Rider→Studio /api/pass on Execute (default off)
+CUNI_STUDIO_URL=https://cuni-studio.fly.dev
 CUNI_STUDIO_INGEST_KEY=               # shared Studio ingest secret
 CUNI_CITIZEN_RECEIPT_INGEST_OPEN=false
 ```
+
+
+---
+
+## Smoke (Rider → Studio `/api/pass` — live Studio)
+
+```bash
+# Missing source → 400 REFUSE
+curl -sS -o /tmp/pass-miss.json -w '%{http_code}' -X POST https://cuni-studio.fly.dev/api/pass \
+  -H 'Content-Type: application/json' -d '{}'
+
+# Broken source → 400 REFUSE
+curl -sS -X POST https://cuni-studio.fly.dev/api/pass \
+  -H 'Content-Type: application/json' -d '{"source":"say(1+"}'
+
+# PASS (spend-control.cuni)
+curl -sS -X POST https://cuni-studio.fly.dev/api/pass \
+  -H 'Content-Type: application/json' \
+  --data-binary @<(python3 -c 'import json,pathlib;print(json.dumps({"source":pathlib.Path("examples/laws/spend-control.cuni").read_text()}))')
+```
+
+Enable on Rider Fly only after Cos GREEN: `fly secrets set CUNI_STUDIO_PASS_REQUIRED=true -a agentrider` (Ship merges/deploys).

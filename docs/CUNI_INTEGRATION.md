@@ -60,7 +60,8 @@ Rider validates CuNi citizen receipt PASS fields (`source_hash` + `exactness.pas
 
 - Default: validate-when-present
 - Strict: `CUNI_CITIZEN_RECEIPT_REQUIRED=true` (fail-closed)
-- Studio → Rider **HTTP receive**: `POST /api/v0/citizen-receipts` (wired; auth via ingest key / merchant / api_key)
-- Rider → Studio outbound verify: still **PARKED** (Rider does not call Studio)
+- Studio → Rider **HTTP receive**: `POST /api/v0/citizen-receipts` (wired; auth via ingest key / merchant / api_key) — unchanged
+- Rider → Studio Execute verify: **WIRED (env-gated)** via `POST {CUNI_STUDIO_URL}/api/pass` when `CUNI_STUDIO_PASS_REQUIRED=true` or `studio_pass: true` (default **off**; never soft “always live”)
+- PCC = lossless compressor only — never fund/paywall; Fund = Rider settle / XPay
 
 → [`CUNI_CITIZEN_GATE.md`](./CUNI_CITIZEN_GATE.md) · Coord [`_CUNI_COORD_PASS_GATE.md`](./_CUNI_COORD_PASS_GATE.md)

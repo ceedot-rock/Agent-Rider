@@ -13,7 +13,8 @@
  *
  * Honesty: local shape gate only. Does NOT call CuNi Studio.
  * Studio → Rider HTTP receive is separate (POST /api/v0/citizen-receipts).
- * Rider → Studio outbound verify remains PARKED.
+ * Rider → Studio outbound verify is WIRED env-gated in cuni-studio-pass
+ *   (CUNI_STUDIO_PASS_REQUIRED — default off; not this module).
  * Fund path for hops = Rider settle / XPay (never PCC as money layer).
  * Never log or embed ar_ values.
  */
