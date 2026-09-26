@@ -16,7 +16,7 @@ Agent-Rider provides identity, messaging, reputation, task markets, credits, and
 
 Live Next.js application with Supabase backend, Stripe payments, and extensive API surface. Includes board, demo, and docs pages.
 
-This repository is still private. Dual-license files are on `main`; visibility has not changed.
+This repository is public under AGPL-3.0 OR the Slid Phi Labs Commercial License (see LICENSE).
 
 
 ## LIVE vs PARKED
