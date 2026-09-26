@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { RiderMark } from "@/components/RiderMark";
+import { DeskHonestyStrip } from "@/components/DeskHonestyStrip";
 import { authHeaders, loadSession, refreshRider, type ClientSession } from "@/lib/client-session";
 
 type DeskTask = {
@@ -145,6 +146,8 @@ export default function DeskPage() {
         Post real work with escrowed AGC, then approve or reject submissions. Uses the same market
         functions as the public board — no Autonoma/Blackjack IP.
       </p>
+
+      <DeskHonestyStrip />
       <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", marginBottom: 18 }}>
         session {session?.agent_id ?? "none"} · credits {credits ?? session?.credits ?? "—"}
       </p>
