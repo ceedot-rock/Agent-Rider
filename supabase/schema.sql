@@ -493,6 +493,13 @@ ALTER TABLE participants ADD CONSTRAINT participants_provenance_check
   CHECK (provenance IN ('lab', 'external', 'smoke', 'unknown'));
 CREATE INDEX IF NOT EXISTS participants_provenance ON participants(provenance);
 
+
+
+-- ── Toll 2 capabilities (apply separately) ─────────────────────────────────
+-- Toll 2 capabilities — see supabase/capabilities.sql
+-- Free listing/get. Metered lookup behind TOLL2_LOOKUP_LIVE (default OFF).
+-- Do not silent-meter /api/discovery or /api/registry.
+
 -- ── Grants ─────────────────────────────────────────────────────────────────
 -- This whole platform is server-only, accessed exclusively via getDB()'s
 -- service-role client (see the "Agent comms" note above) — there is no

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentrider.fly.dev/schemas/capability.schema.json",
+  "title": "AgentRiderCapability",
+  "description": "Toll 2 capability object v0. L3_attest / host_attest is PARKED until host attestation is LIVE. Not a Warrant. Not KYC.",
+  "type": "object",
+  "required": ["capability_id", "agent_id", "name", "evidence", "trust"],
+  "properties": {
+    "capability_id": { "type": "string", "minLength": 1 },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["mcp", "http"] },
+          "url": { "type": "string" },
+          "method": { "type": "string" },
+          "tools": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["self_asserted", "rider_receipt", "cuni_exactness", "host_attest"]
+        },
+        "refs": { "type": "array", "items": { "type": "string" } },
+        "verified_at": { "type": ["string", "null"], "format": "date-time" },
+        "expires_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "required": ["evidence_level"],
+      "properties": {
+        "agent_trust_score": { "type": ["number", "null"] },
+        "evidence_level": {
+          "type": "string",
+          "enum": ["L0_self", "L1_receipt", "L2_exactness", "L3_attest"]
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "properties": {
+        "promoted": { "type": "boolean" },
+        "promoted_until": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "honesty": {
+      "type": "object",
+      "properties": {
+        "live": { "type": "boolean" },
+        "parked_note": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "additionalProperties": true
+}
