@@ -24,7 +24,13 @@
     "selftest:quickstart": "node lib/quickstart.selftest.mjs",
     "selftest:sealed-ride": "node lib/sealed-ride-envelope.selftest.mjs",
     "selftest:cuni-studio-pass": "node lib/cuni-studio-pass.selftest.mjs",
-    "selftest:toll-1-2": "node lib/toll-1-2.selftest.mjs"
+    "selftest:toll-1-2": "node lib/toll-1-2.selftest.mjs",
+    "selftest:toll-3": "node lib/toll-3.selftest.mjs",
+    "selftest:toll-4": "node lib/toll-4.selftest.mjs",
+    "selftest:toll-5": "node lib/toll-5.selftest.mjs",
+    "selftest:toll-6": "node lib/toll-6.selftest.mjs",
+    "selftest:toll-7": "node lib/toll-7.selftest.mjs",
+    "selftest:toll-3-7": "npm run selftest:toll-3 && npm run selftest:toll-4 && npm run selftest:toll-5 && npm run selftest:toll-6 && npm run selftest:toll-7"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
