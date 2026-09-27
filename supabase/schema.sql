@@ -500,6 +500,144 @@ CREATE INDEX IF NOT EXISTS participants_provenance ON participants(provenance);
 -- Free listing/get. Metered lookup behind TOLL2_LOOKUP_LIVE (default OFF).
 -- Do not silent-meter /api/discovery or /api/registry.
 
+-- ── Tollkeeper Tolls 3–7 (apply separately; DO NOT apply without CoS green) ──
+-- Toll 3 escrow/disputes, Toll 4 grants, Toll 5 attestations, Toll 6 bonds,
+-- Toll 7 memory transfers, plus the shared toll_meter and the mocked
+-- settlement ledger (toll_mock_ledger / toll_mock_balances — fake USDC,
+-- zero chain IO; no real money ever moves through these tables).
+-- Money columns are INTEGER micro-USDC (1 USDC = 1_000_000). Never floats.
+
+CREATE TABLE IF NOT EXISTS toll_escrows (
+  id BIGSERIAL PRIMARY KEY,
+  job_id TEXT NOT NULL UNIQUE,
+  payer TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  amount_uusdc BIGINT NOT NULL CHECK (amount_uusdc > 0),
+  fee_uusdc BIGINT NOT NULL CHECK (fee_uusdc >= 0),
+  job_spec_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'locked' CHECK (status IN ('locked','released','refunded','timed_out')),
+  lock_tx TEXT NOT NULL DEFAULT '',
+  created_at BIGINT NOT NULL,
+  timeout_at BIGINT NOT NULL,
+  settled_at BIGINT
+);
+CREATE INDEX IF NOT EXISTS idx_toll_escrows_status_timeout ON toll_escrows(status, timeout_at);
+
+CREATE TABLE IF NOT EXISTS toll_disputes (
+  id BIGSERIAL PRIMARY KEY,
+  escrow_id BIGINT NOT NULL REFERENCES toll_escrows(id),
+  opener TEXT NOT NULL,
+  evidence TEXT NOT NULL DEFAULT '',
+  response TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','answered','resolved')),
+  fee_uusdc BIGINT NOT NULL,
+  fee_tx TEXT NOT NULL,
+  opener_won SMALLINT,
+  resolution TEXT,
+  created_at BIGINT NOT NULL,
+  resolved_at BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS toll_payment_receipts (
+  tx_hash TEXT PRIMARY KEY,
+  envelope_json JSONB NOT NULL,
+  created_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS toll_grants (
+  grant_id TEXT PRIMARY KEY,
+  envelope_json JSONB NOT NULL,
+  grantor TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  cap_uusdc BIGINT NOT NULL CHECK (cap_uusdc > 0),
+  not_before BIGINT NOT NULL,
+  not_after BIGINT NOT NULL,
+  issued_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_toll_grants_agent ON toll_grants(agent_id);
+
+CREATE TABLE IF NOT EXISTS toll_grant_spends (
+  id BIGSERIAL PRIMARY KEY,
+  grant_id TEXT NOT NULL REFERENCES toll_grants(grant_id),
+  amount_uusdc BIGINT NOT NULL CHECK (amount_uusdc >= 0),
+  action TEXT NOT NULL,
+  created_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS toll_revocations (
+  grant_id TEXT PRIMARY KEY REFERENCES toll_grants(grant_id),
+  envelope_json JSONB NOT NULL,
+  revoked_at BIGINT NOT NULL,
+  revoker TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS toll_attestations (
+  attestation_id TEXT PRIMARY KEY,
+  artifact_hash TEXT NOT NULL,
+  envelope_json JSONB NOT NULL,
+  result TEXT NOT NULL CHECK (result IN ('pass','refuse')),
+  checked_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_toll_attestations_artifact ON toll_attestations(artifact_hash);
+
+CREATE TABLE IF NOT EXISTS toll_bonds (
+  bond_id TEXT PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  amount_uusdc BIGINT NOT NULL CHECK (amount_uusdc > 0),
+  remaining_uusdc BIGINT NOT NULL CHECK (remaining_uusdc >= 0),
+  conditions_json JSONB NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active','released','exhausted')),
+  stake_envelope JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_toll_bonds_agent ON toll_bonds(agent_id);
+
+CREATE TABLE IF NOT EXISTS toll_bond_events (
+  id BIGSERIAL PRIMARY KEY,
+  bond_id TEXT NOT NULL REFERENCES toll_bonds(bond_id),
+  kind TEXT NOT NULL CHECK (kind IN ('stake','slash','release')),
+  amount_uusdc BIGINT NOT NULL CHECK (amount_uusdc >= 0),
+  envelope_json JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS toll_memory_transfers (
+  blob_hash TEXT PRIMARY KEY,
+  from_agent TEXT NOT NULL,
+  to_host TEXT NOT NULL,
+  receipt_json JSONB NOT NULL,
+  envelope_json JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_toll_memory_transfers_from ON toll_memory_transfers(from_agent);
+
+-- Shared meter ledger: (module, operation, amount_uusdc, ref_id, created_at).
+-- Metered only — no real charge. Stripe reporters stay no-op until env wired.
+CREATE TABLE IF NOT EXISTS toll_meter (
+  id BIGSERIAL PRIMARY KEY,
+  module TEXT NOT NULL,
+  operation TEXT NOT NULL,
+  amount_uusdc BIGINT NOT NULL CHECK (amount_uusdc >= 0),
+  ref_id TEXT NOT NULL,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_toll_meter_module_ref ON toll_meter(module, ref_id);
+
+-- Mocked settlement ledger (fake USDC, zero chain IO).
+CREATE TABLE IF NOT EXISTS toll_mock_ledger (
+  tx_hash TEXT PRIMARY KEY,
+  sender TEXT NOT NULL,
+  recipient TEXT NOT NULL,
+  amount_uusdc BIGINT NOT NULL CHECK (amount_uusdc > 0),
+  memo TEXT NOT NULL DEFAULT '',
+  created_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS toll_mock_balances (
+  agent_id TEXT PRIMARY KEY,
+  balance_uusdc BIGINT NOT NULL CHECK (balance_uusdc >= 0)
+);
+
 -- ── Grants ─────────────────────────────────────────────────────────────────
 -- This whole platform is server-only, accessed exclusively via getDB()'s
 -- service-role client (see the "Agent comms" note above) — there is no

@@ -171,3 +171,67 @@ export async function reportCapabilityLookup(customerId: string): Promise<void> 
     console.error("reportCapabilityLookup failed", (err as Error).message);
   }
 }
+
+// ── Tollkeeper Tolls 3–7 meters (behind feature flags; no-op until env wired)
+// Dashboard: create Billing Meters named per below, attach metered Prices,
+// then set env. Until names are set these are deliberate no-ops (fail-open,
+// same as Toll 1/2). Meters stay no-op until env wired — no real charging.
+
+const TOLL3_ESCROW_METER_NAME = process.env.STRIPE_TOLL3_ESCROW_METER_NAME;
+const TOLL4_GRANT_ISSUE_METER_NAME = process.env.STRIPE_TOLL4_GRANT_ISSUE_METER_NAME;
+const TOLL4_GRANT_CHECK_METER_NAME = process.env.STRIPE_TOLL4_GRANT_CHECK_METER_NAME;
+const TOLL5_CHECK_METER_NAME = process.env.STRIPE_TOLL5_CHECK_METER_NAME;
+const TOLL6_BOND_STAKE_METER_NAME = process.env.STRIPE_TOLL6_BOND_STAKE_METER_NAME;
+const TOLL6_AUDIT_EXPORT_METER_NAME = process.env.STRIPE_TOLL6_AUDIT_EXPORT_METER_NAME;
+const TOLL7_MEMORY_TRANSFER_METER_NAME = process.env.STRIPE_TOLL7_MEMORY_TRANSFER_METER_NAME;
+
+async function reportTollMeter(
+  meterName: string | undefined,
+  customerId: string,
+  label: string
+): Promise<void> {
+  if (!meterName || !customerId) return;
+  try {
+    await stripe.billing.meterEvents.create({
+      event_name: meterName,
+      payload: { stripe_customer_id: customerId, value: "1" },
+    });
+  } catch (err) {
+    console.error(`${label} failed`, (err as Error).message);
+  }
+}
+
+/** Toll 3 — one escrow lock (1% routing fee accounted at lock). */
+export async function reportToll3Escrow(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL3_ESCROW_METER_NAME, customerId, "reportToll3Escrow");
+}
+
+/** Toll 4 — one grant issuance (1¢). */
+export async function reportToll4GrantIssue(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL4_GRANT_ISSUE_METER_NAME, customerId, "reportToll4GrantIssue");
+}
+
+/** Toll 4 — one grant check (0.5¢). */
+export async function reportToll4GrantCheck(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL4_GRANT_CHECK_METER_NAME, customerId, "reportToll4GrantCheck");
+}
+
+/** Toll 5 — one exactness attestation check (10¢). */
+export async function reportToll5Check(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL5_CHECK_METER_NAME, customerId, "reportToll5Check");
+}
+
+/** Toll 6 — one bond stake (1% of bonded value, metered). */
+export async function reportToll6BondStake(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL6_BOND_STAKE_METER_NAME, customerId, "reportToll6BondStake");
+}
+
+/** Toll 6 — one audit-trail export (5¢). */
+export async function reportToll6AuditExport(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL6_AUDIT_EXPORT_METER_NAME, customerId, "reportToll6AuditExport");
+}
+
+/** Toll 7 — one hosted memory transfer (2¢). */
+export async function reportToll7MemoryTransfer(customerId: string): Promise<void> {
+  return reportTollMeter(TOLL7_MEMORY_TRANSFER_METER_NAME, customerId, "reportToll7MemoryTransfer");
+}
