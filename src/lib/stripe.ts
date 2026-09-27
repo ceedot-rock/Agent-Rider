@@ -137,3 +137,37 @@ export async function reportVerifyOverage(customerId: string): Promise<void> {
     console.error("reportVerifyOverage failed", (err as Error).message);
   }
 }
+
+// ── Toll 1 / Toll 2 meters (behind feature flags; no-op until env wired) ─────
+// Dashboard: create Billing Meters named STRIPE_RIDER_VERIFY_METER_NAME and
+// STRIPE_CAPABILITY_LOOKUP_METER_NAME, attach metered Prices, then set env.
+// Until names are set these are deliberate no-ops (same fail-open as verify).
+
+const RIDER_VERIFY_METER_NAME = process.env.STRIPE_RIDER_VERIFY_METER_NAME;
+const CAPABILITY_LOOKUP_METER_NAME = process.env.STRIPE_CAPABILITY_LOOKUP_METER_NAME;
+
+/** Toll 1 — one billable rider-JWT verify above free tier (0.5¢). */
+export async function reportRiderVerifyOverage(customerId: string): Promise<void> {
+  if (!RIDER_VERIFY_METER_NAME || !customerId) return;
+  try {
+    await stripe.billing.meterEvents.create({
+      event_name: RIDER_VERIFY_METER_NAME,
+      payload: { stripe_customer_id: customerId, value: "1" },
+    });
+  } catch (err) {
+    console.error("reportRiderVerifyOverage failed", (err as Error).message);
+  }
+}
+
+/** Toll 2 — one billable capability lookup request (2¢). */
+export async function reportCapabilityLookup(customerId: string): Promise<void> {
+  if (!CAPABILITY_LOOKUP_METER_NAME || !customerId) return;
+  try {
+    await stripe.billing.meterEvents.create({
+      event_name: CAPABILITY_LOOKUP_METER_NAME,
+      payload: { stripe_customer_id: customerId, value: "1" },
+    });
+  } catch (err) {
+    console.error("reportCapabilityLookup failed", (err as Error).message);
+  }
+}
