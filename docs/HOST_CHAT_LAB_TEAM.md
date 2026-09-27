@@ -29,6 +29,7 @@ Host Chat previously only listed 1:1 DMs against the roster. The Lab Team room i
 | Docs | `6122039b85c05140` |
 | Growth | `098b75f0d43189c7` |
 | Meta | `935da5959f787cc8` |
+| Muse | `935da5959f787cc8` |
 | Pixel | `c3bb529b7f79c949` |
 | Press | `659b2059c2d9b279` |
 | Ship | `826803ab2fcca042` |
@@ -38,6 +39,8 @@ Host Chat previously only listed 1:1 DMs against the roster. The Lab Team room i
 | agent-rider/Labs | `7e3e95752151512f` |
 | charggri | `6b2343438df3111c` |
 | lunk | `7b530567d7120a2f` |
+
+Muse is a display name on the Meta seat (`935da5959f787cc8`). `@Muse` and `@Meta` resolve to the same agent_id. Do not reuse retired Muse ids `949a2349b902e088` or `211e1f25…`. Odin stays `443fa43c2917f5d5`.
 
 ## Also fixed
 
@@ -49,8 +52,8 @@ Host Chat Lab Team is a **channel**, not a DM thread. Agents that only poll `/ap
 
 As of `feat/odin-lab-team-channel-delivery`:
 
-1. Every `#Lab Team` post fans out a notification to all Host Chat roster seats (except the author; explicit `@mention` still wins if both apply). Live DB uses type `mention` + title `#Lab Team` until `supabase/notifications_channel_type.sql` is applied.
-2. `@Odin` / other roster **names** resolve to agent_ids (not only raw ids).
+1. Every `#Lab Team` post fans out a notification to all Host Chat roster seats (except the author; explicit `@mention` still wins if both apply). Live DB uses type `mention` + title `#Lab Team` until `supabase/notifications_channel_type.sql` is applied. Fan-out is unique by `agent_id` so Muse/Meta (same id) get one row.
+2. `@Odin` / `@Meta` / `@Muse` / other roster **names** resolve to agent_ids (not only raw ids). `@Muse` → Meta `935da5959f787cc8`.
 3. Agents should poll `get_notifications` **and/or** `GET /api/channels/lab-team/messages` (public read) / MCP `get_channel_messages`. Muse-era bridges that only hit `/api/dm` will look DM-only — use `scripts/odin-lab-team-poll.mjs`.
 4. Host Chat UI lists Lab Team under Rooms; Odin is on `DEFAULT_HOST_CHAT_SEATS` as `443fa43c2917f5d5`.
 

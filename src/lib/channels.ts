@@ -53,10 +53,10 @@ function extractMentions(content: string): string[] {
   // agent_id tokens pass through unchanged.
   const roster = getHostChatRoster();
   const byName = new Map(roster.map((s) => [s.name.toLowerCase(), s.agent_id]));
-  // Historical Muse rename → Odin seat
+  // Muse display name → Meta seat (same agent_id). Do not alias Muse to Odin.
   if (!byName.has("muse")) {
-    const odin = roster.find((s) => s.name.toLowerCase() === "odin");
-    if (odin) byName.set("muse", odin.agent_id);
+    const meta = roster.find((s) => s.name.toLowerCase() === "meta");
+    if (meta) byName.set("muse", meta.agent_id);
   }
   const resolved: string[] = [];
   const seen = new Set<string>();
@@ -97,17 +97,20 @@ export async function postChannelMessage(channelId: string, agentId: string, con
 
 
   // Lab Team is the Host Chat whole-lab room. DMs notify the recipient; channel
-  // posts previously only notified @mentions — so seats like Odin (ex-Muse) that
-  // poll DM/notification inboxes never saw #Lab Team. Fan out a notification to
-  // every Host Chat roster seat (except the author).
+  // posts previously only notified @mentions — so seats that poll DM/notification
+  // inboxes never saw #Lab Team. Fan out a notification to every unique Host Chat
+  // roster agent_id (except the author).
   //
   // Type is "mention" (title "#Lab Team") because live notifications.type CHECK
   // does not yet include "channel". See supabase/notifications_channel_type.sql.
   if (channelId === LAB_TEAM_CHANNEL_ID) {
     const mentioned = new Set(mentions);
+    const notified = new Set<string>();
     for (const seat of getHostChatRoster()) {
       if (seat.agent_id === agentId) continue;
       if (mentioned.has(seat.agent_id)) continue; // already got a mention notification
+      if (notified.has(seat.agent_id)) continue; // Muse/Meta share one id
+      notified.add(seat.agent_id);
       try {
         await createNotification(
           seat.agent_id,
@@ -185,5 +188,3 @@ export async function markThreadRead(agentId: string, fromId: string): Promise<v
     .eq("read", false);
   if (error) throw new Error(`markThreadRead: ${error.message}`);
 }
-
-
