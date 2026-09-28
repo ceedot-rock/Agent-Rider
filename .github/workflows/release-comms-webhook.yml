@@ -1,8 +1,8 @@
-# On published GitHub releases, ping the CoS release→press/posts routine (draft-only).
-# Secrets (repo Settings → Secrets and variables → Actions):
-#   RIDER_RELEASE_COMMS_WEBHOOK_URL  — Grok Bot routine webhook URL
-#   RIDER_RELEASE_COMMS_WEBHOOK_KEY  — routine sender key (Authorization Bearer)
-name: Rider release → press/posts webhook
+# On a published GitHub release, post the notes on Lab Team.
+# The Grok Bot webhook URL and key were never stored and cannot be revealed,
+# so this job mints a short rider from RIDER_RELEASE_API_KEY and posts here.
+# Draft pack only. Nothing auto-publishes.
+name: Rider release → Lab Team
 on:
   release:
     types: [published]
@@ -10,21 +10,56 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify CoS release-comms routine
+      - name: Post the release on Lab Team
         env:
-          URL: ${{ secrets.RIDER_RELEASE_COMMS_WEBHOOK_URL }}
-          KEY: ${{ secrets.RIDER_RELEASE_COMMS_WEBHOOK_KEY }}
+          API_KEY: ${{ secrets.RIDER_RELEASE_API_KEY }}
+          TAG: ${{ github.event.release.tag_name }}
+          REL_NAME: ${{ github.event.release.name }}
+          REL_URL: ${{ github.event.release.html_url }}
+          REL_BODY: ${{ github.event.release.body }}
+          PUBLISHED: ${{ github.event.release.published_at }}
         run: |
-          set -euo pipefail
-          test -n "${URL:-}" || { echo "missing RIDER_RELEASE_COMMS_WEBHOOK_URL"; exit 1; }
-          payload=$(jq -n \
-            --arg tag "${{ github.event.release.tag_name }}" \
-            --arg name "${{ github.event.release.name }}" \
-            --arg url "${{ github.event.release.html_url }}" \
-            --arg body "${{ github.event.release.body }}" \
-            --arg published "${{ github.event.release.published_at }}" \
-            '{source:"github-release",repo:"ceedot-rock/Agent-Rider",tag:$tag,name:$name,url:$url,body:$body,published_at:$published}')
-          curl -fsS -X POST "$URL" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${KEY}" \
-            -d "$payload"
+          sed 's/^          //' << 'PY' | python3 -
+          import json, os, urllib.request
+          key = os.environ.get("API_KEY") or ""
+          if not key:
+              raise SystemExit("missing RIDER_RELEASE_API_KEY")
+          def call(url, payload, headers):
+              data = json.dumps(payload).encode()
+              req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+              with urllib.request.urlopen(req, timeout=30) as res:
+                  return json.load(res)
+          issued = call(
+              "https://agentrider.fly.dev/api/rider/issue",
+              {},
+              {"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+          )
+          token = issued.get("rider")
+          if not token:
+              raise SystemExit("rider issue returned no token")
+          body = (os.environ.get("REL_BODY") or "").strip()
+          if len(body) > 1200:
+              body = body[:1200].rstrip() + "…"
+          lines = [
+              "@CoS GitHub release published.",
+              "repo: ceedot-rock/Agent-Rider",
+              "tag: " + (os.environ.get("TAG") or ""),
+              "name: " + (os.environ.get("REL_NAME") or ""),
+              "url: " + (os.environ.get("REL_URL") or ""),
+              "published: " + (os.environ.get("PUBLISHED") or ""),
+              "",
+              body,
+              "",
+              "Draft pack only. Nothing auto-publishes.",
+          ]
+          content = "\n".join(lines).strip()
+          if len(content) > 1900:
+              content = content[:1900].rstrip() + "…"
+          posted = call(
+              "https://agentrider.fly.dev/api/channels/lab-team/messages",
+              {"content": content},
+              {"X-Agent-Rider": token, "Content-Type": "application/json"},
+          )
+          message = posted.get("message") or {}
+          print("posted", message.get("id", "ok"))
+          PY
