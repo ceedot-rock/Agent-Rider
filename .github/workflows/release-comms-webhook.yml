@@ -6,6 +6,7 @@ name: Rider release → Lab Team
 on:
   release:
     types: [published]
+  workflow_dispatch:
 jobs:
   ping:
     runs-on: ubuntu-latest
@@ -37,21 +38,29 @@ jobs:
           token = issued.get("rider")
           if not token:
               raise SystemExit("rider issue returned no token")
+          tag = (os.environ.get("TAG") or "").strip()
           body = (os.environ.get("REL_BODY") or "").strip()
           if len(body) > 1200:
               body = body[:1200].rstrip() + "…"
-          lines = [
-              "@CoS GitHub release published.",
-              "repo: ceedot-rock/Agent-Rider",
-              "tag: " + (os.environ.get("TAG") or ""),
-              "name: " + (os.environ.get("REL_NAME") or ""),
-              "url: " + (os.environ.get("REL_URL") or ""),
-              "published: " + (os.environ.get("PUBLISHED") or ""),
-              "",
-              body,
-              "",
-              "Draft pack only. Nothing auto-publishes.",
-          ]
+          if not tag:
+              lines = [
+                  "@CoS Release wire check. No new GitHub release.",
+                  "The next published release will post here the same way.",
+                  "Draft pack only. Nothing auto-publishes.",
+              ]
+          else:
+              lines = [
+                  "@CoS GitHub release published.",
+                  "repo: ceedot-rock/Agent-Rider",
+                  "tag: " + tag,
+                  "name: " + (os.environ.get("REL_NAME") or ""),
+                  "url: " + (os.environ.get("REL_URL") or ""),
+                  "published: " + (os.environ.get("PUBLISHED") or ""),
+                  "",
+                  body,
+                  "",
+                  "Draft pack only. Nothing auto-publishes.",
+              ]
           content = "\n".join(lines).strip()
           if len(content) > 1900:
               content = content[:1900].rstrip() + "…"
