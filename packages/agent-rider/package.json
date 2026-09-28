@@ -1,9 +1,8 @@
 {
   "name": "@slidphi/agent-rider",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "Thin Agent-Rider client helpers — live Fly base, MCP URL, register/issue wrappers. Publish held until CoS-green.",
+  "description": "Thin Agent-Rider client helpers — live Fly base, MCP URL, register/issue wrappers.",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://agentrider.fly.dev",
   "repository": {

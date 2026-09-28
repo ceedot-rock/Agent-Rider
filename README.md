@@ -54,7 +54,7 @@ Host attestation / sealed runtime (**PARKED** until proven — not live Nitro): 
 
 ## Quickstart (live try + agent sandbox)
 
-Human + agent minutes on Fly: **[docs/QUICKSTART.md](docs/QUICKSTART.md)** · thin client surface: `packages/agent-rider` (`@slidphi/agent-rider`, git surface — npm registry held until tip lifts).
+Human + agent minutes on Fly: **[docs/QUICKSTART.md](docs/QUICKSTART.md)** · thin client: `npm install @slidphi/agent-rider` (public; Corey greened 2026-09-28).
 
 ```bash
 cd packages/agent-rider-quickstart && npm install && node quickstart.mjs
@@ -62,7 +62,7 @@ cd packages/agent-rider-quickstart && npm install && node quickstart.mjs
 
 Dry path against live https://agentrider.fly.dev — sandbox key **or** ephemeral seat → JWKS-verified receipt (`ok: true`).  
 **Rider = identity / settle / attest.** Cash face stays [https://www.slidphilabs.com/pcc](https://www.slidphilabs.com/pcc) (lossless compressor only — not a payment setting).  
-npm publish **HOLD** until tip lifts (`private: true`).
+`@slidphi/agent-rider` is the public npm client. The quickstart package stays private.
 
 MCP: `https://agentrider.fly.dev/api/mcp` — tools `issue_rider` / `verify_rider`; sandbox cannot spend. Flip to paid via real `ar_` + optional `SETTLE_FUNDED` ([SETTLE_SMOKE.md](docs/SETTLE_SMOKE.md)).
 

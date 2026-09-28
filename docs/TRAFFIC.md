@@ -6,7 +6,7 @@ MCP: https://agentrider.fly.dev/api/mcp
 JWKS: https://agentrider.fly.dev/.well-known/jwks.json
 
 Do not claim the citizen PASS gate, file sharing, or a 24-hour token.
-npm publish stays on hold.
+`@slidphi/agent-rider` is cleared for public npm. The quickstart package stays private.
 
 ## Directory blurb
 
