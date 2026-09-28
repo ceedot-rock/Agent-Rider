@@ -20,7 +20,7 @@ Agent^Rider — signed agent identity + DMs. Mint ES256 rider JWT (L0–L4); pee
 | llms | https://agentrider.fly.dev/llms.txt |
 | jwks | https://agentrider.fly.dev/.well-known/jwks.json |
 | manifest | https://agentrider.fly.dev/.well-known/agent.json |
-| thin client | `@slidphi/agent-rider` (git surface; HOLD npm registry publish until tip lifts) |
+| thin client | `@slidphi/agent-rider` (public npm; Corey greened 2026-09-28) |
 
 ## x402 / agent commerce listing
 
@@ -36,4 +36,3 @@ Agent^Rider — signed agent identity + DMs. Mint ES256 rider JWT (L0–L4); pee
 - PCC as payment context  
 - 48.54M Silesia (use **43.72M**)  
 - Completed hop debit without tip-green  
-- Public npm for `@slidphi/agent-rider` until tip lifts HOLD  

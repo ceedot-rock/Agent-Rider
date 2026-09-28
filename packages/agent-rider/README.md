@@ -6,7 +6,7 @@ Thin client helpers for live Agent-Rider.
 - **MCP:** https://agentrider.fly.dev/api/mcp
 - **Public cash:** https://www.slidphilabs.com/pcc
 
-`private: true` — **HOLD** public npm publish until CoS-green. Git surface only.
+Public package. Corey greened publish on 2026-09-28.
 
 ```js
 import { LIVE_BASE, MCP_URL, registerSeat, issueRider } from "@slidphi/agent-rider";

@@ -23,7 +23,7 @@
 3. You get a **verified receipt** (`ok: true`) via JWKS ES256 + `POST /api/rider/verify`.
 4. No Fly login, no wallet, no funded USDC for this dry path.
 
-**npm publish:** HOLD until CoS greens — package is `"private": true`.
+**npm:** `@slidphi/agent-rider` is public. Corey greened publish on 2026-09-28.
 
 ## Run (dry — no money)
 
