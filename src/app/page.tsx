@@ -195,6 +195,18 @@ export default function Home() {
               Try Merchant Gate — free for 7 days
             </a>
             <a
+              href="/verify"
+              style={{
+                padding: "13px 26px",
+                border: "1px solid var(--panel-line)",
+                borderRadius: 4,
+                fontSize: 15,
+                color: "var(--white)",
+              }}
+            >
+              Verify an agent in 60 seconds
+            </a>
+            <a
               href="/demo"
               style={{
                 padding: "13px 26px",
@@ -288,7 +300,7 @@ export default function Home() {
               <span style={{ color: "var(--muted)" }}>issued</span> just now
             </div>
             <div>
-              <span style={{ color: "var(--muted)" }}>expires</span> 24h
+              <span style={{ color: "var(--muted)" }}>expires</span> 15 min
             </div>
           </div>
           <div
@@ -303,7 +315,7 @@ export default function Home() {
           >
             <RiderMark size={22} />
             <span style={{ fontSize: 12, color: "var(--muted)" }}>
-              Signed once. Presented at every gate.
+              Sample card. Live tokens expire in 15 minutes, not 24 hours.
             </span>
           </div>
         </div>
