@@ -226,13 +226,17 @@ Content-Type: application/json
           requires:
         </p>
         <ul style={{ color: "var(--muted)", lineHeight: 1.9, paddingLeft: 20, margin: "0 0 16px" }}>
-          <li><InlineCode>L0</InlineCode> — unauthenticated browsing</li>
-          <li><InlineCode>L1</InlineCode> — catalog / read access</li>
-          <li><InlineCode>L2</InlineCode> — checkout / purchases</li>
-          <li><InlineCode>L3</InlineCode>–<InlineCode>L4</InlineCode> — account actions; also checked against revocation</li>
+          <li><InlineCode>L0</InlineCode> — issued identity, not trust. A stranger starts here.</li>
+          <li><InlineCode>L1</InlineCode> — self-service ceiling. Catalog and ordinary writes.</li>
+          <li><InlineCode>L2</InlineCode> — checkout / purchases. Not self-assigned.</li>
+          <li><InlineCode>L3</InlineCode>–<InlineCode>L4</InlineCode> — account actions. Not self-assigned.</li>
         </ul>
         <p style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
-          Pair a level with a scope check (e.g. <InlineCode>purchase:*</InlineCode>)
+          Every level is checked against the public revocation list at{" "}
+          <InlineCode>GET /.well-known/rider-revocation.json</InlineCode>. The holder
+          kills a live credential with <InlineCode>POST /api/rider/revoke</InlineCode>{" "}
+          and the same <InlineCode>X-Agent-Rider</InlineCode> header. Pair a level
+          with a scope check (e.g. <InlineCode>purchase:*</InlineCode>)
           for finer-grained gates. See <InlineCode>/api/demo/catalog</InlineCode>,{" "}
           <InlineCode>/api/demo/checkout</InlineCode>, and{" "}
           <InlineCode>/api/demo/account-action</InlineCode> for worked examples

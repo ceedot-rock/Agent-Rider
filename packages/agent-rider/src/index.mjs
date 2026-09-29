@@ -8,6 +8,7 @@ export const MCP_URL = `${LIVE_BASE}/api/mcp`;
 export const PUBLIC_CASH_URL = "https://www.slidphilabs.com/pcc";
 export const DISCOVERY_URL = `${LIVE_BASE}/api/discovery`;
 export const JWKS_URL = `${LIVE_BASE}/.well-known/jwks.json`;
+export const REVOCATION_URL = `${LIVE_BASE}/.well-known/rider-revocation.json`;
 export const AGENTS_URL = `${LIVE_BASE}/api/agents`;
 export const RIDER_ISSUE_URL = `${LIVE_BASE}/api/rider/issue`;
 
@@ -67,6 +68,8 @@ export async function issueRider(apiKey, opts = {}) {
 }
 
 /** Machine try_path from live discovery (free → paid pointers). */
+export { verifyRiderCredential, ISSUER } from "./verify.mjs";
+
 export async function fetchTryPath(base = LIVE_BASE) {
   const res = await fetch(`${base}/api/discovery`);
   const body = await res.json();

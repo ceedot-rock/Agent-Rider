@@ -123,6 +123,23 @@ export async function revoke(jti: string, agentId?: string, reason?: string): Pr
     .upsert({ jti, agent_id: agentId ?? null, reason: reason ?? null });
 }
 
+/** Public list for third-party verifiers. ok:false means the read failed — do not treat that as an empty list. */
+export async function listRevoked(
+  limit = 500
+): Promise<{ ok: true; rows: { jti: string; revoked_at: string | null }[] } | { ok: false }> {
+  const { data, error } = await getDB()
+    .from("revoked_tokens")
+    .select("jti, revoked_at")
+    .order("revoked_at", { ascending: false })
+    .limit(limit);
+  if (error) return { ok: false };
+  const rows = (data ?? []).map((row) => ({
+    jti: String(row.jti),
+    revoked_at: row.revoked_at ? String(row.revoked_at) : null,
+  }));
+  return { ok: true, rows };
+}
+
 // --- shared gate check, used by every demo route -------------------------
 export type GateResult =
   | { ok: true; rider: RiderPayload }
@@ -186,7 +203,8 @@ export async function checkGateForToken(
 
   const rider = result.rider;
 
-  if ((minLevel === "L3" || minLevel === "L4") && (await isRevoked(rider.jti))) {
+  // Every clearance, including L0. A cancelled passport is not a browsing pass.
+  if (await isRevoked(rider.jti)) {
     return { ok: false, status: 403, body: { error: "revoked" } };
   }
 
