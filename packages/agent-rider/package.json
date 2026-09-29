@@ -14,6 +14,9 @@
     ".": "./src/index.mjs"
   },
   "files": ["src", "README.md"],
+  "scripts": {
+    "selftest": "node src/verify.selftest.mjs"
+  },
   "keywords": ["agent-rider", "agentrider", "mcp", "slidphi", "x402"],
   "publishConfig": { "access": "public" },
   "engines": { "node": ">=18" }
