@@ -312,3 +312,34 @@ export async function listCapabilitiesForLookup(): Promise<Capability[]> {
 export function _resetCapabilityMemStoreForTests(): void {
   memStore.clear();
 }
+
+/**
+ * Toll 2 promote fulfillment — flips a capability's placement.
+ * Called from the Stripe webhook when a toll2_promote subscription starts
+ * (promoted=true until period end) or is deleted (promoted=false).
+ * Updates Supabase when reachable, else the in-memory store.
+ */
+export async function setCapabilityPromotion(
+  capabilityId: string,
+  promoted: boolean,
+  promotedUntil: string | null
+): Promise<{ ok: boolean; store: "supabase" | "memory"; dbError?: string }> {
+  const placement: CapabilityPlacement = { promoted, promoted_until: promotedUntil };
+  const now = new Date().toISOString();
+  try {
+    const db = getDB();
+    const { error } = await db
+      .from("capabilities")
+      .update({ placement, updated_at: now })
+      .eq("capability_id", capabilityId);
+    if (error) throw new Error(error.message);
+    const mem = memStore.get(capabilityId);
+    if (mem) memStore.set(capabilityId, { ...mem, placement, updated_at: now });
+    return { ok: true, store: "supabase" };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const mem = memStore.get(capabilityId);
+    if (mem) memStore.set(capabilityId, { ...mem, placement, updated_at: now });
+    return { ok: !!mem, store: "memory", dbError: msg.slice(0, 240) };
+  }
+}

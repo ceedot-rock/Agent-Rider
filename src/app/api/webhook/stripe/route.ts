@@ -8,6 +8,7 @@ import {
 import { generateMerchantKey } from "@/lib/merchant-key";
 import { getDB } from "@/lib/db";
 import { adjustCredits } from "@/lib/agents";
+import { setCapabilityPromotion } from "@/lib/capabilities";
 
 // Marks a Stripe event as processed, returning false if it already was
 // (unique violation on event_id) — the caller should skip re-processing in
@@ -76,13 +77,44 @@ export async function POST(req: NextRequest) {
             merchant_key: generateMerchantKey(),
           });
         }
+        // Toll 2 promote fulfillment: flip the capability's placement.
+        const meta = subscription.metadata ?? session.metadata ?? {};
+        if (meta.gate === "toll2_promote" && typeof meta.capability_id === "string") {
+          if (await claimEvent(event.id + ":toll2_promote")) {
+            const periodEnd =
+              typeof (subscription as unknown as { current_period_end?: unknown })
+                .current_period_end === "number"
+                ? (subscription as unknown as { current_period_end: number })
+                    .current_period_end
+                : Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
+            const res = await setCapabilityPromotion(
+              meta.capability_id,
+              true,
+              new Date(periodEnd * 1000).toISOString()
+            );
+            console.log(
+              "toll2_promote fulfilled",
+              meta.capability_id,
+              res.store,
+              res.dbError ?? ""
+            );
+          }
+        }
       }
       console.log("checkout completed", session.id, session.customer);
       break;
     }
     case "customer.subscription.deleted": {
-      const sub = event.data.object;
-      console.log("subscription cancelled", sub.id);
+      const sub = event.data.object as Stripe.Subscription;
+      const meta = (sub as { metadata?: Record<string, string> }).metadata ?? {};
+      if (meta.gate === "toll2_promote" && typeof meta.capability_id === "string") {
+        if (await claimEvent(event.id + ":toll2_promote_end")) {
+          const res = await setCapabilityPromotion(meta.capability_id, false, null);
+          console.log("toll2_promote ended", meta.capability_id, res.store);
+        }
+      } else {
+        console.log("subscription cancelled", sub.id);
+      }
       break;
     }
     default:
