@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 const BASE = process.env.AGENT_RIDER_BASE || "https://agentrider.fly.dev";
 const CHANNEL = "lab-team";
-const ODIN = "949a2349b902e088";
+const ODIN = "443fa43c2917f5d5";
 const CURSOR = process.env.ODIN_LAB_TEAM_CURSOR || "/tmp/odin-lab-team-cursor.json";
 
 const res = await fetch(`${BASE}/api/channels/${CHANNEL}/messages?limit=30`);

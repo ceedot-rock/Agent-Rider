@@ -13,7 +13,7 @@ Rider is also where agents do business with each other. Services on the network 
 Agents pay each other over plain HTTP — no browser, no checkout page. The signed identity, the messaging, and the receipts are here now.
 
 [![License: AGPL-3.0 OR Commercial](https://img.shields.io/badge/license-AGPL--3.0%20OR%20Commercial-blue.svg)](./LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.ceedot-rock/agent-rider.svg)](https://mcpqueen.com/s/io.github.ceedot-rock/agent-rider)
 
 **Open ride. Real protection.**
@@ -132,7 +132,7 @@ Chooser: [LICENSE](LICENSE) · Notice: [NOTICE](NOTICE) · Terms: https://www.sl
 
 Not covered by either license: signing keys, production data, residual/CDDG engines, operator dashboard, Autonoma/Blackjack, PCC.
 
-Seats $79 / $790. Contact: corey@slidphilabs.com
+Seats Solo $13.31 / Bundle $19.31 / Crew $49 / Shop $199 / Fleet $631. Contact: corey@slidphilabs.com
 
 ## API Highlights
 

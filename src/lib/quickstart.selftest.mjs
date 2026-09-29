@@ -21,7 +21,7 @@ const pkg = join(pkgDir, "package.json");
 
 assert.ok(existsSync(qs), "packages/agent-rider-quickstart/quickstart.mjs missing");
 assert.ok(existsSync(pkg), "package.json missing");
-assert.ok(existsSync(join(root, "examples/quickstart.mjs")), "examples/quickstart.mjs missing");
+assert.ok(!existsSync(join(root, "examples/quickstart.mjs")), "stale duplicate examples/quickstart.mjs still present");
 assert.ok(existsSync(join(root, "docs/QUICKSTART.md")), "docs/QUICKSTART.md missing");
 
 const src = readFileSync(qs, "utf8");

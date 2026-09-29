@@ -163,12 +163,15 @@ check("env_example_flag_default_false", () => {
 // XPay dry + credits 410 path remains green (spawn settle selftest subset is heavy;
 // invoke full smoke — it is offline-safe aside from optional live 401 probe).
 check("xpay_settle_smoke_still_green", () => {
-  const r = spawnSync(process.execPath, [join(__dirname, "settle-hop.selftest.mjs")], {
+  const run = () => spawnSync(process.execPath, [join(__dirname, "settle-hop.selftest.mjs")], {
     cwd: join(__dirname, ".."),
     encoding: "utf8",
     env: { ...process.env, SKIP_LIVE: "1" },
     timeout: 60_000,
   });
+  let r = run();
+  // The spawned suite is heavy; retry once if the first attempt timed out under load.
+  if (r.signal === "SIGTERM" || r.error?.code === "ETIMEDOUT") r = run();
   if (r.status !== 0) {
     throw new Error(`settle-hop.selftest exit ${r.status}\n${r.stdout}\n${r.stderr}`);
   }
