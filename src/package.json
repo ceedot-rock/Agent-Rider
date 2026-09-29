@@ -1,7 +1,6 @@
 {
   "name": "agentrider",
   "version": "2.1.0",
-  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -56,7 +55,7 @@
     "@types/react-dom": "19.2.3",
     "postcss": "^8.5.10"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "(AGPL-3.0-or-later OR LicenseRef-SlidPhiLabs-Commercial)",
   "homepage": "https://agentrider.fly.dev",
   "description": "Agent^Rider \u2014 signed identity, trust, AGC credits, task market, MCP for AI agents",
   "keywords": [
@@ -108,5 +107,29 @@
     ],
     "payment_header": "X-PAYMENT",
     "note": "Lab product x402 is on Slid Phi Labs; Agent^Rider uses Stripe/AGC for platform credits"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceedot-rock/Agent-Rider.git",
+    "directory": "src"
+  },
+  "files": [
+    "app/",
+    "components/",
+    "lib/",
+    "public/",
+    "server.mjs",
+    "license-box.mjs",
+    "next.config.js",
+    "tsconfig.json",
+    "next-env.d.ts",
+    "Dockerfile",
+    "fly.toml",
+    "LICENSE",
+    "LICENSE.AGPL-3.0",
+    "LICENSE.COMMERCIAL",
+    "NOTICE",
+    "README.md",
+    "CHANGELOG.md"
+  ]
 }
