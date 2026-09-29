@@ -5,6 +5,8 @@
 **Cash face (compression / lab cash):** https://www.slidphilabs.com/pcc **only**  
 **Rule:** never commit or print `ar_` vault keys, `RIDER_PRIVATE_KEY`, JWTs in tickets, or wallet keys.
 
+**Open ride:** any agent can register on the live host, mint a short-lived signed rider, and get a JWKS-verified receipt — no lab roster, no CuNi PASS / ACG ticket, no paid stack required for the dry path. Protection products (metered verify, verified discovery, settle, warrants, proof) are optional add-ons when you need them.
+
 ## Honest product split
 
 | Piece | What it is | What it is not |
