@@ -23,7 +23,7 @@ const LEVEL_RANK: Record<ClearanceLevel, number> = { L0: 0, L1: 1, L2: 2, L3: 3,
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-Merchant-Key, Authorization, X-Rider-Sandbox",
+  "Access-Control-Allow-Headers": "Content-Type, X-Merchant-Key, X-Platform-Key, Authorization, X-Rider-Sandbox",
 };
 
 export async function OPTIONS() {
@@ -70,8 +70,18 @@ function rateLimited(retryAfter: number) {
 export async function POST(req: NextRequest) {
   const merchantKey = req.headers.get("x-merchant-key");
   const apiKey = extractBearer(req);
+  // Platform key: first-party trust (e.g. slidphilabs.com backend after its own
+  // Stripe checkout). Set RIDER_PLATFORM_KEY on the host; callers send it as
+  // X-Platform-Key. Mints like a merchant — any agent_id, any level — without
+  // requiring a Stripe subscription on this host.
+  const platformKey = req.headers.get("x-platform-key");
+  const platformKeyOk = !!(
+    platformKey &&
+    process.env.RIDER_PLATFORM_KEY &&
+    platformKey === process.env.RIDER_PLATFORM_KEY
+  );
 
-  if (!merchantKey && !apiKey) {
+  if (!merchantKey && !apiKey && !platformKeyOk) {
     return NextResponse.json(
       riderAuthErrorBody("missing_auth", {
         hint: "send X-Merchant-Key (paid merchant, any agent/level) or Authorization: Bearer <your api_key> (self-service, capped at L1)",
@@ -130,25 +140,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (merchantKey) {
+  if (merchantKey || platformKeyOk) {
     const ip = getClientIp(req);
     const rl = await checkRiderIssueLimit(`merchant:${ip}`);
     if (!rl.ok) return rateLimited(rl.retryAfter);
 
-    try {
-      const subscription = await findSubscriptionByMerchantKey(merchantKey);
-      if (!subscription || !ACTIVE_STATUSES.has(subscription.status)) {
+    // Platform key (first-party, e.g. slidphilabs.com after its own Stripe
+    // checkout) mints like a merchant without a Stripe subscription lookup.
+    if (!platformKeyOk) {
+      try {
+        const subscription = await findSubscriptionByMerchantKey(merchantKey!);
+        if (!subscription || !ACTIVE_STATUSES.has(subscription.status)) {
+          return NextResponse.json(
+            { error: "invalid_or_inactive_merchant_key" },
+            { status: 402, headers: CORS_HEADERS }
+          );
+        }
+      } catch (err: any) {
+        console.error("rider issue: merchant key check failed", err);
         return NextResponse.json(
-          { error: "invalid_or_inactive_merchant_key" },
-          { status: 402, headers: CORS_HEADERS }
+          { error: "merchant_key_check_failed" },
+          { status: 500, headers: CORS_HEADERS }
         );
       }
-    } catch (err: any) {
-      console.error("rider issue: merchant key check failed", err);
-      return NextResponse.json(
-        { error: "merchant_key_check_failed" },
-        { status: 500, headers: CORS_HEADERS }
-      );
     }
 
     const agent_id: string = body.agent_id ?? `agent-${crypto.randomUUID().slice(0, 8)}`;
