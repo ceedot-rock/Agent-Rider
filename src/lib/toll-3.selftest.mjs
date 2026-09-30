@@ -99,7 +99,12 @@ ok(/isTollPayerOk/.test(lockSrc), "lock route reuses isTollPayerOk");
 ok(/checkMonthlyUsage/.test(lockSrc), "lock route reuses checkMonthlyUsage");
 ok(/reportToll3Escrow/.test(lockSrc), "lock route reports toll3 meter");
 ok(/toll_escrows/.test(lockSrc), "lock route writes toll_escrows");
-ok(/toll_mock_ledger/.test(lockSrc), "lock route writes toll_mock_ledger");
+ok(!/toll_mock_ledger/.test(lockSrc), "lock route never touches the mock ledger");
+ok(/verifyTollDeposit/.test(lockSrc), "lock route verifies the real USDC deposit");
+ok(/deposit_not_proven/.test(lockSrc), "lock route 402s unproven deposits fail-closed");
+ok(/deposit_tx_hash/.test(lockSrc), "lock route records the real deposit tx hash");
+ok(/deposit_already_claimed/.test(lockSrc), "lock route 409s a replayed deposit tx hash");
+ok(/payout_wallet/.test(lockSrc), "lock route records the agent payout wallet");
 ok(/toll_meter/.test(lockSrc), "lock route writes toll_meter");
 ok(/toll_store_unavailable/.test(lockSrc), "lock route fails closed on store errors");
 ok(/price_usd:\s*null/.test(lockSrc), "lock route price_usd null (variable 1% fee)");
@@ -116,6 +121,11 @@ ok(/labJwks/.test(relSrc), "release route verifies against lab JWKS");
 ok(/bad_delivery_receipt/.test(relSrc), "release route 400s bad receipts fail-closed");
 ok(/release_refused/.test(relSrc), "release route 402s refused releases");
 ok(/escrow_released|buildEscrowReleasedPayload/.test(relSrc), "release route seals escrow_released");
+ok(!/toll_mock_ledger/.test(relSrc), "release route never touches the mock ledger");
+ok(/tollSend/.test(relSrc), "release route sends real USDC via AwLPay");
+ok(/TOLL_FEE_WALLET/.test(relSrc), "release route pays the 1% to the lab fee wallet");
+ok(/escrow_predates_real_settlement/.test(relSrc), "release route refuses mock-era escrows");
+ok(/toll_chain_transfers/.test(relSrc), "release route logs the chain transfer");
 
 // ── No float money ops in core source ──────────────────────────────────────
 const coreSrc = readFileSync(join(__dirname, "toll-3-core.mjs"), "utf8");

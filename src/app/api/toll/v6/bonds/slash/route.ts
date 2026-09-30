@@ -10,8 +10,14 @@ import {
 } from "@/lib/toll-receipt";
 import { getDB } from "@/lib/db";
 import {
+  BASE_CHAIN_ID,
+  BASE_USDC,
+  assertBaseAddress,
+  TollSettleError,
+  tollSend,
+} from "@/lib/toll-settle";
+import {
   TRIGGER_ATTESTATION,
-  RECOURSE_POOL,
   validateSlashEvidence,
   slashAmounts,
   buildSlashPayload,
@@ -20,13 +26,24 @@ import {
 } from "@/lib/toll-6-core.mjs";
 
 /**
- * Toll 6 — bond slash (dark).
- * Flag TOLL6_BONDS_LIVE default OFF → 503 toll6_bonds_off.
+ * Toll 6 — bond slash. REAL USDC settlement on Base.
+ *
  * Body: {bond_id, trigger, evidence_envelope}.
  * The evidence envelope must be a lab-signed attestation whose type/verdict
  * matches the trigger (see TRIGGER_ATTESTATION in toll-6-core.mjs) and which
- * references this bond. Slashes are not metered — only the stake (1%) and
- * the audit export (5¢) are. Settlement mocked in toll_mock_balances.
+ * references this bond. On success the bond wallet sends the slashed amount
+ * in real Base USDC to the evidence pay_to address (or the lab recourse
+ * wallet) via AwLPay — idempotent, so retries and crash recovery can never
+ * double-slash.
+ *
+ * Safety rules:
+ * - Bonds staked before real settlement (no deposit_tx_hash) can NEVER move
+ *   real money → 409 bond_predates_real_settlement.
+ * - The slash recipient must be a real Base address: evidence pay_to, else
+ *   TOLL_RECOURSE_WALLET (fail closed when neither is payable).
+ *
+ * Flag TOLL6_BONDS_LIVE default OFF → 503 toll6_bonds_off.
+ * Slashes are not metered — only the stake (1%) and the audit export (5¢) are.
  * Fail closed throughout: bad evidence or a non-active bond is refused.
  */
 
@@ -105,6 +122,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Mock-era bonds never received real deposits — real money must never
+  // move against them.
+  if (!bond.deposit_tx_hash) {
+    return NextResponse.json(
+      { error: "bond_predates_real_settlement", reason: "this bond was staked before real USDC settlement; it cannot move real funds" },
+      { status: 409, headers: CORS_HEADERS }
+    );
+  }
+
   const conditions = Array.isArray(bond.conditions_json) ? bond.conditions_json : [];
   const cond = conditions.find((c: { on?: string }) => c?.on === trigger);
   if (!cond) {
@@ -137,9 +163,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Recipient: evidence pay_to when present, else the lab recourse pool.
+  // Recipient must be a real Base address: evidence pay_to when payable,
+  // else the lab recourse wallet. Fail closed — slashed funds must land
+  // somewhere real, never nowhere.
+  let recipient: string;
   const payTo = evidencePayload.pay_to;
-  const recipient = typeof payTo === "string" && payTo.length > 0 ? payTo : RECOURSE_POOL;
+  if (typeof payTo === "string" && /^0x[0-9a-fA-F]{40}$/.test(payTo)) {
+    recipient = payTo;
+  } else {
+    try {
+      recipient = assertBaseAddress(process.env.TOLL_RECOURSE_WALLET, "TOLL_RECOURSE_WALLET");
+    } catch {
+      return NextResponse.json(
+        { error: "slash_recipient_unpayable", reason: "evidence pay_to is not a Base address and TOLL_RECOURSE_WALLET is unconfigured" },
+        { status: 409, headers: CORS_HEADERS }
+      );
+    }
+  }
 
   const created_at = utcnow();
   let envelope;
@@ -164,67 +204,59 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // State writes fail closed.
-  const { error: updErr } = await db
-    .from("toll_bonds")
-    .update({ remaining_uusdc: newRemaining, status: newStatus })
-    .eq("bond_id", bond_id);
-  if (updErr) {
+  // Real money movement. The idempotency key is deterministic per
+  // (bond, remaining-before, remaining-after): a crash or client retry
+  // replays into the SAME on-chain transfer, never a second one.
+  const idemKey = `t6:slash:${bond_id}:${remaining_uusdc}-${newRemaining}`;
+  let slashTx: string;
+  try {
+    ({ tx_hash: slashTx } = await tollSend({
+      slot: "bonds",
+      to_address: recipient,
+      amount_uusdc: slashAmt,
+      idempotency_key: idemKey,
+      purpose: "bond_slash",
+    }));
+  } catch (err) {
+    const status = err instanceof TollSettleError ? err.status : 502;
+    console.error("toll6 slash: toll send failed", (err as Error).message);
     return NextResponse.json(
-      { error: "state_write_failed", table: "toll_bonds", message: updErr.message },
+      { error: "slash_send_failed", message: (err as Error).message },
+      { status, headers: CORS_HEADERS }
+    );
+  }
+
+  // State write, conditional on the balance we just slashed from: if another
+  // attempt already applied this slash (crash between send and write), the
+  // row no longer matches and we replay the original result instead of
+  // double-applying.
+  const upd = await db
+    .from("toll_bonds")
+    .update({ remaining_uusdc: newRemaining, status: newStatus, slash_tx_hash: slashTx })
+    .eq("bond_id", bond_id)
+    .eq("remaining_uusdc", remaining_uusdc);
+  if (upd.error) {
+    console.error("toll6 slash: bond update failed", upd.error.message);
+    return NextResponse.json(
+      { error: "state_write_failed", table: "toll_bonds", message: upd.error.message, slash_tx: slashTx },
       { status: 500, headers: CORS_HEADERS }
     );
   }
 
-  // Mock settlement: escrow → recipient. No real money.
-  const escrow = "bond:" + bond_id;
-  const { data: escRow, error: escSelErr } = await db
-    .from("toll_mock_balances")
-    .select("balance_uusdc")
-    .eq("agent_id", escrow)
-    .maybeSingle();
-  if (escSelErr || !escRow || Number(escRow.balance_uusdc) < slashAmt) {
-    return NextResponse.json(
-      { error: "state_write_failed", table: "toll_mock_balances", message: escSelErr?.message ?? "escrow short" },
-      { status: 500, headers: CORS_HEADERS }
-    );
-  }
-  const { error: escDebitErr } = await db
-    .from("toll_mock_balances")
-    .update({ balance_uusdc: Number(escRow.balance_uusdc) - slashAmt })
-    .eq("agent_id", escrow);
-  if (escDebitErr) {
-    return NextResponse.json(
-      { error: "state_write_failed", table: "toll_mock_balances", message: escDebitErr.message },
-      { status: 500, headers: CORS_HEADERS }
-    );
-  }
-  const { data: recRow } = await db
-    .from("toll_mock_balances")
-    .select("balance_uusdc")
-    .eq("agent_id", recipient)
-    .maybeSingle();
-  if (recRow) {
-    const { error: recErr } = await db
-      .from("toll_mock_balances")
-      .update({ balance_uusdc: Number(recRow.balance_uusdc) + slashAmt })
-      .eq("agent_id", recipient);
-    if (recErr) {
-      return NextResponse.json(
-        { error: "state_write_failed", table: "toll_mock_balances", message: recErr.message },
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
-  } else {
-    const { error: recErr } = await db
-      .from("toll_mock_balances")
-      .insert({ agent_id: recipient, balance_uusdc: slashAmt });
-    if (recErr) {
-      return NextResponse.json(
-        { error: "state_write_failed", table: "toll_mock_balances", message: recErr.message },
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
+  // Append-only chain transfer log — fail open; the chain tx is the truth.
+  try {
+    await db.from("toll_chain_transfers").insert({
+      kind: "slash",
+      ref_id: bond_id,
+      tx_hash: slashTx,
+      from_slot: "bonds",
+      to_wallet: recipient,
+      amount_uusdc: slashAmt,
+      idempotency_key: idemKey,
+      created_at: Math.floor(Date.now() / 1000),
+    });
+  } catch (err) {
+    console.error("toll6 slash: chain-transfer log failed (fail-open)", (err as Error).message);
   }
 
   const { error: eventErr } = await db.from("toll_bond_events").insert({
@@ -232,11 +264,12 @@ export async function POST(req: NextRequest) {
     kind: "slash",
     amount_uusdc: slashAmt,
     envelope_json: envelope,
+    tx_hash: slashTx,
     created_at,
   });
   if (eventErr) {
     return NextResponse.json(
-      { error: "state_write_failed", table: "toll_bond_events", message: eventErr.message },
+      { error: "state_write_failed", table: "toll_bond_events", message: eventErr.message, slash_tx: slashTx },
       { status: 500, headers: CORS_HEADERS }
     );
   }
@@ -252,8 +285,11 @@ export async function POST(req: NextRequest) {
       envelope,
       slashed_uusdc: slashAmt,
       recipient,
+      slash_tx: slashTx,
       remaining_uusdc: newRemaining,
       status: newStatus,
+      chain_id: BASE_CHAIN_ID,
+      token_contract: BASE_USDC,
       receipt_id,
       usage: { slashesThisMonth: usage.count, overage: usage.overLimit },
       payer: { kind: payer.kind, payer_id: payer.payer_id },

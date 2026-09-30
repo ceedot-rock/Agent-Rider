@@ -6,6 +6,13 @@ import { isTollPayerOk, resolveTollPayer } from "@/lib/toll-billing";
 import { signTollPayload } from "@/lib/toll-receipt";
 import { getDB } from "@/lib/db";
 import {
+  BASE_CHAIN_ID,
+  BASE_USDC,
+  assertBaseAddress,
+  TollSettleError,
+  verifyTollDeposit,
+} from "@/lib/toll-settle";
+import {
   validateAmountUusdc,
   validateConditions,
   newBondId,
@@ -16,13 +23,17 @@ import {
 } from "@/lib/toll-6-core.mjs";
 
 /**
- * Toll 6 — bond stake (dark).
+ * Toll 6 — bond stake. REAL USDC settlement on Base.
+ *
+ * The staker sends `amount_uusdc` of native USDC (Base chain 8453) to the lab
+ * bond wallet, signs a deposit binding, and passes the deposit tx hash here.
+ * Rider verifies the deposit on-chain through AwLPay BEFORE recording the
+ * bond — no deposit proof, no bond. The 1% toll is metered (Stripe rail, as
+ * before); the full deposit stands as slashable collateral.
+ *
  * Flag TOLL6_BONDS_LIVE default OFF → 503 toll6_bonds_off (no stake, no meter).
- * Body: {agent_id, amount_uusdc (integer micro-USDC > 0), conditions[]}.
- * Toll: 1% of bonded value, metered only (no real charge). Settlement mocked
- * in toll_mock_balances — no real USDC ever moves.
- * Fail closed: bad body → 400, insufficient mocked balance → 402,
- * state-write failure → 500. The toll_meter write itself is fail-open.
+ * Fail closed: bad body → 400, unproven deposit → 402, state-write failure
+ * → 500. The toll_meter write itself is fail-open.
  */
 
 const CORS_HEADERS = {
@@ -71,37 +82,56 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const db = getDB();
-
-  // Mocked balance check: agent must actually hold the stake amount.
-  const { data: balRow, error: balErr } = await db
-    .from("toll_mock_balances")
-    .select("balance_uusdc")
-    .eq("agent_id", agent_id)
-    .maybeSingle();
-  if (balErr) {
-    return NextResponse.json(
-      { error: "balance_check_failed", message: balErr.message },
-      { status: 500, headers: CORS_HEADERS }
-    );
-  }
-  const balance = Number(balRow?.balance_uusdc ?? 0);
-  if (balance < amount_uusdc) {
+  // Real-settlement fields.
+  const deposit_tx_hash = body.deposit_tx_hash;
+  const payer_sig = body.payer_sig;
+  if (typeof deposit_tx_hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(deposit_tx_hash)) {
     return NextResponse.json(
       {
-        error: "insufficient_balance",
-        agent_id,
-        balance_uusdc: balance,
-        needed_uusdc: amount_uusdc,
-        fund: {
-          how: "send real USDC on Base to the lab escrow address, then call this endpoint with the deposit tx hash",
-          usdc_base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-          note: "mock balances are retired — toll escrow/bonds settle in real USDC on Base",
-        },
+        error: "missing_deposit",
+        message: "send real USDC on Base to the lab bond wallet, then call this endpoint with the deposit tx hash",
+        usdc_base: BASE_USDC,
+        chain_id: BASE_CHAIN_ID,
         schema_url: "/api/toll/schema",
       },
       { status: 402, headers: CORS_HEADERS }
     );
+  }
+  if (typeof payer_sig !== "string" || payer_sig.length === 0) {
+    return NextResponse.json(
+      { error: "bad_payer_sig", message: "EIP-191 personal signature binding this deposit to your ref" },
+      { status: 400, headers: CORS_HEADERS }
+    );
+  }
+  let payout_wallet: string;
+  try {
+    payout_wallet = assertBaseAddress(body.payout_wallet, "payout_wallet");
+  } catch (err) {
+    return NextResponse.json(
+      { error: "bad_payout_wallet", message: (err as Error).message },
+      { status: 400, headers: CORS_HEADERS }
+    );
+  }
+  const sig_ref = typeof body.sig_ref === "string" && body.sig_ref.length > 0 ? body.sig_ref : agent_id;
+
+  // Prove the real deposit BEFORE any state changes. No proof, no bond.
+  let proof;
+  try {
+    proof = await verifyTollDeposit({
+      slot: "bonds",
+      tx_hash: deposit_tx_hash,
+      payer_sig,
+      min_uusdc: amount_uusdc,
+      ref: sig_ref,
+    });
+  } catch (err) {
+    if (err instanceof TollSettleError) {
+      return NextResponse.json(
+        { error: "deposit_not_proven", message: err.message },
+        { status: err.status, headers: CORS_HEADERS }
+      );
+    }
+    throw err;
   }
 
   // Every stake is metered (free limit 0): report to Stripe when a customer
@@ -135,6 +165,7 @@ export async function POST(req: NextRequest) {
   }
 
   // State writes are fail closed: any failure → 500, nothing partial is returned.
+  const db = getDB();
   const { error: bondErr } = await db.from("toll_bonds").insert({
     bond_id,
     agent_id,
@@ -143,9 +174,23 @@ export async function POST(req: NextRequest) {
     conditions_json: conditions,
     status: "active",
     stake_envelope: envelope,
+    deposit_tx_hash,
+    staker_wallet: proof.payer,
+    payout_wallet,
+    confirmed_uusdc: proof.paid_uusdc,
+    chain_id: BASE_CHAIN_ID,
+    token_contract: BASE_USDC,
     created_at,
   });
   if (bondErr) {
+    // A deposit funds exactly one bond: a replayed tx hash is a 409,
+    // never a second bond.
+    if (bondErr.code === "23505") {
+      return NextResponse.json(
+        { error: "deposit_already_claimed", message: "this deposit tx hash already funds a bond" },
+        { status: 409, headers: CORS_HEADERS }
+      );
+    }
     return NextResponse.json(
       { error: "state_write_failed", table: "toll_bonds", message: bondErr.message },
       { status: 500, headers: CORS_HEADERS }
@@ -157,6 +202,7 @@ export async function POST(req: NextRequest) {
     kind: "stake",
     amount_uusdc,
     envelope_json: envelope,
+    tx_hash: deposit_tx_hash,
     created_at,
   });
   if (eventErr) {
@@ -164,46 +210,6 @@ export async function POST(req: NextRequest) {
       { error: "state_write_failed", table: "toll_bond_events", message: eventErr.message },
       { status: 500, headers: CORS_HEADERS }
     );
-  }
-
-  // Mock settlement: lock the stake in a per-bond escrow row. No real money.
-  const escrow = "bond:" + bond_id;
-  const { error: debitErr } = await db
-    .from("toll_mock_balances")
-    .update({ balance_uusdc: balance - amount_uusdc })
-    .eq("agent_id", agent_id);
-  if (debitErr) {
-    return NextResponse.json(
-      { error: "state_write_failed", table: "toll_mock_balances", message: debitErr.message },
-      { status: 500, headers: CORS_HEADERS }
-    );
-  }
-  const { data: escRow } = await db
-    .from("toll_mock_balances")
-    .select("balance_uusdc")
-    .eq("agent_id", escrow)
-    .maybeSingle();
-  if (escRow) {
-    const { error: escErr } = await db
-      .from("toll_mock_balances")
-      .update({ balance_uusdc: Number(escRow.balance_uusdc) + amount_uusdc })
-      .eq("agent_id", escrow);
-    if (escErr) {
-      return NextResponse.json(
-        { error: "state_write_failed", table: "toll_mock_balances", message: escErr.message },
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
-  } else {
-    const { error: escErr } = await db
-      .from("toll_mock_balances")
-      .insert({ agent_id: escrow, balance_uusdc: amount_uusdc });
-    if (escErr) {
-      return NextResponse.json(
-        { error: "state_write_failed", table: "toll_mock_balances", message: escErr.message },
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
   }
 
   // Toll meter is fail-open: a meter outage must not block the stake.
@@ -231,6 +237,12 @@ export async function POST(req: NextRequest) {
       toll_uusdc,
       receipt_id,
       bond_id,
+      deposit_tx_hash,
+      staker_wallet: proof.payer,
+      payout_wallet,
+      confirmed_uusdc: proof.paid_uusdc,
+      chain_id: BASE_CHAIN_ID,
+      token_contract: BASE_USDC,
       envelope,
       usage: {
         stakesThisMonth: usage.count,
