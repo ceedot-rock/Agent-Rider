@@ -107,6 +107,8 @@ export async function resolveTollPayer(req: Request): Promise<TollPayer> {
     body: {
       error: "missing_billing_auth",
       hint: "send Authorization: Bearer ar_… or X-Merchant-Key — caller pays, not the subject agent",
+      schema_url: "/api/toll/schema",
+      register_url: "/api/agents",
     },
   };
 }

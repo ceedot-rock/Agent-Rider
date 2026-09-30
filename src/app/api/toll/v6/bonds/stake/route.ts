@@ -88,7 +88,18 @@ export async function POST(req: NextRequest) {
   const balance = Number(balRow?.balance_uusdc ?? 0);
   if (balance < amount_uusdc) {
     return NextResponse.json(
-      { error: "insufficient_balance", agent_id, balance_uusdc: balance, needed_uusdc: amount_uusdc },
+      {
+        error: "insufficient_balance",
+        agent_id,
+        balance_uusdc: balance,
+        needed_uusdc: amount_uusdc,
+        topup: {
+          how: "POST /api/toll/balance/topup with your toll auth (Authorization: Bearer ar_… or X-Merchant-Key)",
+          body: { amount_usd_cents: 100 },
+          note: "returns a Stripe checkout URL; toll_mock_balances is credited when payment completes (1 USD = 1,000,000 uusdc)",
+        },
+        schema_url: "/api/toll/schema",
+      },
       { status: 402, headers: CORS_HEADERS }
     );
   }
