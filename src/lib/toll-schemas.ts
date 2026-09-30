@@ -72,17 +72,21 @@ export const TOLL_SCHEMAS: TollEndpointSchema[] = [
     path: "/api/toll/v3/escrow",
     method: "POST",
     auth: TOLL_AUTH,
-    price: "1% of escrowed amount",
+    price: "1% of escrowed amount (realized at release)",
     gate: "Gate 3 — escrow lock",
     body_schema: {
       type: "object",
-      required: ["agent_id", "amount_uusdc", "job_id", "job_spec_hash", "timeout_sec"],
+      required: ["agent_id", "amount_uusdc", "job_id", "job_spec_hash", "timeout_sec", "deposit_tx_hash", "payer_sig", "payout_wallet"],
       properties: {
         agent_id: { type: "string" },
-        amount_uusdc: { type: "integer", minimum: 1, description: "micro-USDC (1 USDC = 1,000,000)" },
+        amount_uusdc: { type: "integer", minimum: 10000, description: "micro-USDC (1 USDC = 1,000,000); min 1¢ so the 1% fee rounds to ≥1" },
         job_id: { type: "string" },
         job_spec_hash: { type: "string" },
         timeout_sec: { type: "integer", minimum: 1 },
+        deposit_tx_hash: { type: "string", description: "0x tx hash of your real Base USDC transfer into the lab escrow wallet" },
+        payer_sig: { type: "string", description: "EIP-191 personal signature binding this deposit to your sig_ref" },
+        payout_wallet: { type: "string", description: "0x Base address that receives the 99% on release" },
+        sig_ref: { type: "string", description: "optional; the ref you signed over (defaults to job_id)" },
       },
     },
     example: {
@@ -91,6 +95,9 @@ export const TOLL_SCHEMAS: TollEndpointSchema[] = [
       job_id: "job-1",
       job_spec_hash: "sha256:…",
       timeout_sec: 3600,
+      deposit_tx_hash: "0x…",
+      payer_sig: "0x…",
+      payout_wallet: "0x…",
     },
   },
   {
@@ -181,14 +188,14 @@ export const TOLL_SCHEMAS: TollEndpointSchema[] = [
     path: "/api/toll/v6/bonds/stake",
     method: "POST",
     auth: TOLL_AUTH,
-    price: "1% of staked amount",
+    price: "1% of staked amount (metered via Stripe; full deposit stands as slashable collateral)",
     gate: "Gate 6 — bond stake",
     body_schema: {
       type: "object",
-      required: ["agent_id", "amount_uusdc", "conditions"],
+      required: ["agent_id", "amount_uusdc", "conditions", "deposit_tx_hash", "payer_sig", "payout_wallet"],
       properties: {
         agent_id: { type: "string" },
-        amount_uusdc: { type: "integer", minimum: 1, description: "must not exceed your toll_mock_balances" },
+        amount_uusdc: { type: "integer", minimum: 1, description: "micro-USDC of the real deposit into the lab bond wallet" },
         conditions: {
           type: "array",
           minItems: 1,
@@ -204,12 +211,19 @@ export const TOLL_SCHEMAS: TollEndpointSchema[] = [
             },
           },
         },
+        deposit_tx_hash: { type: "string", description: "0x tx hash of your real Base USDC transfer into the lab bond wallet" },
+        payer_sig: { type: "string", description: "EIP-191 personal signature binding this deposit to your sig_ref" },
+        payout_wallet: { type: "string", description: "0x Base address that receives the bond on release/refund" },
+        sig_ref: { type: "string", description: "optional; the ref you signed over (defaults to agent_id)" },
       },
     },
     example: {
       agent_id: "a4fbaf7cafaf3016",
-      amount_uusdc: 100,
+      amount_uusdc: 1000000,
       conditions: [{ on: "oracle_refuse", slash_pct: 50 }],
+      deposit_tx_hash: "0x…",
+      payer_sig: "0x…",
+      payout_wallet: "0x…",
     },
   },
   {
@@ -259,6 +273,12 @@ export function tollSchemaDoc() {
     register: "POST /api/agents → { agent_id, api_key } — self-service, no human needed",
     funding:
       "Gates 3 and 6 settle in real USDC on Base (native USDC 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913). Send USDC to the lab escrow address and pass the deposit tx hash.",
+    wallets: {
+      escrow: process.env.TOLL_ESCROW_ADDRESS ?? null,
+      bonds: process.env.TOLL_BONDS_ADDRESS ?? null,
+      chain_id: 8453,
+      token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    },
     endpoints: TOLL_SCHEMAS,
   };
 }

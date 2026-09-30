@@ -6,20 +6,29 @@ import { isTollPayerOk, resolveTollPayer } from "@/lib/toll-billing";
 import { signTollPayload } from "@/lib/toll-receipt";
 import { getDB } from "@/lib/db";
 import {
+  BASE_CHAIN_ID,
+  BASE_USDC,
+  assertBaseAddress,
+  TollSettleError,
+  verifyTollDeposit,
+} from "@/lib/toll-settle";
+import {
   buildEscrowLockPayload,
-  escrowAcct,
-  escrowFeeFor,
-  LAB_FEES_ACCT,
-  mockTxHash,
   Toll3Error,
   validateAmountUusdc,
 } from "@/lib/toll-3-core.mjs";
 
 /**
- * Toll 3 — escrow lock. Payer locks integer micro-USDC against a job-spec
- * hash; a 1% routing fee is accounted to lab:fees at lock time.
+ * Toll 3 — escrow lock. REAL USDC settlement on Base.
+ *
+ * The payer sends `amount_uusdc` of native USDC (Base chain 8453) to the lab
+ * escrow wallet, signs a deposit binding, and passes the deposit tx hash
+ * here. Rider verifies the deposit on-chain through AwLPay BEFORE recording
+ * the escrow — no deposit proof, no escrow. The 1% routing fee is realized
+ * at release (99% to the agent, 1% to the lab fee wallet); a refund returns
+ * the full amount with no fee.
+ *
  * Flag TOLL3_ESCROW_LIVE default OFF → 503 toll3_escrow_off (no state).
- * Mocked settlement only — fake USDC, zero chain IO, no real money.
  */
 
 const CORS_HEADERS = {
@@ -62,6 +71,22 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     return bad(400, "bad_amount_uusdc", { reason: (err as Error).message });
   }
+  // Real-settlement fields.
+  const deposit_tx_hash = body.deposit_tx_hash;
+  const payer_sig = body.payer_sig;
+  if (typeof deposit_tx_hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(deposit_tx_hash)) {
+    return bad(400, "bad_deposit_tx_hash", { reason: "want 0x + 64 hex, the real Base USDC transfer into the escrow wallet" });
+  }
+  if (typeof payer_sig !== "string" || payer_sig.length === 0) {
+    return bad(400, "bad_payer_sig", { reason: "EIP-191 personal signature binding this deposit to your ref" });
+  }
+  let payout_wallet: string;
+  try {
+    payout_wallet = assertBaseAddress(body.payout_wallet, "payout_wallet");
+  } catch (err) {
+    return bad(400, "bad_payout_wallet", { reason: (err as Error).message });
+  }
+  const sig_ref = typeof body.sig_ref === "string" && body.sig_ref.length > 0 ? body.sig_ref : job_id;
 
   const usage = await checkMonthlyUsage(`toll3_escrow:${payer.payer_id}`, 0);
   let metered = false;
@@ -95,6 +120,23 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Prove the real deposit BEFORE any state changes. No proof, no escrow.
+  let proof;
+  try {
+    proof = await verifyTollDeposit({
+      slot: "escrow",
+      tx_hash: deposit_tx_hash,
+      payer_sig,
+      min_uusdc: amount_uusdc,
+      ref: sig_ref,
+    });
+  } catch (err) {
+    if (err instanceof TollSettleError) {
+      return bad(err.status, "deposit_not_proven", { reason: err.message });
+    }
+    throw err;
+  }
+
   // Money-state writes fail closed: any failure → 500, no envelope minted.
   let db;
   try {
@@ -114,36 +156,30 @@ export async function POST(req: NextRequest) {
       fee_uusdc: lock.fee_uusdc,
       job_spec_hash,
       status: "locked",
-      lock_tx: "",
+      lock_tx: deposit_tx_hash,
+      deposit_tx_hash,
+      payer_wallet: proof.payer,
+      payout_wallet,
+      confirmed_uusdc: proof.paid_uusdc,
+      chain_id: BASE_CHAIN_ID,
+      token_contract: BASE_USDC,
       created_at: now,
       timeout_at: now + timeout_sec,
     })
     .select("id")
     .single();
   if (insertEscrow.error || !insertEscrow.data) {
+    // A deposit funds exactly one escrow: a replayed tx hash is a 409,
+    // never a second escrow.
+    if (insertEscrow.error?.code === "23505") {
+      return bad(409, "deposit_already_claimed", {
+        reason: "this deposit tx hash already funds an escrow",
+      });
+    }
     console.error("toll3 escrow: insert failed", insertEscrow.error?.message);
     return bad(500, "toll_store_unavailable");
   }
   const escrow_id = insertEscrow.data.id as number;
-
-  const nonce = crypto.randomUUID();
-  const lock_tx = mockTxHash(payer.payer_id, escrowAcct(escrow_id), amount_uusdc, `escrow lock job ${job_id}`, now, nonce);
-  const fee_tx = mockTxHash(escrowAcct(escrow_id), LAB_FEES_ACCT, lock.fee_uusdc, `1% routing fee job ${job_id}`, now, `${nonce}:fee`);
-
-  const ledgerRows = [
-    { tx_hash: lock_tx, sender: payer.payer_id, recipient: escrowAcct(escrow_id), amount_uusdc, memo: `escrow lock job ${job_id}`, created_at: now },
-    { tx_hash: fee_tx, sender: escrowAcct(escrow_id), recipient: LAB_FEES_ACCT, amount_uusdc: lock.fee_uusdc, memo: `1% routing fee job ${job_id}`, created_at: now },
-  ];
-  const ledgerInsert = await db.from("toll_mock_ledger").insert(ledgerRows);
-  if (ledgerInsert.error) {
-    console.error("toll3 escrow: ledger insert failed", ledgerInsert.error.message);
-    return bad(500, "toll_store_unavailable");
-  }
-  const lockTxUpdate = await db.from("toll_escrows").update({ lock_tx }).eq("id", escrow_id);
-  if (lockTxUpdate.error) {
-    console.error("toll3 escrow: lock_tx update failed", lockTxUpdate.error.message);
-    return bad(500, "toll_store_unavailable");
-  }
 
   // Meter the 1% fee — fail open, never blocks the lock.
   try {
@@ -162,7 +198,9 @@ export async function POST(req: NextRequest) {
     ...lock.payload,
     escrow_id,
     timeout_at: now + timeout_sec,
-    lock_tx,
+    lock_tx: deposit_tx_hash,
+    chain_id: BASE_CHAIN_ID,
+    token_contract: BASE_USDC,
   });
   const receipt_id = `t3_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
@@ -175,7 +213,13 @@ export async function POST(req: NextRequest) {
       net_uusdc: lock.net_uusdc,
       receipt_id,
       escrow_id,
-      lock_tx,
+      lock_tx: deposit_tx_hash,
+      deposit_tx_hash,
+      payer_wallet: proof.payer,
+      payout_wallet,
+      confirmed_uusdc: proof.paid_uusdc,
+      chain_id: BASE_CHAIN_ID,
+      token_contract: BASE_USDC,
       envelope,
       usage: {
         locksThisMonth: usage.count,
