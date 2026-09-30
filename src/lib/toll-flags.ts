@@ -46,7 +46,7 @@ export const TOLL2_LOOKUP_OFF_BODY = {
 export const TOLL2_PROMOTE_OFF_BODY = {
   error: "toll2_promote_off" as const,
   live: false as const,
-  hint: "TOLL2_PROMOTE_LIVE is off (default). Promote is a stub until Stripe $9/mo price is wired and smoked.",
+  hint: "TOLL2_PROMOTE_LIVE is off (default). When on, needs STRIPE_CAPABILITY_PROMOTE_PRICE_ID — returns Stripe Checkout $9/mo per capability.",
   metered_path: "POST /api/toll/v2/promote",
   price_usd_mo_when_live: 9,
 };
