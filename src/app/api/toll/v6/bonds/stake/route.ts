@@ -93,10 +93,10 @@ export async function POST(req: NextRequest) {
         agent_id,
         balance_uusdc: balance,
         needed_uusdc: amount_uusdc,
-        topup: {
-          how: "POST /api/toll/balance/topup with your toll auth (Authorization: Bearer ar_… or X-Merchant-Key)",
-          body: { amount_usd_cents: 100 },
-          note: "returns a Stripe checkout URL; toll_mock_balances is credited when payment completes (1 USD = 1,000,000 uusdc)",
+        fund: {
+          how: "send real USDC on Base to the lab escrow address, then call this endpoint with the deposit tx hash",
+          usdc_base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          note: "mock balances are retired — toll escrow/bonds settle in real USDC on Base",
         },
         schema_url: "/api/toll/schema",
       },

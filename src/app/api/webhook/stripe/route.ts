@@ -36,39 +36,6 @@ async function handleCreditsPurchase(session: Stripe.Checkout.Session): Promise<
   });
 }
 
-// Toll balance top-up: a completed one-time checkout with
-// metadata.gate = "toll_balance_topup" credits toll_mock_balances for the
-// agent. Idempotent via claimEvent in the caller.
-async function handleTollBalanceTopup(session: Stripe.Checkout.Session): Promise<void> {
-  const agentId = session.metadata?.agent_id;
-  const uusdc = Number(session.metadata?.uusdc);
-  if (!agentId || !Number.isFinite(uusdc) || uusdc <= 0) {
-    console.error("toll_balance_topup webhook: missing/invalid metadata", session.id, session.metadata);
-    return;
-  }
-
-  const db = getDB();
-  const { data: row } = await db
-    .from("toll_mock_balances")
-    .select("balance_uusdc")
-    .eq("agent_id", agentId)
-    .maybeSingle();
-  const next = Number(row?.balance_uusdc ?? 0) + uusdc;
-  const { error } = await db
-    .from("toll_mock_balances")
-    .upsert({ agent_id: agentId, balance_uusdc: next }, { onConflict: "agent_id" });
-  if (error) throw new Error(`toll_balance_topup upsert failed: ${error.message}`);
-  await db.from("toll_mock_ledger").insert({
-    tx_hash: `topup_${session.id}`,
-    sender: "stripe",
-    recipient: agentId,
-    amount_uusdc: uusdc,
-    memo: `toll topup $${((session.amount_total ?? 0) / 100).toFixed(2)}`,
-    created_at: Date.now(),
-  });
-  console.log(`toll_balance_topup: agent ${agentId} +${uusdc} uusdc (session ${session.id})`);
-}
-
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("stripe-signature") || "";
@@ -95,15 +62,6 @@ export async function POST(req: NextRequest) {
           await handleCreditsPurchase(session);
         } else {
           console.log("credits_purchase webhook already processed, skipping", event.id);
-        }
-        break;
-      }
-
-      if (session.mode === "payment" && session.metadata?.gate === "toll_balance_topup") {
-        if (await claimEvent(event.id)) {
-          await handleTollBalanceTopup(session);
-        } else {
-          console.log("toll_balance_topup webhook already processed, skipping", event.id);
         }
         break;
       }

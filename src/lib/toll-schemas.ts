@@ -250,30 +250,6 @@ export const TOLL_SCHEMAS: TollEndpointSchema[] = [
     },
     example: { agent_id: "a4fbaf7cafaf3016", to_host: "host-b", memories: [] },
   },
-  {
-    path: "/api/toll/balance/topup",
-    method: "POST",
-    auth: TOLL_AUTH,
-    price: "no fee — you pay only the USD amount",
-    gate: "Funding rail — top up toll mock balance",
-    body_schema: {
-      type: "object",
-      required: ["amount_usd_cents"],
-      properties: {
-        amount_usd_cents: {
-          type: "integer",
-          minimum: 100,
-          maximum: 50000,
-          description: "$1–$500; 1 USD = 1,000,000 micro-USDC credited on payment",
-        },
-        agent_id: {
-          type: "string",
-          description: "merchants only: which agent to fund; ar_ keys fund themselves",
-        },
-      },
-    },
-    example: { amount_usd_cents: 500 },
-  },
 ];
 
 export function tollSchemaDoc() {
@@ -282,7 +258,7 @@ export function tollSchemaDoc() {
     auth: TOLL_AUTH,
     register: "POST /api/agents → { agent_id, api_key } — self-service, no human needed",
     funding:
-      "Gates 3 and 6 spend toll mock USDC (toll_mock_balances). Fund via POST /api/toll/balance/topup.",
+      "Gates 3 and 6 settle in real USDC on Base (native USDC 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913). Send USDC to the lab escrow address and pass the deposit tx hash.",
     endpoints: TOLL_SCHEMAS,
   };
 }

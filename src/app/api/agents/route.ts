@@ -31,8 +31,7 @@ export async function POST(req: NextRequest) {
         store,
         db_error: dbError ?? null,
         toll_schema_url: "/api/toll/schema",
-        toll_topup_url: "/api/toll/balance/topup",
-        next: "send Authorization: Bearer <api_key> to any toll endpoint; fetch /api/toll/schema for request shapes; fund Gates 3/6 via /api/toll/balance/topup",
+        next: "send Authorization: Bearer <api_key> to any toll endpoint; fetch /api/toll/schema for request shapes; Gates 3/6 settle in real USDC on Base",
         note:
           store === "disk"
             ? "Stored on this Fly instance only — Supabase INSERT failed. Run the service_role GRANT. Store api_key now."
