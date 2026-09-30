@@ -110,6 +110,24 @@ export function buildStakePayload({ bond_id, agent_id, amount_uusdc, conditions,
 }
 
 /**
+ * buildStakeFeePayload — the signed record of the 1% platform fee collected
+ * ON TOP of the bond at stake time (Corey's 2026-09-30 call: the bond stays
+ * whole, the fee goes to TOLL_FEE_WALLET immediately). Stored as a
+ * toll_bond_events row with kind 'fee'.
+ */
+export function buildStakeFeePayload({ bond_id, agent_id, fee_uusdc, fee_wallet, fee_tx_hash, created_at }) {
+  return {
+    type: "bond_stake_fee",
+    bond_id,
+    agent_id,
+    fee_uusdc,
+    fee_wallet,
+    fee_tx_hash,
+    created_at,
+  };
+}
+
+/**
  * Check an ALREADY-VERIFIED evidence payload against a trigger:
  * payload.bond_id must match; payload.attestation_type and the verdict
  * (from `verdict` or `outcome`) must match TRIGGER_ATTESTATION[trigger].
