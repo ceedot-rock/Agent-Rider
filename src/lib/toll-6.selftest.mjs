@@ -30,6 +30,7 @@ import {
   newBondId,
   stakeTollFor,
   buildStakePayload,
+  buildStakeFeePayload,
   validateSlashEvidence,
   slashAmounts,
   buildSlashPayload,
@@ -88,6 +89,32 @@ class MiniLedger {
     this.events.push({ bond_id, kind: "stake", amount_uusdc: amount, envelope });
     this.meterWrite("bonds", "stake_1pct", stakeTollFor(amount), bond_id);
     return { bond_id, envelope, toll_uusdc: stakeTollFor(amount) };
+  }
+  // 1%-ON-TOP stake (Corey's 2026-09-30 call): the deposit must cover
+  // amount + fee. The bond stays whole; the fee moves to the fee wallet
+  // immediately and gets its own event row.
+  stakeOnTop(agent_id, amount_uusdc, conditions, feeWallet) {
+    const amount = validateAmountUusdc(amount_uusdc);
+    const conds = validateConditions(conditions);
+    const fee = stakeTollFor(amount);
+    const required = amount + fee;
+    if (this.balance_of(agent_id) < required) {
+      const err = new Toll6Error(`deposit_not_proven: paid less than amount+fee (${required})`);
+      err.code = 402;
+      throw err;
+    }
+    const bond_id = newBondId();
+    this.move(agent_id, "bond:" + bond_id, amount);
+    this.bonds.set(bond_id, { bond_id, agent_id, amount_uusdc: amount, remaining_uusdc: amount, conditions: conds, status: "active" });
+    this.events.push({ bond_id, kind: "stake", amount_uusdc: amount });
+    let feeTx = null;
+    if (fee > 0) {
+      this.move(agent_id, feeWallet, fee);
+      feeTx = "0xfee" + bond_id.slice(4);
+      this.events.push({ bond_id, kind: "fee", amount_uusdc: fee, tx_hash: feeTx, to_wallet: feeWallet });
+    }
+    this.meterWrite("bonds", "stake_1pct", fee, bond_id);
+    return { bond_id, fee_uusdc: fee, fee_tx_hash: feeTx, fee_wallet: feeWallet, required_uusdc: required };
   }
   getBond(bond_id) {
     const b = this.bonds.get(bond_id);
@@ -195,6 +222,65 @@ assert.equal(AUDIT_EXPORT_FEE_UUSDC, 50_000);
   assert.deepEqual(payload.conditions, CONDS);
   assert.equal(ledger.balance_of("agent:a"), 90_000_000); // funds locked
   assert.equal(ledger.meterTotal("agent:a"), 100_000); // metered 1%
+}
+
+// ── test_stake_on_top_ok: exact amount+fee → bond whole, fee forwarded ────
+{
+  const { ledger } = makeLedger();
+  const FEE_WALLET = "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c";
+  ledger.fund("agent:a", 10_100_000); // exactly 10 USDC + 1%
+  const res = ledger.stakeOnTop("agent:a", 10_000_000, CONDS, FEE_WALLET);
+  assert.equal(res.fee_uusdc, 100_000); // 1% of 10 USDC
+  assert.equal(res.required_uusdc, 10_100_000);
+  assert.equal(res.fee_wallet, FEE_WALLET);
+  assert.ok(res.fee_tx_hash, "fee tx hash recorded");
+  const bond = ledger.getBond(res.bond_id);
+  assert.equal(bond.amount_uusdc, 10_000_000);
+  assert.equal(bond.remaining_uusdc, 10_000_000); // bond stays whole
+  assert.equal(ledger.balance_of(FEE_WALLET), 100_000); // fee landed
+  assert.equal(ledger.balance_of("agent:a"), 0); // exact deposit spent
+  const kinds = ledger.events.filter((e) => e.bond_id === res.bond_id).map((e) => e.kind);
+  assert.deepEqual(kinds, ["stake", "fee"]);
+  const feeEv = ledger.events.find((e) => e.kind === "fee");
+  assert.equal(feeEv.amount_uusdc, 100_000);
+  assert.equal(feeEv.tx_hash, res.fee_tx_hash);
+}
+
+// ── test_stake_on_top_refusals ───────────────────────────────────────────
+{
+  const { ledger } = makeLedger();
+  const FEE_WALLET = "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c";
+  // deposit of amount only (no fee) → 402-style refusal
+  ledger.fund("agent:short", 10_000_000);
+  try {
+    ledger.stakeOnTop("agent:short", 10_000_000, CONDS, FEE_WALLET);
+    throw new assert.AssertionError({ message: "fee-less deposit accepted" });
+  } catch (err) {
+    assert.equal(err.code, 402, "underfunded deposit refuses like 402 deposit_not_proven");
+  }
+  // dust bond: fee floors to 0, no fee movement, bond still whole
+  ledger.fund("agent:dust", 99);
+  const dust = ledger.stakeOnTop("agent:dust", 99, CONDS, FEE_WALLET);
+  assert.equal(dust.fee_uusdc, 0);
+  assert.equal(dust.fee_tx_hash, null);
+  assert.equal(ledger.getBond(dust.bond_id).remaining_uusdc, 99);
+}
+
+// ── buildStakeFeePayload shape ────────────────────────────────────────────
+{
+  const p = buildStakeFeePayload({
+    bond_id: "bnd_abc123",
+    agent_id: "agent:a",
+    fee_uusdc: 100_000,
+    fee_wallet: "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c",
+    fee_tx_hash: "0xdeadbeef",
+    created_at: 1234567890,
+  });
+  assert.equal(p.type, "bond_stake_fee");
+  assert.equal(p.bond_id, "bnd_abc123");
+  assert.equal(p.fee_uusdc, 100_000);
+  assert.equal(p.fee_wallet, "0xAd3dB8e2b1A311701E6233f17F6d648e4A52287c");
+  assert.equal(p.fee_tx_hash, "0xdeadbeef");
 }
 
 // ── test_stake_refusals ────────────────────────────────────────────────────
@@ -372,6 +458,23 @@ assert.match(stake, /deposit_already_claimed/);
 assert.match(stake, /payout_wallet/);
 assert.ok(!/toll_mock_balances/.test(stake), "stake never touches mock balances");
 assert.match(stake, /price_usd:\s*null/);
+// 1%-on-top: deposit must cover amount+fee, fee forwarded fail-closed
+assert.match(stake, /required_uusdc/);
+assert.match(stake, /min_uusdc:\s*required_uusdc/);
+assert.match(stake, /TOLL_FEE_WALLET/);
+assert.match(stake, /toll_fee_wallet_unconfigured/);
+assert.match(stake, /tollSend\(/);
+assert.match(stake, /slot:\s*"bonds"/);
+assert.match(stake, /t6:fee:/);
+assert.match(stake, /bond_stake_fee/);
+assert.match(stake, /stake_fee_send_failed/);
+assert.match(stake, /retry_idempotency_key/);
+assert.match(stake, /buildStakeFeePayload/);
+assert.match(stake, /kind:\s*"fee"/);
+assert.match(stake, /toll_chain_transfers/);
+assert.match(stake, /fee_uusdc/);
+assert.match(stake, /fee_tx_hash/);
+assert.match(stake, /fee_wallet/);
 
 const slash = readFileSync(join(__dirname, "../app/api/toll/v6/bonds/slash/route.ts"), "utf8");
 assert.match(slash, /isToll6BondsLive/);
@@ -395,4 +498,9 @@ const stripe = readFileSync(join(__dirname, "stripe.ts"), "utf8");
 assert.match(stripe, /reportToll6BondStake/);
 assert.match(stripe, /reportToll6AuditExport/);
 
-console.log("toll-6.selftest: ok (core logic, evidence refusals, slash math, release, audit export, route shapes)");
+console.log("toll-6.selftest: ok (core logic, evidence refusals, slash math, release, audit export, 1%-on-top fee, route shapes)");
+
+// ── Fee migration: toll_bond_events.kind admits 'fee' ──────────────────────
+const feeMigration = readFileSync(join(root, "supabase/migrations/20260930_toll6_fee_on_top.sql"), "utf8");
+assert.match(feeMigration, /toll_bond_events/);
+assert.match(feeMigration, /'fee'/);

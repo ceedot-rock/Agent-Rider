@@ -11,6 +11,7 @@ import {
   assertBaseAddress,
   TollSettleError,
   verifyTollDeposit,
+  tollSend,
 } from "@/lib/toll-settle";
 import {
   validateAmountUusdc,
@@ -18,6 +19,7 @@ import {
   newBondId,
   stakeTollFor,
   buildStakePayload,
+  buildStakeFeePayload,
   utcnow,
   Toll6Error,
 } from "@/lib/toll-6-core.mjs";
@@ -25,15 +27,23 @@ import {
 /**
  * Toll 6 — bond stake. REAL USDC settlement on Base.
  *
- * The staker sends `amount_uusdc` of native USDC (Base chain 8453) to the lab
- * bond wallet, signs a deposit binding, and passes the deposit tx hash here.
+ * The staker sends `amount_uusdc` PLUS the 1% platform fee (one tx to the lab
+ * bond wallet), signs a deposit binding, and passes the deposit tx hash here.
  * Rider verifies the deposit on-chain through AwLPay BEFORE recording the
- * bond — no deposit proof, no bond. The 1% toll is metered (Stripe rail, as
- * before); the full deposit stands as slashable collateral.
+ * bond — no deposit proof, no bond. The 1% fee is collected ON TOP of the
+ * bond at stake time (Corey's 2026-09-30 call): the bond stays whole as
+ * slashable collateral and the fee is forwarded on-chain to TOLL_FEE_WALLET
+ * immediately. The 1% is still metered (Stripe rail, as before).
  *
  * Flag TOLL6_BONDS_LIVE default OFF → 503 toll6_bonds_off (no stake, no meter).
- * Fail closed: bad body → 400, unproven deposit → 402, state-write failure
+ * Fail closed: bad body → 400, unproven deposit → 402, missing fee wallet →
+ * 500, fee-forward failure → 500 (no success receipt), state-write failure
  * → 500. The toll_meter write itself is fail-open.
+ *
+ * Fee retry: if the fee forward fails after the bond row exists, the bond
+ * stands (the deposit was proven). Re-run the exact tollSend call with the
+ * same idempotency key `t6:fee:<bond_id>` — AwLPay's idempotency adopts the
+ * existing transfer instead of double-sending.
  */
 
 const CORS_HEADERS = {
@@ -114,14 +124,34 @@ export async function POST(req: NextRequest) {
   }
   const sig_ref = typeof body.sig_ref === "string" && body.sig_ref.length > 0 ? body.sig_ref : agent_id;
 
+  // The 1% fee is collected ON TOP: the deposit must cover bond + fee.
+  // Computed BEFORE verification so an underfunded (fee-less) deposit
+  // is refused at the proof step.
+  const toll_uusdc = stakeTollFor(amount_uusdc);
+  const required_uusdc = amount_uusdc + toll_uusdc;
+
+  // Fail closed on the fee wallet BEFORE any state changes: a stake that
+  // cannot forward its fee must never be recorded as successful.
+  let feeWallet: string;
+  try {
+    feeWallet = assertBaseAddress(process.env.TOLL_FEE_WALLET, "TOLL_FEE_WALLET");
+  } catch (err) {
+    console.error("toll6 stake: fee wallet unconfigured");
+    return NextResponse.json(
+      { error: "toll_fee_wallet_unconfigured", reason: (err as Error).message },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+
   // Prove the real deposit BEFORE any state changes. No proof, no bond.
+  // paid < amount + fee → 402 deposit_not_proven.
   let proof;
   try {
     proof = await verifyTollDeposit({
       slot: "bonds",
       tx_hash: deposit_tx_hash,
       payer_sig,
-      min_uusdc: amount_uusdc,
+      min_uusdc: required_uusdc,
       ref: sig_ref,
     });
   } catch (err) {
@@ -149,7 +179,6 @@ export async function POST(req: NextRequest) {
   }
 
   const bond_id = newBondId();
-  const toll_uusdc = stakeTollFor(amount_uusdc);
   const created_at = utcnow();
 
   let envelope;
@@ -212,6 +241,73 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Forward the 1% fee on-chain to the fee wallet. FAIL-CLOSED: if this
+  // send fails, no success receipt is returned — the bond row already
+  // exists (the deposit was proven) and stands, and the fee is retried by
+  // re-running tollSend with the same idempotency key `t6:fee:<bond_id>`
+  // (AwLPay adopts the existing transfer; never double-sends).
+  // Dust bonds (fee floors to 0) skip the send: there is nothing to move.
+  let feeTx: string | null = null;
+  if (toll_uusdc > 0) {
+    try {
+      ({ tx_hash: feeTx } = await tollSend({
+        slot: "bonds",
+        to_address: feeWallet,
+        amount_uusdc: toll_uusdc,
+        idempotency_key: `t6:fee:${bond_id}`,
+        purpose: "bond_stake_fee",
+      }));
+    } catch (err) {
+      console.error("toll6 stake: fee forward failed (fail-closed, no receipt)", bond_id, (err as Error).message);
+      return NextResponse.json(
+        {
+          error: "stake_fee_send_failed",
+          reason: (err as Error).message,
+          bond_id,
+          retry_idempotency_key: `t6:fee:${bond_id}`,
+        },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    // Record the fee movement. Fail-open with a loud log: the chain tx is
+    // the truth and the idempotency key allows reconciliation.
+    try {
+      const feeEnvelope = signTollPayload(
+        buildStakeFeePayload({
+          bond_id,
+          agent_id,
+          fee_uusdc: toll_uusdc,
+          fee_wallet: feeWallet,
+          fee_tx_hash: feeTx,
+          created_at,
+        })
+      );
+      const { error: feeEventErr } = await db.from("toll_bond_events").insert({
+        bond_id,
+        kind: "fee",
+        amount_uusdc: toll_uusdc,
+        envelope_json: feeEnvelope,
+        tx_hash: feeTx,
+        created_at,
+      });
+      if (feeEventErr) throw new Error(feeEventErr.message);
+      const { error: chainErr } = await db.from("toll_chain_transfers").insert({
+        kind: "fee",
+        ref_id: bond_id,
+        tx_hash: feeTx,
+        from_slot: "bonds",
+        to_wallet: feeWallet,
+        amount_uusdc: toll_uusdc,
+        idempotency_key: `t6:fee:${bond_id}`,
+        created_at: Math.floor(Date.now() / 1000),
+      });
+      if (chainErr) throw new Error(chainErr.message);
+    } catch (err) {
+      console.error("toll6 stake: fee event log failed (fail-open)", bond_id, (err as Error).message);
+    }
+  }
+
   // Toll meter is fail-open: a meter outage must not block the stake.
   try {
     const { error: meterErr } = await db.from("toll_meter").insert({
@@ -241,6 +337,10 @@ export async function POST(req: NextRequest) {
       staker_wallet: proof.payer,
       payout_wallet,
       confirmed_uusdc: proof.paid_uusdc,
+      required_uusdc,
+      fee_uusdc: toll_uusdc,
+      fee_tx_hash: feeTx,
+      fee_wallet: feeWallet,
       chain_id: BASE_CHAIN_ID,
       token_contract: BASE_USDC,
       envelope,
