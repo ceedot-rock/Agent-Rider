@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { getDB } from "@/lib/db";
 import { normalizeProvenance, type Provenance } from "@/lib/provenance";
 
@@ -64,12 +66,10 @@ function hashApiKey(apiKey: string): string {
 }
 
 function diskPath(): string {
-  const { join } = require("node:path") as typeof import("node:path");
   return join(process.cwd(), "data", "participants.json");
 }
 
 function readDisk(): ParticipantRow[] {
-  const { readFileSync, existsSync } = require("node:fs") as typeof import("node:fs");
   const p = diskPath();
   if (!existsSync(p)) return [];
   try {
@@ -81,8 +81,6 @@ function readDisk(): ParticipantRow[] {
 }
 
 function writeDisk(list: ParticipantRow[]): void {
-  const { writeFileSync, mkdirSync } = require("node:fs") as typeof import("node:fs");
-  const { dirname } = require("node:path") as typeof import("node:path");
   const p = diskPath();
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, JSON.stringify(list, null, 2));
@@ -123,7 +121,13 @@ export interface RegisterResult {
 }
 
 export async function registerParticipant(input: RegisterInput): Promise<RegisterResult> {
-  const db = getDB();
+  // Nullable: without Supabase creds the disk store carries registration.
+  let db: ReturnType<typeof getDB> | null = null;
+  try {
+    db = getDB();
+  } catch {
+    db = null;
+  }
   const id = randomBytes(8).toString("hex");
   const apiKey = "ar_" + randomBytes(20).toString("hex");
   const bonus = await signupBonus();
@@ -131,18 +135,20 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   let referrerId: string | null = null;
   if (input.referralCode) {
     const hashed = hashApiKey(input.referralCode);
-    try {
-      const { data } = await db.from("participants").select("id").eq("api_key_hash", hashed).single();
-      referrerId = data?.id ?? null;
-    } catch {
-      referrerId = null;
+    if (db) {
+      try {
+        const { data } = await db.from("participants").select("id").eq("api_key_hash", hashed).single();
+        referrerId = data?.id ?? null;
+      } catch {
+        referrerId = null;
+      }
     }
     if (!referrerId) {
       referrerId = readDisk().find((row) => row.api_key_hash === hashed)?.id ?? null;
     }
   }
 
-  const credits = bonus + (referrerId ? 5 : 0);
+  const credits = bonus;
 
   const provenance = normalizeProvenance(input.provenance);
   const payload = {
@@ -161,6 +167,7 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   let row: ParticipantRow | null = null;
   let dbError: string | undefined;
   try {
+    if (!db) throw new Error("disk-only");
     let { data, error } = await db.from("participants").insert(payload).select().single();
     // Soft: column not migrated yet — retry without provenance (defaults unknown in app layer).
     if (error && /provenance/i.test(error.message)) {
@@ -180,10 +187,11 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   if (row) {
     try {
       await recordTransaction(id, "signup_bonus", bonus, { referrerId });
-      if (referrerId) await recordTransaction(id, "referral_join_bonus", 5, { referrerId });
     } catch {
       /* ledger row exists even if the bonus tx fails */
     }
+    // The advertised join bonus belongs to the REFERRER, not the joiner.
+    if (referrerId) await rewardReferrer(referrerId, id).catch(() => {});
     return { participant: rowToParticipant(row), apiKey, store: "supabase" };
   }
 
@@ -200,12 +208,72 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   list.push(diskRow);
   writeDisk(list);
 
+  // The advertised join bonus belongs to the REFERRER, not the joiner.
+  if (referrerId) await rewardReferrer(referrerId, id).catch(() => {});
+
   return {
     participant: rowToParticipant(diskRow),
     apiKey,
     store: "disk",
     dbError,
   };
+}
+
+/**
+ * Pays the advertised referral join bonus to the referrer: +5 credits with a
+ * `referral_join_bonus` ledger entry on the REFERRER's account, plus +1 to
+ * their `referrals` count. Works against Supabase with disk fallback.
+ * Never throws — a failed reward must not break registration.
+ */
+export async function rewardReferrer(referrerId: string, newJoinerId: string): Promise<void> {
+  try {
+    await adjustCredits(referrerId, 5, "referral_join_bonus", { referredId: newJoinerId });
+  } catch {
+    return; // referrer unreachable — do not break registration
+  }
+
+  const db = (() => {
+    try {
+      return getDB();
+    } catch {
+      return null;
+    }
+  })();
+  if (!db) {
+    incrementDiskReferrals(referrerId);
+    return;
+  }
+  try {
+    const { data, error } = await db.from("participants").select("referrals").eq("id", referrerId).single();
+    if (!error && data) {
+      await db
+        .from("participants")
+        .update({ referrals: Number(data.referrals ?? 0) + 1, last_active: new Date().toISOString() })
+        .eq("id", referrerId);
+      return;
+    }
+  } catch {
+    /* fall through to disk */
+  }
+  incrementDiskReferrals(referrerId);
+}
+
+/** +1 to a disk-store participant's referrals count. Never throws. */
+function incrementDiskReferrals(participantId: string): void {
+  try {
+    const list = readDisk();
+    const idx = list.findIndex((row) => row.id === participantId);
+    if (idx >= 0) {
+      list[idx] = {
+        ...list[idx],
+        referrals: Number(list[idx].referrals ?? 0) + 1,
+        last_active: new Date().toISOString(),
+      };
+      writeDisk(list);
+    }
+  } catch {
+    /* disk write failed — registration already succeeded */
+  }
 }
 
 export async function resolveByApiKey(apiKey: string): Promise<Participant | null> {
@@ -239,7 +307,12 @@ export async function recordTransaction(
   amount: number,
   meta: Record<string, unknown> = {}
 ): Promise<void> {
-  const db = getDB();
+  let db: ReturnType<typeof getDB> | null = null;
+  try {
+    db = getDB();
+  } catch {
+    return; // disk-only mode: no ledger table
+  }
   const { data: participant } = await db
     .from("participants")
     .select("credits")
@@ -262,23 +335,30 @@ export async function adjustCredits(
   type: string,
   meta: Record<string, unknown> = {}
 ): Promise<number> {
-  const db = getDB();
-  const { data, error } = await db.from("participants").select("credits").eq("id", participantId).single();
-  if (!error && data) {
-    const newBalance = Number(data.credits) + amount;
-    const { error: updateError } = await db
-      .from("participants")
-      .update({ credits: newBalance, last_active: new Date().toISOString() })
-      .eq("id", participantId);
-    if (updateError) throw new Error(`adjustCredits: ${updateError.message}`);
-    await db.from("transactions").insert({
-      participant_id: participantId,
-      type,
-      amount,
-      balance_after: newBalance,
-      meta,
-    });
-    return newBalance;
+  let db: ReturnType<typeof getDB> | null = null;
+  try {
+    db = getDB();
+  } catch {
+    db = null; // disk-only mode
+  }
+  if (db) {
+    const { data, error } = await db.from("participants").select("credits").eq("id", participantId).single();
+    if (!error && data) {
+      const newBalance = Number(data.credits) + amount;
+      const { error: updateError } = await db
+        .from("participants")
+        .update({ credits: newBalance, last_active: new Date().toISOString() })
+        .eq("id", participantId);
+      if (updateError) throw new Error(`adjustCredits: ${updateError.message}`);
+      await db.from("transactions").insert({
+        participant_id: participantId,
+        type,
+        amount,
+        balance_after: newBalance,
+        meta,
+      });
+      return newBalance;
+    }
   }
 
   const list = readDisk();

@@ -29,7 +29,8 @@
     "selftest:toll-5": "node lib/toll-5.selftest.mjs",
     "selftest:toll-6": "node lib/toll-6.selftest.mjs",
     "selftest:toll-7": "node lib/toll-7.selftest.mjs",
-    "selftest:toll-3-7": "npm run selftest:toll-3 && npm run selftest:toll-4 && npm run selftest:toll-5 && npm run selftest:toll-6 && npm run selftest:toll-7"
+    "selftest:toll-3-7": "npm run selftest:toll-3 && npm run selftest:toll-4 && npm run selftest:toll-5 && npm run selftest:toll-6 && npm run selftest:toll-7",
+    "selftest:referral-bonus": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/referral-bonus.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",
