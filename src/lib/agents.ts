@@ -21,6 +21,12 @@ export interface Participant {
   solanaWallet: string | null;
   /** Seat origin label — lab|external|smoke|unknown. Not KYC. */
   provenance: Provenance;
+  /** ISO timestamp until which toll-gate charges are waived (promo comp). */
+  compedUntil: string | null;
+  /** Which promo code granted the comp (code hash). */
+  compedVia: string | null;
+  /** How many referred agents this participant has granted comped access to (cap 10). */
+  compedReferrals: number;
   registeredAt: string;
   lastActive: string;
 }
@@ -39,6 +45,9 @@ interface ParticipantRow {
   capabilities: string[];
   solana_wallet: string | null;
   provenance?: string | null;
+  comped_until?: string | null;
+  comped_via?: string | null;
+  comped_referrals?: number;
   registered_at: string;
   last_active: string;
 }
@@ -56,6 +65,9 @@ function rowToParticipant(row: ParticipantRow): Participant {
     capabilities: row.capabilities ?? [],
     solanaWallet: row.solana_wallet,
     provenance: normalizeProvenance(row.provenance),
+    compedUntil: row.comped_until ?? null,
+    compedVia: row.comped_via ?? null,
+    compedReferrals: Number(row.comped_referrals ?? 0),
     registeredAt: row.registered_at,
     lastActive: row.last_active,
   };
@@ -108,6 +120,8 @@ export interface RegisterInput {
   type: ParticipantType;
   operatorId?: string | null;
   referralCode?: string | null;
+  /** Redeemable promo code — grants 3 free months of Rider access on success. */
+  promoCode?: string | null;
   capabilities?: string[];
   /** Optional; defaults unknown. Invalid values coerced to unknown. */
   provenance?: Provenance | string | null;
@@ -118,6 +132,8 @@ export interface RegisterResult {
   apiKey: string;
   store: ParticipantStore;
   dbError?: string;
+  /** Set when a promo code was supplied but redemption failed (cap hit, unknown code…). */
+  promoError?: string;
 }
 
 export async function registerParticipant(input: RegisterInput): Promise<RegisterResult> {
@@ -162,6 +178,9 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
     referred_by: referrerId,
     capabilities: input.capabilities ?? [],
     provenance,
+    comped_until: null as string | null,
+    comped_via: null as string | null,
+    comped_referrals: 0,
   };
 
   let row: ParticipantRow | null = null;
@@ -174,6 +193,12 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
       const { provenance: _drop, ...withoutProv } = payload;
       ({ data, error } = await db.from("participants").insert(withoutProv).select().single());
     }
+    // Soft: promo columns not migrated yet — retry without them.
+    if (error && /comped/i.test(error.message)) {
+      const { comped_until: _c1, comped_via: _c3, comped_referrals: _c2, ...withoutComp } =
+        payload as Record<string, unknown>;
+      ({ data, error } = await db.from("participants").insert(withoutComp).select().single());
+    }
     if (!error && data) {
       row = data as ParticipantRow;
     } else if (error) {
@@ -184,15 +209,42 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
     row = null;
   }
 
+  // Promo + referral settlement shared by both stores. Imported lazily to
+  // keep promo.ts dependency-free of agents.ts (no import cycle).
+  const settlePromo = async (participantId: string): Promise<string | undefined> => {
+    let promoError: string | undefined;
+    if (input.promoCode) {
+      const { redeemPromoCode } = await import("@/lib/promo");
+      const res = await redeemPromoCode({ code: input.promoCode, participantId }).catch(
+        (e: unknown) => ({ ok: false as const, reason: e instanceof Error ? e.message : "redeem_failed" })
+      );
+      if (!res.ok) promoError = res.reason;
+    }
+    if (referrerId) {
+      await rewardReferrer(referrerId, participantId).catch(() => {});
+      // A comped referrer extends 3 free months to up to 10 referred agents.
+      const { grantCompedReferral } = await import("@/lib/promo");
+      await grantCompedReferral({ referrerId, joinerId: participantId }).catch(() => {});
+    }
+    return promoError;
+  };
+
   if (row) {
     try {
       await recordTransaction(id, "signup_bonus", bonus, { referrerId });
     } catch {
       /* ledger row exists even if the bonus tx fails */
     }
-    // The advertised join bonus belongs to the REFERRER, not the joiner.
-    if (referrerId) await rewardReferrer(referrerId, id).catch(() => {});
-    return { participant: rowToParticipant(row), apiKey, store: "supabase" };
+    const promoError = await settlePromo(id);
+    // Re-read: settlePromo applies the comp after the insert, so the
+    // in-memory row is stale.
+    const fresh = await resolveById(id).catch(() => null);
+    return {
+      participant: fresh ?? rowToParticipant(row),
+      apiKey,
+      store: "supabase",
+      promoError,
+    };
   }
 
   const diskRow: ParticipantRow = {
@@ -208,14 +260,17 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
   list.push(diskRow);
   writeDisk(list);
 
-  // The advertised join bonus belongs to the REFERRER, not the joiner.
-  if (referrerId) await rewardReferrer(referrerId, id).catch(() => {});
+  const promoError = await settlePromo(id);
 
+  // Re-read: settlePromo applies the comp after the insert, so the
+  // in-memory row is stale.
+  const fresh = await resolveById(id).catch(() => null);
   return {
-    participant: rowToParticipant(diskRow),
+    participant: fresh ?? rowToParticipant(diskRow),
     apiKey,
     store: "disk",
     dbError,
+    promoError,
   };
 }
 

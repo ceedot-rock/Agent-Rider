@@ -69,7 +69,16 @@ export async function spendCredits(
     if (gate.body.agent_id !== participantId) throw new Error("warrant_agent");
     if (cost > gate.body.max_cents) throw new Error("warrant_cap");
   }
-  if (participant.credits < cost) throw new Error("insufficient_credits");
+  // Promo comp: 3 free months of Rider access — toll charges are waived while
+  // comped_until is in the future. Usage is still ledgered (amount 0).
+  const { isComped } = await import("@/lib/promo");
+  const comped = isComped(participant.compedUntil);
+  if (!comped && participant.credits < cost) throw new Error("insufficient_credits");
+
+  async function recordCompedUse(): Promise<number> {
+    await recordTransaction(participantId, "spend_comped", 0, { service, units }).catch(() => {});
+    return participant.credits;
+  }
 
   if (service === "generate") {
     if (!prompt) throw new Error("prompt_required");
@@ -99,16 +108,26 @@ export async function spendCredits(
       throw new Error(`generation_failed: ${(err as Error).message}`);
     }
 
-    const remaining = await adjustCredits(participantId, -cost, "spend", {
+    const remaining = comped
+      ? await recordCompedUse()
+      : await adjustCredits(participantId, -cost, "spend", {
+          service,
+          units,
+          prompt: prompt.slice(0, 100),
+        });
+    return {
+      creditsSpent: comped ? 0 : cost,
+      creditsRemaining: remaining,
       service,
       units,
-      prompt: prompt.slice(0, 100),
-    });
-    return { creditsSpent: cost, creditsRemaining: remaining, service, units, generated };
+      generated,
+    };
   }
 
-  const remaining = await adjustCredits(participantId, -cost, "spend", { service, units });
-  return { creditsSpent: cost, creditsRemaining: remaining, service, units };
+  const remaining = comped
+    ? await recordCompedUse()
+    : await adjustCredits(participantId, -cost, "spend", { service, units });
+  return { creditsSpent: comped ? 0 : cost, creditsRemaining: remaining, service, units };
 }
 
 export async function getTransactionHistory(participantId: string, limit = 20) {
