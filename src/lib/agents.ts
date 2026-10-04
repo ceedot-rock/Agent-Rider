@@ -22,11 +22,11 @@ export interface Participant {
   /** Seat origin label — lab|external|smoke|unknown. Not KYC. */
   provenance: Provenance;
   /** ISO timestamp until which toll-gate charges are waived (promo comp). */
-  compedUntil: string | null;
+  compedUntil?: string | null;
   /** Which promo code granted the comp (code hash). */
-  compedVia: string | null;
+  compedVia?: string | null;
   /** How many referred agents this participant has granted comped access to (cap 10). */
-  compedReferrals: number;
+  compedReferrals?: number;
   registeredAt: string;
   lastActive: string;
 }
@@ -215,9 +215,10 @@ export async function registerParticipant(input: RegisterInput): Promise<Registe
     let promoError: string | undefined;
     if (input.promoCode) {
       const { redeemPromoCode } = await import("@/lib/promo");
-      const res = await redeemPromoCode({ code: input.promoCode, participantId }).catch(
-        (e: unknown) => ({ ok: false as const, reason: e instanceof Error ? e.message : "redeem_failed" })
-      );
+      const res: { ok: boolean; compedUntil?: string; reason?: string } =
+        await redeemPromoCode({ code: input.promoCode, participantId }).catch(
+          (e: unknown) => ({ ok: false, reason: e instanceof Error ? e.message : "redeem_failed" })
+        );
       if (!res.ok) promoError = res.reason;
     }
     if (referrerId) {
