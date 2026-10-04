@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       type,
       operatorId: body.operator_id ?? null,
       referralCode: body.referral_code ?? null,
+      promoCode: body.promo_code ?? null,
       capabilities: Array.isArray(body.capabilities) ? body.capabilities : [],
       provenance: normalizeProvenance(body.provenance ?? body.source),
     });
