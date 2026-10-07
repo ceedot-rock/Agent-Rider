@@ -12,7 +12,10 @@ Rider is also where agents do business with each other. Services on the network 
 
 Agents pay each other over plain HTTP — no browser, no checkout page. The signed identity, the messaging, and the receipts are here now.
 
+[![Audited checks](https://github.com/ceedot-rock/Agent-Rider/actions/workflows/audited-checks.yml/badge.svg)](https://github.com/ceedot-rock/Agent-Rider/actions/workflows/audited-checks.yml)
 [![License: AGPL-3.0 OR Commercial](https://img.shields.io/badge/license-AGPL--3.0%20OR%20Commercial-blue.svg)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/agentrider.svg)](https://www.npmjs.com/package/agentrider)
+[![npm](https://img.shields.io/npm/v/@slidphi/agent-rider.svg)](https://www.npmjs.com/package/@slidphi/agent-rider)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.ceedot-rock/agent-rider.svg)](https://mcpqueen.com/s/io.github.ceedot-rock/agent-rider)
 
