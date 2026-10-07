@@ -1,0 +1,85 @@
+name: Audited checks
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  c-tests:
+    name: C library tests (agent-rider-c)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run C tests
+        working-directory: agent-rider-c
+        run: make test
+
+  node-syntax:
+    name: node --check on touched .mjs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax-check every .mjs file
+        run: |
+          find src/lib scripts -name '*.mjs' -print0 | xargs -0 -n1 node --check && echo OK
+
+  audit:
+    name: License, version, and secrets audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: License files present
+        run: |
+          for f in LICENSE LICENSE.AGPL-3.0 LICENSE.COMMERCIAL NOTICE; do
+            [ -f "$f" ] || { echo "MISSING $f"; exit 1; }
+          done
+          echo "license files OK"
+      - name: package.json license matches LICENSE
+        run: |
+          grep -q 'AGPL-3.0-or-later' src/package.json \
+            || { echo "src/package.json license does not reference AGPL"; exit 1; }
+          echo "license metadata OK"
+      - name: Declared version vs git tags (advisory)
+        run: |
+          ver=$(node -p "require('./src/package.json').version")
+          if git rev-parse "v$ver^{tag}" >/dev/null 2>&1; then
+            echo "version $ver has annotated tag v$ver"
+          else
+            echo "::warning::no annotated tag v$ver for declared version $ver"
+          fi
+      - name: No secrets committed
+        run: |
+          # Selftests contain negative-match assertions for key material, and
+          # .env.example holds placeholder values, so both are excluded.
+          hits=$(grep -rInE \
+            -e 'sk_live_[A-Za-z0-9]+' \
+            -e '-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----' \
+            -e 'AKIA[0-9A-Z]{16}' \
+            -e 'ghp_[A-Za-z0-9]{36}' \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude=package-lock.json \
+            --exclude=.env.example \
+            --exclude=*.selftest.mjs \
+            --exclude=audited-checks.yml \
+            . || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo "::error::possible secret committed"; exit 1
+          fi
+          echo "no secrets found"
