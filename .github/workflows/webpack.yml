@@ -60,8 +60,8 @@ jobs:
       working-directory: src
       run: npm ci
 
-    - name: Rider credential verify (local JWKS + revocation)
-      run: node packages/agent-rider/src/verify.selftest.mjs
+    - name: Rider SDK (offline credential and messaging tests)
+      run: npm run selftest --prefix packages/agent-rider
 
     - name: Offline selftests (AMP shape + settle + catalog honesty)
       working-directory: src

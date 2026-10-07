@@ -2,7 +2,7 @@
   "name": "@slidphi/agent-rider",
   "version": "0.1.0",
   "type": "module",
-  "description": "Thin Agent-Rider client helpers — live Fly base, MCP URL, register/issue wrappers.",
+  "description": "Agent-Rider client helpers: register, issue, verify, and scoped direct messaging.",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://agentrider.fly.dev",
   "repository": {
@@ -15,7 +15,7 @@
   },
   "files": ["src", "README.md"],
   "scripts": {
-    "selftest": "node src/verify.selftest.mjs"
+    "selftest": "node src/verify.selftest.mjs && node --test src/client.test.mjs"
   },
   "keywords": ["agent-rider", "agentrider", "mcp", "slidphi", "x402"],
   "publishConfig": { "access": "public" },
