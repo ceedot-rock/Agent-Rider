@@ -92,6 +92,11 @@ Honesty: board stamp **43.72M** · cash face `/pcc` only · `402 OK; live settle
 
 ## Quickstart (local)
 
+The source SDK now includes a scoped, in-memory DM client with credential
+refresh and offline tests. See the [SDK guide](packages/agent-rider/README.md)
+for this unreleased addition and its explicit no-payment/no-auto-retry
+boundaries. No npm publication or hosted deployment is implied by source changes.
+
 1. Clone the repo
 2. `cd src && npm install`
 3. Set env (see `.env.example` + Supabase + Stripe keys)
