@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify, importPKCS8, importSPKI, exportJWK, calculateJwkThumbprint, type CryptoKey, type JWK } from "jose";
 import { getDB } from "@/lib/db";
+import { tollPublicJwk, previousTollPublicJwks, parseRevokedKids } from "@/lib/toll-receipt";
 
 export type ClearanceLevel = "L0" | "L1" | "L2" | "L3" | "L4";
 
@@ -62,8 +63,34 @@ async function getPublicJwk(): Promise<JWK & { kid: string }> {
   return publicJwkPromise;
 }
 
-export async function getJwks(): Promise<{ keys: (JWK & { kid: string })[] }> {
-  return { keys: [await getPublicJwk()] };
+export interface RevokedKidEntry {
+  kid: string;
+  revoked_at: string;
+}
+
+/**
+ * The published verifier contract (see ROTATION.md).
+ *
+ * keys: the Rider identity key (backwards compat — receipts minted before
+ * the dedicated toll signer still verify) + the current dedicated toll
+ * signer + any previous toll signers still in their rotation grace period.
+ * revoked: kids that MUST fail closed with "revoked_kid", listed with
+ * revoked_at timestamps and never silently dropped.
+ *
+ * Verifiers: fetch this JWKS (cache ≤1h per our Cache-Control), reject
+ * unknown_kid, reject revoked_kid. A verifier that cannot fetch the JWKS
+ * must refuse — never verify against a stale snapshot silently.
+ */
+export async function getJwks(): Promise<{
+  keys: (JWK & { kid: string })[];
+  revoked: RevokedKidEntry[];
+}> {
+  const keys: (JWK & { kid: string })[] = [await getPublicJwk()];
+  if (process.env.TOLL_SIGNING_KEY) {
+    keys.push(tollPublicJwk() as JWK & { kid: string });
+    for (const prev of previousTollPublicJwks()) keys.push(prev as JWK & { kid: string });
+  }
+  return { keys, revoked: parseRevokedKids() };
 }
 
 export async function issueRider(

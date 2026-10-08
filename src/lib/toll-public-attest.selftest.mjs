@@ -157,14 +157,14 @@ function sha256Hex(s) {
 
 // ── 6. missing signing key throws (route → 500, never unsigned) ─────────────
 {
-  const saved = process.env.RIDER_PRIVATE_KEY;
-  delete process.env.RIDER_PRIVATE_KEY;
+  const saved = process.env.TOLL_SIGNING_KEY;
+  delete process.env.TOLL_SIGNING_KEY;
   throws(
     () => signTollPayload({ a: 1 }),
-    /RIDER_PRIVATE_KEY/,
-    "missing key throws"
+    /TOLL_SIGNING_KEY/,
+    "missing toll key throws"
   );
-  if (saved !== undefined) process.env.RIDER_PRIVATE_KEY = saved;
+  if (saved !== undefined) process.env.TOLL_SIGNING_KEY = saved;
 }
 
 // ── 7. shape classification ────────────────────────────────────────────────

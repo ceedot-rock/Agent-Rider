@@ -51,6 +51,7 @@ export function isSandboxCredential(bearerToken, merchantKey) {
  */
 export function classifyEnvelopeError(message) {
   const m = String(message ?? "");
+  if (/revoked_kid/i.test(m)) return "revoked_kid";
   if (/unknown kid/i.test(m)) return "unknown_kid";
   if (
     /envelope must be a dict/i.test(m) ||

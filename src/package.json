@@ -32,6 +32,7 @@
     "selftest:toll-3-7": "npm run selftest:toll-3 && npm run selftest:toll-4 && npm run selftest:toll-5 && npm run selftest:toll-6 && npm run selftest:toll-7",
     "selftest:toll-sandbox": "node lib/toll-sandbox.selftest.mjs",
     "selftest:toll-public-attest": "node lib/toll-public-attest.selftest.mjs",
+    "selftest:toll-rotation": "node lib/toll-rotation.selftest.mjs",
     "selftest:referral-bonus": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/referral-bonus.selftest.mjs",
     "selftest:promo": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/promo.selftest.mjs"
   },
