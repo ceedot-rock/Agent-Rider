@@ -219,7 +219,9 @@ export async function runPccCompress({ data_base64, decoded }) {
       detail: {
         bytes_in,
         bytes_out: outBuf.length,
-        ratio: Number((outBuf.length / bytes_in).toFixed(6)),
+        // Integer per-mille (750 = output is 75.0% of input). Floats are
+        // forbidden in receipt payloads (canonicalJson refuses them).
+        ratio: Math.round((outBuf.length * 1000) / bytes_in),
         sha256_in,
         sha256_out: sha256Hex(outBuf),
       },
