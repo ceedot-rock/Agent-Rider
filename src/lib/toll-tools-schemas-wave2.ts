@@ -20,8 +20,11 @@ export const TOOL_SCHEMAS_WAVE2: TollEndpointSchema[] = [
       type: "object",
       required: ["game_id"],
       properties: {
-        game_id: { type: "string", description: "ExactOdds game identifier" },
-        draw_id: { type: "string", description: "optional client draw id (idempotency)" },
+        game_id: {
+          type: "string",
+          description: "ExactOdds game identifier (catalog: coin-flip, dice, roulette, crash)",
+        },
+        draw_id: { type: "string", description: "optional client draw id — genuine idempotency key: same (game_id, draw_id) replays identically" },
         count: { type: "integer", minimum: 1, maximum: 100, default: 1 },
       },
     },
@@ -37,10 +40,21 @@ export const TOOL_SCHEMAS_WAVE2: TollEndpointSchema[] = [
       type: "object",
       required: ["game_id", "draw_id"],
       properties: {
-        game_id: { type: "string", description: "ExactOdds game identifier" },
-        draw_id: { type: "string", description: "the draw to resolve" },
+        game_id: {
+          type: "string",
+          description: "ExactOdds game identifier (catalog: coin-flip, dice, roulette, crash)",
+        },
+        draw_id: {
+          type: "string",
+          description: "the draw to resolve — re-executes the canonical upstream draw for (game_id, draw_id) and returns the verifiable settled outcome",
+        },
+        stake_cents: {
+          type: "integer",
+          minimum: 1,
+          description: "optional; forwarded to upstream stake-based settle routes when the game supports them (all integers — upstream 400s on strings)",
+        },
       },
     },
-    example: { game_id: "coin-flip", draw_id: "draw_abc123" },
+    example: { game_id: "dice", draw_id: "draw_abc123", stake_cents: 100 },
   },
 ];
