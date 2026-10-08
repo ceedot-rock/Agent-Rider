@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     tool: TOOL,
     payer_id: payer.payer_id,
     price_uusdc,
-    result: out.result,
+    result: out.result === "refuse" ? "refuse" : "pass",
     input_hash: out.input_hash,
     detail: out.detail,
   });
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         billed: false,
       },
       payer: { kind: payer.kind, payer_id: payer.payer_id },
-      result: out.result,
+      result: out.result === "refuse" ? "refuse" : "pass",
       chamber_envelope: out.chamber_envelope,
       detail: out.detail,
     },
