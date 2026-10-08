@@ -3,6 +3,7 @@ import { checkMonthlyUsage } from "@/lib/rate-limit";
 import { reportToll4GrantCheck } from "@/lib/stripe";
 import { isToll4GrantsLive, TOLL4_GRANTS_OFF_BODY } from "@/lib/toll-flags";
 import { isTollPayerOk, resolveTollPayer } from "@/lib/toll-billing";
+import { isSandboxRequest, sandboxV4 } from "@/lib/toll-sandbox";
 import { TollReceiptError, verifyTollEnvelope } from "@/lib/toll-receipt";
 import { getDB } from "@/lib/db";
 import {
@@ -51,6 +52,12 @@ function grantRef(envelope: unknown): string {
 export async function POST(req: NextRequest) {
   if (!isToll4GrantsLive()) {
     return NextResponse.json(TOLL4_GRANTS_OFF_BODY, { status: 503, headers: CORS_HEADERS });
+  }
+
+  // Corruption sandbox: the public demo key runs the full validation
+  // pipeline with zero side effects. It can never authorize real dispatch.
+  if (isSandboxRequest(req)) {
+    return sandboxV4(req);
   }
 
   const payer = await resolveTollPayer(req);

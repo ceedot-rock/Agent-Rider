@@ -5,8 +5,21 @@
 
 import { resolveByApiKey } from "@/lib/agents";
 import { findSubscriptionByMerchantKey } from "@/lib/stripe";
+import { sandboxDemoKey } from "./toll-sandbox-core.mjs";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
+
+/**
+ * The public corruption-sandbox demo key. It is sandbox-only by
+ * construction (routes branch before this function), but this guard makes
+ * the invariant explicit: even if a route forgets the sandbox branch, the
+ * demo key can never resolve to a payer.
+ */
+function isDemoKey(value: string | null): boolean {
+  if (!value) return false;
+  const demo = sandboxDemoKey();
+  return !!demo && !demo.startsWith("ar_") && value === demo;
+}
 
 export type TollPayer =
   | {
@@ -41,6 +54,16 @@ function extractBearer(req: Request): string | null {
 export async function resolveTollPayer(req: Request): Promise<TollPayer> {
   const merchantKey = req.headers.get("x-merchant-key");
   if (merchantKey) {
+    if (isDemoKey(merchantKey)) {
+      return {
+        ok: false,
+        status: 401,
+        body: {
+          error: "sandbox_key_not_billable",
+          hint: "demo keys run the corruption sandbox only — they never authorize real dispatch",
+        },
+      };
+    }
     try {
       const subscription = await findSubscriptionByMerchantKey(merchantKey);
       if (!subscription || !ACTIVE_STATUSES.has(subscription.status)) {
@@ -76,6 +99,16 @@ export async function resolveTollPayer(req: Request): Promise<TollPayer> {
 
   const apiKey = extractBearer(req);
   if (apiKey) {
+    if (isDemoKey(apiKey)) {
+      return {
+        ok: false,
+        status: 401,
+        body: {
+          error: "sandbox_key_not_billable",
+          hint: "demo keys run the corruption sandbox only — they never authorize real dispatch",
+        },
+      };
+    }
     if (!apiKey.startsWith("ar_")) {
       return {
         ok: false,
