@@ -202,7 +202,9 @@ export async function sandboxTool(
       http_status: 400,
     });
   }
-  if (!v.ok) {
+  // NOTE: explicit `=== false` — the project tsconfig has strict:false,
+  // under which `!v.ok` does not narrow the discriminated union.
+  if (v.ok === false) {
     return sandboxJson({
       decision: "refuse",
       refusal_code: v.code,

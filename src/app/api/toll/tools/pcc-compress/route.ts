@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const v = validatePccCompress(body);
-  if (!v.ok) {
+  if (v.ok === false) {
     return bad(400, v.code, { reason: v.reason });
   }
   const input = v.value;

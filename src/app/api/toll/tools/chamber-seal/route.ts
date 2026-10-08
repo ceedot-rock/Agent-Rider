@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const v = validateChamberSeal(body);
-  if (!v.ok) return bad(400, v.code, { reason: v.reason });
+  if (v.ok === false) return bad(400, v.code, { reason: v.reason });
 
   let out;
   try {

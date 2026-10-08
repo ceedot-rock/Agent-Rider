@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const v = validateAwlpayQuote(body);
-  if (!v.ok) return bad(400, v.code, { reason: v.reason });
+  if (v.ok === false) return bad(400, v.code, { reason: v.reason });
 
   // Pure integer math — no dependencies, cannot fail closed.
   const out = runAwlpayQuote(v.value);

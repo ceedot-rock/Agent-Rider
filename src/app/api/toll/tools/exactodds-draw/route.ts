@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   // 4. Validate input → 400 named codes.
   const body = await req.json().catch(() => null);
   const v = validateExactoddsDraw(body);
-  if (!v.ok) {
+  if (v.ok === false) {
     return bad(400, v.code, v.reason ? { reason: v.reason } : undefined);
   }
 
