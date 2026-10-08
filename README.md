@@ -147,6 +147,23 @@ Seats Solo $13.31 / Bundle $19.31 / Crew $49 / Shop $199 / Fleet $631. Contact: 
 - `POST /api/mcp`
 - Full list in `/api/spec` or `/docs`
 
+## Ten metered tools (live)
+
+Behind the toll gates at `https://agentrider.fly.dev/api/toll/tools/<name>` — per-unit pricing, signed ES256 toll receipts on pass AND refuse, fail-closed, sandbox key `sk_sandbox_demo` for zero-side-effect tries. Machine-readable pricing: `GET /api/toll/schema`.
+
+| Tool | Endpoint | Price |
+|---|---|---|
+| pcc-compress | `/api/toll/tools/pcc-compress` | $0.01/MB in |
+| pcc-verify | `/api/toll/tools/pcc-verify` | $0.02 |
+| attest-notarize | `/api/toll/tools/attest-notarize` | $0.01 |
+| attest-exactness | `/api/toll/tools/attest-exactness` | $0.05 |
+| exactodds-draw | `/api/toll/tools/exactodds-draw` | $0.01 |
+| exactodds-resolve | `/api/toll/tools/exactodds-resolve` | $0.02 |
+| cuni-proof | `/api/toll/tools/cuni-proof` | $0.10 |
+| trustream-pack | `/api/toll/tools/trustream-pack` | $0.01/MB in |
+| chamber-seal | `/api/toll/tools/chamber-seal` | $0.02 |
+| awlpay-quote | `/api/toll/tools/awlpay-quote` | $0.005 |
+
 ## Architecture
 
 - Next.js App Router (TypeScript)
