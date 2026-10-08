@@ -34,7 +34,11 @@
     "selftest:toll-public-attest": "node lib/toll-public-attest.selftest.mjs",
     "selftest:toll-rotation": "node lib/toll-rotation.selftest.mjs",
     "selftest:referral-bonus": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/referral-bonus.selftest.mjs",
-    "selftest:promo": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/promo.selftest.mjs"
+    "selftest:promo": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/promo.selftest.mjs",
+    "selftest:rider-renewal": "SELFTEST_DISK_ONLY=1 node --import ./lib/ts-alias.hooks.mjs lib/rider-renewal.selftest.mjs",
+    "selftest:toll-tools-1": "node lib/toll-tools-wave1.selftest.mjs",
+    "selftest:toll-tools-2": "node lib/toll-tools-wave2.selftest.mjs",
+    "selftest:toll-tools-3": "node lib/toll-tools-wave3.selftest.mjs"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.56.0",

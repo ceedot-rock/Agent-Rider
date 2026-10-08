@@ -173,3 +173,48 @@ export async function sandboxV5(req: NextRequest) {
   const out = sandboxV5Decide({ artifact: body?.artifact, claim: body?.claim });
   return sandboxJson(out);
 }
+
+// ── Toll Tools: generic sandbox branch ──────────────────────────────────
+// Each tool route calls sandboxTool(req, "<tool-name>", validateFn) when the
+// request carries the demo key. The validator is the SAME function the live
+// route uses (imported from the wave's core module), so sandbox and live
+// agree on input shape. Sandbox never signs, writes, meters, or dispatches:
+// it returns the validation verdict only.
+
+export type ToolValidateResult =
+  | { ok: true; detail?: Record<string, unknown> }
+  | { ok: false; code: string; reason?: string };
+
+export async function sandboxTool(
+  req: NextRequest,
+  tool: string,
+  validate: (body: unknown) => ToolValidateResult
+) {
+  const body = await req.json().catch(() => null);
+  let v: ToolValidateResult;
+  try {
+    v = validate(body);
+  } catch {
+    return sandboxJson({
+      decision: "refuse",
+      refusal_code: "malformed_tool_request",
+      checks_run: ["input_shape", tool],
+      http_status: 400,
+    });
+  }
+  if (!v.ok) {
+    return sandboxJson({
+      decision: "refuse",
+      refusal_code: v.code,
+      reason: v.reason,
+      checks_run: ["input_shape", tool],
+      http_status: 400,
+    });
+  }
+  return sandboxJson({
+    decision: "allow",
+    refusal_code: null,
+    checks_run: ["input_shape", tool],
+    detail: v.detail ?? {},
+  });
+}
