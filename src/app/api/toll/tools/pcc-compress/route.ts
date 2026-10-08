@@ -121,6 +121,9 @@ export async function POST(req: NextRequest) {
       },
       payer: { kind: payer.kind, payer_id: payer.payer_id },
       ...outcome.detail,
+      // The compressed bytes themselves (response body only — the signed
+      // receipt carries hashes, not the blob).
+      ...(outcome.blob_base64 ? { blob_base64: outcome.blob_base64 } : {}),
     },
     { headers: TOOL_CORS_HEADERS }
   );

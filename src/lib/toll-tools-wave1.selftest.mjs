@@ -124,6 +124,7 @@ if (!haveBinary) {
     ok(res.detail.bytes_out === blob.length, "compress detail bytes_out matches real binary");
     ok(res.detail.sha256_in === createHash("sha256").update(raw).digest("hex"), "compress sha256_in correct");
     ok(res.detail.sha256_out === createHash("sha256").update(blob).digest("hex"), "compress sha256_out correct");
+    ok(typeof res.blob_base64 === "string" && Buffer.from(res.blob_base64, "base64").equals(blob), "compress returns the actual blob bytes (response body, not receipt)");
     ok(res.detail.ratio < 1000, "compress ratio < 1000 (per-mille) on compressible input");
     ok(Number.isInteger(res.detail.ratio), "compress ratio is an integer (no floats in receipts)");
 

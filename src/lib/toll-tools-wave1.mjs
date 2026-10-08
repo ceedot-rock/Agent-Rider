@@ -225,6 +225,9 @@ export async function runPccCompress({ data_base64, decoded }) {
         sha256_in,
         sha256_out: sha256Hex(outBuf),
       },
+      // The actual product. Kept OUT of the receipt detail (the receipt
+      // carries hashes; the response body carries the bytes).
+      blob_base64: outBuf.toString("base64"),
     };
   });
   return result;
