@@ -157,3 +157,97 @@ refinement:
 - Override the demo key with `TOLL_SANDBOX_DEMO_KEY` (it must not start
   with `ar_`; if it does, sandbox detection disables itself fail-safe).
 - Tests: `cd src && npm run selftest:toll-sandbox` (82 assertions).
+
+---
+
+# Public attestation (no account)
+
+**"POST a payload, get a signed receipt, verify locally."**
+
+`POST /api/toll/public/attest` — no auth, no account, no billing, no
+metering, no DB writes. Anyone can get a lab-signed receipt envelope and
+verify it offline against `/.well-known/jwks.json` with standard ES256
+tooling. The receipt never phones home.
+
+Two shapes (send exactly one):
+
+| Body | Attests |
+|---|---|
+| `{"payload": {...}}` | Notarization — "the lab saw this exact payload at time T" (payload hashed into the receipt) |
+| `{"artifact": {...}, "claim": {...}}` | Exactness — runs the same check as the v5 toll gate; attests match/mismatch |
+
+Every receipt payload carries `type: "public-attestation"`, `version: 1`,
+`mode: "notarization" | "exactness"`, `issuer: "slid-phi-labs"`, and a
+timestamp. Envelope is the standard `{payload, sig, kid, alg: "ES256"}`.
+
+## Limits (abuse guards)
+
+- 64 KB raw body cap → `413 payload_too_large`
+- Floats refused → `400 floats_refused` (integer-exact canonicalization)
+- Per-IP 60 requests/hour → `429 rate_limited` with `retry_after`
+  (override with `PUBLIC_ATTEST_MAX_PER_HOUR`; in-process, no DB)
+- Missing signing key → `500 signing_unavailable` — fail closed, an
+  unsigned receipt is never returned
+
+## Examples
+
+### Notarization
+
+```bash
+curl -s https://agentrider.fly.dev/api/toll/public/attest \
+  -H "Content-Type: application/json" \
+  -d '{"payload":{"treaty":"signed","parties":2}}' | python3 -m json.tool
+# → {"public": true, "live": true, "mode": "notarization",
+#    "envelope": {"payload": {"type":"public-attestation","version":1,
+#      "mode":"notarization","issuer":"slid-phi-labs",
+#      "payload_hash":"222559ef…","attested_at":1791476389},
+#      "sig":"…","kid":"wr719uYqdFTNlnVKumbmyAcbDqIidey6xupdXHV19jw","alg":"ES256"},
+#    "verify": {"jwks_url": "/.well-known/jwks.json", ...}}
+```
+
+### Exactness check (same pipeline as the v5 toll gate)
+
+The claim must equal the sha256 of the canonical artifact JSON. Compute
+it with the repo's own canonicalizer (sorted keys — plain
+`JSON.stringify` will not match):
+
+```bash
+STDOUT=$(cd ~/workspace/Agent-Rider/src && node --input-type=module -e "
+import { canonicalJson } from './lib/toll-receipt-core.mjs';
+import { createHash } from 'node:crypto';
+const art = { lang: 'python', code: 'print(1)' };
+process.stdout.write(createHash('sha256').update(canonicalJson({ artifact: art }), 'utf8').digest('hex'));")
+
+curl -s https://agentrider.fly.dev/api/toll/public/attest \
+  -H "Content-Type: application/json" \
+  -d '{"artifact":{"lang":"python","code":"print(1)"},"claim":{"stdout":"'"$STDOUT"'"}}'
+# → {"public": true, "mode": "exactness", "result": "pass", "envelope": {...}}
+```
+
+A wrong claim returns `"result": "refuse"` — still a signed receipt,
+attesting the negative outcome.
+
+### Verify offline (no server contact)
+
+```bash
+# 1. Save the envelope from any response above to /tmp/env.json
+# 2. Fetch the lab JWKS once (cache it — it outlives us):
+curl -s https://agentrider.fly.dev/.well-known/jwks.json > /tmp/jwks.json
+
+# 3. Verify with any JOSE tooling. Node example:
+cd ~/workspace/Agent-Rider/src && node --input-type=module <<'EOF'
+import { readFileSync } from 'node:fs';
+import { verifyTollEnvelope } from './lib/toll-receipt-core.mjs';
+const { envelope } = JSON.parse(readFileSync('/tmp/env.json', 'utf8'));
+const jwks = JSON.parse(readFileSync('/tmp/jwks.json', 'utf8'));
+const payload = verifyTollEnvelope(envelope, jwks); // throws on any failure
+console.log('verified offline:', JSON.stringify(payload));
+EOF
+```
+
+## What it does NOT do
+
+- No account, no API key, no Stripe, no metering rows, no settlement.
+- The demo sandbox key (`sk_sandbox_demo`) is rejected here like any
+  other credential — this endpoint needs none.
+- Tests: `cd src && npm run selftest:toll-public-attest` (43 assertions).
