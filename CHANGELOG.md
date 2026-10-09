@@ -9,6 +9,7 @@ Live service: https://agentrider.fly.dev
 ## [Unreleased]
 
 - Audited CI checks (version/license coherence, secret scan) — workflow staged; requires a token with `workflow` scope to land
+- Rider auto-renewal: `POST /api/rider/issue` now also returns a `renewal_token` (opaque `rrt_` bearer, SHA-256 hash stored only, 30d default via server env `RIDER_RENEWAL_TTL_SECONDS`); new `POST /api/rider/renew` exchanges it for a fresh 15m rider with single-use rotation and reuse-detection chain revocation; new `POST /api/rider/renew/revoke` kills a renewal chain independently. Riders stay 15m fixed — no expiry knob anywhere
 
 ---
 
