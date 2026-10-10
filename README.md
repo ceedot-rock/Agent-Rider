@@ -1,3 +1,7 @@
+> **This repo has moved into the verse.** Development continues at
+> [ceedot-rock/RiderVerse](https://github.com/ceedot-rock/RiderVerse), in folder Agent-Rider/.
+> This copy is archived and read-only - history preserved, nothing lost.
+
 # Agent-Rider
 
 ## What Agent Rider is
