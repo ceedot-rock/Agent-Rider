@@ -20,6 +20,22 @@ export interface RiderPayload {
 const ISSUER = "agentrider.dev";
 const DEFAULT_TTL_SECONDS = 15 * 60;
 
+/**
+ * Effectively unending TTL for designated long-lived seats (lab riders).
+ * Set RIDER_LONG_LIVED_AGENT_IDS to a comma-separated list of agent_ids.
+ * 10 years keeps the exp claim (verifiers that require exp stay happy)
+ * while never expiring in practice. Revocation still works via kid/JWKS.
+ */
+const LONG_LIVED_TTL_SECONDS = 10 * 365 * 24 * 60 * 60;
+
+function ttlForAgent(agentId: string): number {
+  const list = (process.env.RIDER_LONG_LIVED_AGENT_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.includes(agentId) ? LONG_LIVED_TTL_SECONDS : DEFAULT_TTL_SECONDS;
+}
+
 function riderPems(): { privatePem: string; publicPem: string } {
   const privatePem = process.env.RIDER_PRIVATE_KEY;
   const publicPem = process.env.RIDER_PUBLIC_KEY;
@@ -95,17 +111,18 @@ export async function getJwks(): Promise<{
 
 export async function issueRider(
   payload: Omit<RiderPayload, "jti">,
-  ttlSeconds: number = DEFAULT_TTL_SECONDS
+  ttlSeconds?: number
 ): Promise<{ token: string; jti: string; expires_in: number }> {
+  const ttl = ttlSeconds ?? ttlForAgent(payload.agent_id);
   const jti = crypto.randomUUID();
   const [key, jwk] = await Promise.all([getSigningKey(), getPublicJwk()]);
   const token = await new SignJWT({ ...payload, jti })
     .setProtectedHeader({ alg: "ES256", typ: "JWT", kid: jwk.kid })
     .setIssuer(ISSUER)
     .setIssuedAt()
-    .setExpirationTime(Math.floor(Date.now() / 1000) + ttlSeconds)
+    .setExpirationTime(Math.floor(Date.now() / 1000) + ttl)
     .sign(key);
-  return { token, jti, expires_in: ttlSeconds };
+  return { token, jti, expires_in: ttl };
 }
 
 export interface VerifyResult {
