@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { issueRider, riderAuthErrorBody, type ClearanceLevel } from "@/lib/rider";
+import { issueRider, riderAuthErrorBody, type ClearanceLevel, type RiderPayload } from "@/lib/rider";
+import { tryMintRenewalToken } from "@/lib/rider-renewal";
 import { findSubscriptionByMerchantKey } from "@/lib/stripe";
 import { resolveById, resolveByApiKey } from "@/lib/agents";
 import { getBlendedTrustScore } from "@/lib/reputation";
@@ -112,12 +113,16 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
     const rl = await checkRiderIssueLimit(`sandbox:${ip}`);
     if (!rl.ok) return rateLimited(rl.retryAfter);
-    const { token, jti, expires_in } = await issueRider(sandboxIssuePayload());
+    const sandboxClaims = sandboxIssuePayload();
+    const { token, jti, expires_in } = await issueRider(sandboxClaims);
+    const renewal = await tryMintRenewalToken(sandboxClaims.agent_id, sandboxClaims);
     return NextResponse.json(
       {
         rider: token,
         jti,
         expires_in,
+        renewal_token: renewal?.renewal_token ?? null,
+        renewal_expires_in: renewal?.renewal_expires_in ?? null,
         header_to_send: "X-Agent-Rider",
         mode: "sandbox",
         cash_face: "https://www.slidphilabs.com/pcc",
@@ -175,7 +180,7 @@ export async function POST(req: NextRequest) {
     const participant = await resolveById(agent_id).catch(() => null);
     const reputation_score = participant ? await getBlendedTrustScore(agent_id) : undefined;
 
-    const { token, jti, expires_in } = await issueRider({
+    const merchantClaims: Omit<RiderPayload, "jti"> = {
       agent_id,
       operator_id,
       level: requestedLevel,
@@ -183,10 +188,19 @@ export async function POST(req: NextRequest) {
       reputation_score,
       layer_from: "agent",
       layer_to: "human",
-    });
+    };
+    const { token, jti, expires_in } = await issueRider(merchantClaims);
+    const renewal = await tryMintRenewalToken(agent_id, merchantClaims);
 
     return NextResponse.json(
-      { rider: token, jti, expires_in, header_to_send: "X-Agent-Rider" },
+      {
+        rider: token,
+        jti,
+        expires_in,
+        renewal_token: renewal?.renewal_token ?? null,
+        renewal_expires_in: renewal?.renewal_expires_in ?? null,
+        header_to_send: "X-Agent-Rider",
+      },
       { headers: CORS_HEADERS }
     );
   }
@@ -208,7 +222,7 @@ export async function POST(req: NextRequest) {
     LEVEL_RANK[requestedLevel] < LEVEL_RANK[SELF_SERVICE_MAX_LEVEL] ? requestedLevel : SELF_SERVICE_MAX_LEVEL;
   const reputation_score = await getBlendedTrustScore(participant.id);
 
-  const { token, jti, expires_in } = await issueRider({
+  const selfClaims: Omit<RiderPayload, "jti"> = {
     agent_id: participant.id,
     operator_id: participant.operatorId ?? "self",
     level,
@@ -216,10 +230,19 @@ export async function POST(req: NextRequest) {
     reputation_score,
     layer_from: participant.type,
     layer_to: "human",
-  });
+  };
+  const { token, jti, expires_in } = await issueRider(selfClaims);
+  const renewal = await tryMintRenewalToken(participant.id, selfClaims);
 
   return NextResponse.json(
-    { rider: token, jti, expires_in, header_to_send: "X-Agent-Rider" },
+    {
+      rider: token,
+      jti,
+      expires_in,
+      renewal_token: renewal?.renewal_token ?? null,
+      renewal_expires_in: renewal?.renewal_expires_in ?? null,
+      header_to_send: "X-Agent-Rider",
+    },
     { headers: CORS_HEADERS }
   );
 }

@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+title: Agent-Rider
+message: If you use this software, please cite it as below.
+version: 2.1.0
+date-released: '2026-09-09'
+authors:
+  - family-names: Tasz
+    given-names: Corey
+    affiliation: Slid Phi Labs
+    email: corey@slidphilabs.com
+repository-code: 'https://github.com/ceedot-rock/Agent-Rider'
+url: 'https://agentrider.fly.dev'
+license: AGPL-3.0-or-later
+abstract: >-
+  A network where AI agents operate under their own signed names: verifiable
+  identity, spending limits (Warrants), and a signed receipt for every job.

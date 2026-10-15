@@ -1,8 +1,12 @@
 /**
  * Tollkeeper signed receipts — typed wrapper.
  * Pure logic lives in toll-receipt-core.mjs (selftest-importable, node:crypto).
- * Production signing key: the existing RIDER_PRIVATE_KEY / RIDER_PUBLIC_KEY
- * ES256 pair (same lab key as rider.ts). kid is the RFC 7638 JWK thumbprint.
+ *
+ * Production signing key: the DEDICATED TOLL_SIGNING_KEY ES256 pair — never
+ * the Rider identity key. kid is the RFC 7638 JWK thumbprint. The JWKS
+ * carries the Rider identity key (backwards compat), the current toll
+ * signer, previous toll signers in their grace period, and a "revoked" list;
+ * verifiers must reject unknown_kid and revoked_kid. See ROTATION.md.
  */
 
 import type { KeyObject } from "node:crypto";
@@ -10,6 +14,11 @@ import {
   TollReceiptError as TollReceiptErrorJs,
   canonicalJson as canonicalJsonJs,
   tollSignerKid as tollSignerKidJs,
+  tollPublicJwk as tollPublicJwkJs,
+  riderPublicJwk as riderPublicJwkJs,
+  previousTollPublicJwks as previousTollPublicJwksJs,
+  parseRevokedKids as parseRevokedKidsJs,
+  tollJwks as tollJwksJs,
   signTollPayload as signTollPayloadJs,
   verifyTollEnvelope as verifyTollEnvelopeJs,
   verifyTollEnvelopeOk as verifyTollEnvelopeOkJs,
@@ -45,6 +54,47 @@ export function canonicalJson(payload: unknown): string {
 
 export function tollSignerKid(publicKeyPem?: string): string {
   return tollSignerKidJs(publicKeyPem) as string;
+}
+
+export interface TollPublicJwk extends Record<string, unknown> {
+  kid: string;
+  alg: string;
+  use: string;
+}
+
+/** Public JWK of the dedicated toll signer (derived from TOLL_SIGNING_KEY). */
+export function tollPublicJwk(): TollPublicJwk {
+  return tollPublicJwkJs() as TollPublicJwk;
+}
+
+/** Public JWK of the Rider identity key (backwards compat). */
+export function riderPublicJwk(): TollPublicJwk {
+  return riderPublicJwkJs() as TollPublicJwk;
+}
+
+/** Previous toll-signer public keys still in their rotation grace period. */
+export function previousTollPublicJwks(raw?: string): TollPublicJwk[] {
+  return previousTollPublicJwksJs(raw) as TollPublicJwk[];
+}
+
+export interface RevokedKid {
+  kid: string;
+  revoked_at: string;
+}
+
+/** Parsed TOLL_REVOKED_KIDS list. */
+export function parseRevokedKids(raw?: string): RevokedKid[] {
+  return parseRevokedKidsJs(raw) as RevokedKid[];
+}
+
+export interface TollJwks {
+  keys: TollPublicJwk[];
+  revoked: RevokedKid[];
+}
+
+/** JWKS for toll-signer verification: current + previous keys, revoked list. */
+export function tollJwks(): TollJwks {
+  return tollJwksJs() as TollJwks;
 }
 
 export function signTollPayload(
@@ -96,7 +146,7 @@ export function jwksForTest(
   >;
 }
 
-/** Lab JWKS for verifying lab-sealed envelopes (from RIDER_PUBLIC_KEY). */
-export function labJwks(): { keys: Array<Record<string, unknown>> } {
-  return labJwksJs() as { keys: Array<Record<string, unknown>> };
+/** Lab JWKS for verifying lab-sealed envelopes: Rider key + toll signer(s) + revoked list. */
+export function labJwks(): TollJwks {
+  return labJwksJs() as TollJwks;
 }

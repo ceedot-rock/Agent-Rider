@@ -3,6 +3,7 @@ import { checkMonthlyUsage } from "@/lib/rate-limit";
 import { reportToll5Check } from "@/lib/stripe";
 import { isToll5CheckLive, TOLL5_CHECK_OFF_BODY } from "@/lib/toll-flags";
 import { isTollPayerOk, resolveTollPayer } from "@/lib/toll-billing";
+import { isSandboxRequest, sandboxV5 } from "@/lib/toll-sandbox";
 import { signTollPayload } from "@/lib/toll-receipt";
 import { getDB } from "@/lib/db";
 import {
@@ -41,6 +42,12 @@ function bad(status: number, error: string, extra?: Record<string, unknown>) {
 export async function POST(req: NextRequest) {
   if (!isToll5CheckLive()) {
     return NextResponse.json(TOLL5_CHECK_OFF_BODY, { status: 503, headers: CORS_HEADERS });
+  }
+
+  // Corruption sandbox: the public demo key runs the full validation
+  // pipeline with zero side effects. It can never authorize real dispatch.
+  if (isSandboxRequest(req)) {
+    return sandboxV5(req);
   }
 
   const payer = await resolveTollPayer(req);

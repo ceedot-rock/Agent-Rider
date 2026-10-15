@@ -17,6 +17,10 @@ export interface TollEndpointSchema {
   example: Record<string, unknown>;
 }
 
+import { TOOL_SCHEMAS_WAVE1 } from "./toll-tools-schemas-wave1";
+import { TOOL_SCHEMAS_WAVE2 } from "./toll-tools-schemas-wave2";
+import { TOOL_SCHEMAS_WAVE3 } from "./toll-tools-schemas-wave3";
+
 const TOLL_AUTH =
   "Authorization: Bearer ar_… (toll API key from POST /api/agents) or X-Merchant-Key (caller pays)";
 
@@ -264,6 +268,10 @@ export const TOLL_SCHEMAS: TollEndpointSchema[] = [
     },
     example: { agent_id: "a4fbaf7cafaf3016", to_host: "host-b", memories: [] },
   },
+  // ── Toll Tools shelf (10 metered micro-tools) ──────────────────────────
+  ...TOOL_SCHEMAS_WAVE1,
+  ...TOOL_SCHEMAS_WAVE2,
+  ...TOOL_SCHEMAS_WAVE3,
 ];
 
 export function tollSchemaDoc() {

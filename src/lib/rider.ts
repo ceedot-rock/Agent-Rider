@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify, importPKCS8, importSPKI, exportJWK, calculateJwkThumbprint, type CryptoKey, type JWK } from "jose";
 import { getDB } from "@/lib/db";
+import { tollPublicJwk, previousTollPublicJwks, parseRevokedKids } from "@/lib/toll-receipt";
 
 export type ClearanceLevel = "L0" | "L1" | "L2" | "L3" | "L4";
 
@@ -18,6 +19,22 @@ export interface RiderPayload {
 
 const ISSUER = "agentrider.dev";
 const DEFAULT_TTL_SECONDS = 15 * 60;
+
+/**
+ * Effectively unending TTL for designated long-lived seats (lab riders).
+ * Set RIDER_LONG_LIVED_AGENT_IDS to a comma-separated list of agent_ids.
+ * 10 years keeps the exp claim (verifiers that require exp stay happy)
+ * while never expiring in practice. Revocation still works via kid/JWKS.
+ */
+const LONG_LIVED_TTL_SECONDS = 10 * 365 * 24 * 60 * 60;
+
+function ttlForAgent(agentId: string): number {
+  const list = (process.env.RIDER_LONG_LIVED_AGENT_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.includes(agentId) ? LONG_LIVED_TTL_SECONDS : DEFAULT_TTL_SECONDS;
+}
 
 function riderPems(): { privatePem: string; publicPem: string } {
   const privatePem = process.env.RIDER_PRIVATE_KEY;
@@ -62,23 +79,50 @@ async function getPublicJwk(): Promise<JWK & { kid: string }> {
   return publicJwkPromise;
 }
 
-export async function getJwks(): Promise<{ keys: (JWK & { kid: string })[] }> {
-  return { keys: [await getPublicJwk()] };
+export interface RevokedKidEntry {
+  kid: string;
+  revoked_at: string;
+}
+
+/**
+ * The published verifier contract (see ROTATION.md).
+ *
+ * keys: the Rider identity key (backwards compat — receipts minted before
+ * the dedicated toll signer still verify) + the current dedicated toll
+ * signer + any previous toll signers still in their rotation grace period.
+ * revoked: kids that MUST fail closed with "revoked_kid", listed with
+ * revoked_at timestamps and never silently dropped.
+ *
+ * Verifiers: fetch this JWKS (cache ≤1h per our Cache-Control), reject
+ * unknown_kid, reject revoked_kid. A verifier that cannot fetch the JWKS
+ * must refuse — never verify against a stale snapshot silently.
+ */
+export async function getJwks(): Promise<{
+  keys: (JWK & { kid: string })[];
+  revoked: RevokedKidEntry[];
+}> {
+  const keys: (JWK & { kid: string })[] = [await getPublicJwk()];
+  if (process.env.TOLL_SIGNING_KEY) {
+    keys.push(tollPublicJwk() as JWK & { kid: string });
+    for (const prev of previousTollPublicJwks()) keys.push(prev as JWK & { kid: string });
+  }
+  return { keys, revoked: parseRevokedKids() };
 }
 
 export async function issueRider(
   payload: Omit<RiderPayload, "jti">,
-  ttlSeconds: number = DEFAULT_TTL_SECONDS
+  ttlSeconds?: number
 ): Promise<{ token: string; jti: string; expires_in: number }> {
+  const ttl = ttlSeconds ?? ttlForAgent(payload.agent_id);
   const jti = crypto.randomUUID();
   const [key, jwk] = await Promise.all([getSigningKey(), getPublicJwk()]);
   const token = await new SignJWT({ ...payload, jti })
     .setProtectedHeader({ alg: "ES256", typ: "JWT", kid: jwk.kid })
     .setIssuer(ISSUER)
     .setIssuedAt()
-    .setExpirationTime(Math.floor(Date.now() / 1000) + ttlSeconds)
+    .setExpirationTime(Math.floor(Date.now() / 1000) + ttl)
     .sign(key);
-  return { token, jti, expires_in: ttlSeconds };
+  return { token, jti, expires_in: ttl };
 }
 
 export interface VerifyResult {
