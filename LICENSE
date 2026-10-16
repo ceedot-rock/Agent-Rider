@@ -4,7 +4,7 @@ Agent-Rider is available under two licenses. You choose one.
    See LICENSE.AGPL-3.0
    Official text: https://www.gnu.org/licenses/agpl-3.0.txt
 
-2. Slid Phi Labs Commercial License
+2. SLID PHI LABS LLC Commercial License
    See LICENSE.COMMERCIAL
    Use this if you do not want AGPL source obligations,
    or if you offer Agent-Rider or a derivative as a hosted
@@ -14,6 +14,6 @@ Not covered by either license:
 signing keys, production data, residual/CDDG engines,
 operator dashboard, Autonoma/Blackjack, PCC (hosted lossless; private encoder stays private).
 
-Copyright (c) 2026 Slid Phi Labs / Corey Tasz.
+Copyright (c) 2026 SLID PHI LABS LLC.
 Seats and current terms: https://www.slidphilabs.com/licensing.json
 Contact: corey@slidphilabs.com
