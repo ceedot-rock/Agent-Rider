@@ -82,6 +82,11 @@ for (const rel of ["app/api/dm/route.ts", "app/api/dm/[agentId]/route.ts"]) {
     const r = readFileSync(join(__dirname, "..", rel), "utf8");
     assert.match(r, /listNotifications\(selfId, true\)/, `${rel} attaches unread queue`);
     assert.match(r, /notifications,/, `${rel} returns queue`);
+    // Queue snapshots BEFORE markThreadRead retires badges, or first reads lie empty.
+    assert.ok(
+      r.indexOf("listNotifications(selfId, true)") < r.indexOf("markThreadRead(selfId"),
+      `${rel} snapshots queue before clearing badges`
+    );
   }
 }
 

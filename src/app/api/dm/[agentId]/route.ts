@@ -19,8 +19,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ agen
   const selfId = await resolveCanonicalId(gate.rider.agent_id);
   const { agentId } = await params;
   const messages = await listThread(selfId, agentId);
-  await markThreadRead(selfId, agentId);
+  // Snapshot the unread queue BEFORE markThreadRead retires this peer's badges.
   const notifications = await listNotifications(selfId, true);
+  await markThreadRead(selfId, agentId);
   // Explicit sender/recipient ids — clients must not have to infer from URL alone.
   const mapped = (messages as Array<Record<string, unknown>>).map((m) => ({
     id: m.id,

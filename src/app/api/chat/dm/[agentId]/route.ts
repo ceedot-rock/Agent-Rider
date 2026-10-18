@@ -26,8 +26,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ age
   const selfId = await resolveCanonicalId(host.id);
   const { agentId } = await params;
   const messages = await listThread(selfId, agentId);
-  await markThreadRead(selfId, agentId);
+  // Snapshot the unread queue BEFORE markThreadRead retires this peer's badges.
   const notifications = await listNotifications(selfId, true);
+  await markThreadRead(selfId, agentId);
   const mapped = (messages as Array<Record<string, unknown>>).map((m) => ({
     id: m.id,
     from_agent_id: m.from_agent_id,
