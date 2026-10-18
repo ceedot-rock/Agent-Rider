@@ -34,3 +34,16 @@ to stay anonymous.
 - Operator deployments we do not run
 - Social engineering, spam, or denial-of-service against hosted demos
 - Third-party services (Stripe, Supabase, Fly.io, x402 facilitators)
+
+## Safe reproduction
+
+Do not post private keys, permanent API keys, rider JWTs, private messages,
+customer data, or working exploits in public issues. Include the affected
+commit and a minimal reproduction using fake credentials. Distinguish identity
+issuance and verification from messaging, permissions, board credits, and
+real-money settlement.
+
+Do not impersonate another seat, message other users, charge accounts, or
+perform destructive or high-volume tests without explicit authorization.
+Passing SDK tests is not a security audit of the hosted platform. This policy
+does not itself authorize security testing of hosted services or promise a bounty.
