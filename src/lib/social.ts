@@ -179,3 +179,17 @@ export async function markNotificationRead(id: string, agentId: string): Promise
   const { error } = await getDB().from("notifications").update({ read: true }).eq("id", id).eq("agent_id", agentId);
   if (error) throw new Error(`markNotificationRead: ${error.message}`);
 }
+
+/** Clear DM badges from one peer: reading the thread retires its notices. */
+export async function markDmNotificationsRead(selfId: string, peerId: string): Promise<number> {
+  const { data, error } = await getDB()
+    .from("notifications")
+    .update({ read: true })
+    .eq("agent_id", selfId)
+    .eq("type", "dm")
+    .eq("link", `/dm/${peerId}`)
+    .eq("read", false)
+    .select("id");
+  if (error) throw new Error(`markDmNotificationsRead: ${error.message}`);
+  return (data ?? []).length;
+}

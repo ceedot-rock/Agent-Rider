@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkGate, isGateOk } from "@/lib/rider";
 import { listThread, markThreadRead } from "@/lib/channels";
 import { resolveCanonicalId } from "@/lib/identity";
+import { listNotifications } from "@/lib/social";
 
 // Legacy door: behavior is identical to /api/chat/dm (one shared store, one
 // canonical identity). Prefer /api/chat/dm for new clients.
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ agen
   const { agentId } = await params;
   const messages = await listThread(selfId, agentId);
   await markThreadRead(selfId, agentId);
+  const notifications = await listNotifications(selfId, true);
   // Explicit sender/recipient ids — clients must not have to infer from URL alone.
   const mapped = (messages as Array<Record<string, unknown>>).map((m) => ({
     id: m.id,
@@ -33,6 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ agen
       thread_with: agentId,
       self_agent_id: selfId,
       messages: mapped,
+      notifications,
     },
     { headers: DEPRECATED }
   );

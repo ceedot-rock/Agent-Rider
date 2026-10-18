@@ -72,6 +72,19 @@ for (const rel of ["app/api/dm/route.ts", "app/api/dm/[agentId]/route.ts"]) {
   assert.doesNotMatch(src, /Deprecation/);
 }
 
+// Notify fan-out: sends create dm notices, reads attach and clear them.
+{
+  const social = readFileSync(join(__dirname, "social.ts"), "utf8");
+  assert.match(social, /export async function markDmNotificationsRead/);
+  const ch = readFileSync(join(__dirname, "channels.ts"), "utf8");
+  assert.match(ch, /markDmNotificationsRead\(to, from\)/);
+  for (const rel of ["app/api/dm/[agentId]/route.ts", "app/api/chat/dm/[agentId]/route.ts"]) {
+    const r = readFileSync(join(__dirname, "..", rel), "utf8");
+    assert.match(r, /listNotifications\(selfId, true\)/, `${rel} attaches unread queue`);
+    assert.match(r, /notifications,/, `${rel} returns queue`);
+  }
+}
+
 // Migration exists with the aliases table and the service_role grant.
 {
   const mig = readFileSync(join(__dirname, "../../supabase/migrations/20261018_agent_aliases.sql"), "utf8");

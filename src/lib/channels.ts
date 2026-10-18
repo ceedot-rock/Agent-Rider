@@ -1,5 +1,5 @@
 import { getDB } from "@/lib/db";
-import { createNotification } from "@/lib/social";
+import { createNotification, markDmNotificationsRead } from "@/lib/social";
 import { getHostChatRoster } from "@/lib/host-chat-roster";
 import { resolveCanonicalId } from "@/lib/identity";
 
@@ -191,4 +191,10 @@ export async function markThreadRead(agentId: string, fromId: string): Promise<v
     .eq("from_agent_id", from)
     .eq("read", false);
   if (error) throw new Error(`markThreadRead: ${error.message}`);
+  // Badge-clearing must never fail the read itself.
+  try {
+    await markDmNotificationsRead(to, from);
+  } catch {
+    /* notifications stay; next read retries */
+  }
 }
