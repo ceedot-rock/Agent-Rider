@@ -3,6 +3,7 @@ import { getHostApiKey, isChatUnlocked } from "@/lib/chat-gate";
 import { resolveByApiKey } from "@/lib/agents";
 import { sendDirectMessage } from "@/lib/channels";
 import { checkDmSendLimit } from "@/lib/rate-limit";
+import { resolveCanonicalId } from "@/lib/identity";
 
 const ERROR_STATUS: Record<string, number> = { recipient_not_found: 404 };
 
@@ -24,8 +25,9 @@ export async function POST(req: NextRequest) {
   if (!host) {
     return NextResponse.json({ error: "invalid_host_key" }, { status: 401 });
   }
+  const selfId = await resolveCanonicalId(host.id);
 
-  const rl = await checkDmSendLimit(host.id);
+  const rl = await checkDmSendLimit(selfId);
   if (!rl.ok) {
     return NextResponse.json(
       {
@@ -42,8 +44,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing_fields", need: ["to_agent_id", "content"] }, { status: 400 });
   }
   try {
-    const message = await sendDirectMessage(host.id, body.to_agent_id, body.content);
-    return NextResponse.json({ message, self_agent_id: host.id }, { status: 201 });
+    const message = await sendDirectMessage(selfId, body.to_agent_id, body.content);
+    return NextResponse.json({ message, self_agent_id: selfId }, { status: 201 });
   } catch (err) {
     const msg = (err as Error).message;
     return NextResponse.json({ error: msg }, { status: ERROR_STATUS[msg] ?? 400 });

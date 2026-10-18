@@ -1,6 +1,7 @@
 import { getDB } from "@/lib/db";
 import { createNotification } from "@/lib/social";
 import { getHostChatRoster } from "@/lib/host-chat-roster";
+import { resolveCanonicalId } from "@/lib/identity";
 
 // Channels (topic rooms) and direct messages — ported from AgentNet's
 // Lovable UI. Channels are seeded/curated, not agent-created (matching the
@@ -146,33 +147,35 @@ export async function listChannelMessages(channelId: string, limit = 50) {
 // ── Direct messages ───────────────────────────────────────────────────────
 
 export async function sendDirectMessage(fromId: string, toId: string, content: string) {
-  if (fromId === toId) throw new Error("cannot_message_self");
+  const from = await resolveCanonicalId(fromId);
+  const to = await resolveCanonicalId(toId);
+  if (from === to) throw new Error("cannot_message_self");
   if (content.trim().length === 0) throw new Error("content_required");
   if (content.length > 4000) throw new Error("content_too_long");
 
   const db = getDB();
-  const { data: recipient } = await db.from("participants").select("id").eq("id", toId).maybeSingle();
+  const { data: recipient } = await db.from("participants").select("id").eq("id", to).maybeSingle();
   if (!recipient) throw new Error("recipient_not_found");
 
   const { data, error } = await db
     .from("direct_messages")
-    .insert({ from_agent_id: fromId, to_agent_id: toId, content })
+    .insert({ from_agent_id: from, to_agent_id: to, content })
     .select("id, from_agent_id, to_agent_id, content, created_at, read")
     .single();
   if (error || !data) throw new Error(`sendDirectMessage: ${error?.message ?? "insert failed"}`);
 
-  await createNotification(toId, "dm", "New message", content.slice(0, 100), `/dm/${fromId}`);
+  await createNotification(to, "dm", "New message", content.slice(0, 100), `/dm/${from}`);
   return data;
 }
 
 // One thread between two agents — ordered oldest-first, like a chat window.
+// Both sides resolve through aliases first, so a remint never splits history.
 export async function listThread(agentIdA: string, agentIdB: string, limit = 100) {
+  const [a, b] = await Promise.all([resolveCanonicalId(agentIdA), resolveCanonicalId(agentIdB)]);
   const { data, error } = await getDB()
     .from("direct_messages")
     .select("*")
-    .or(
-      `and(from_agent_id.eq.${agentIdA},to_agent_id.eq.${agentIdB}),and(from_agent_id.eq.${agentIdB},to_agent_id.eq.${agentIdA})`
-    )
+    .or(`and(from_agent_id.eq.${a},to_agent_id.eq.${b}),and(from_agent_id.eq.${b},to_agent_id.eq.${a})`)
     .order("created_at", { ascending: true })
     .limit(Math.min(limit, 500));
   if (error) throw new Error(`listThread: ${error.message}`);
@@ -180,11 +183,12 @@ export async function listThread(agentIdA: string, agentIdB: string, limit = 100
 }
 
 export async function markThreadRead(agentId: string, fromId: string): Promise<void> {
+  const [to, from] = await Promise.all([resolveCanonicalId(agentId), resolveCanonicalId(fromId)]);
   const { error } = await getDB()
     .from("direct_messages")
     .update({ read: true })
-    .eq("to_agent_id", agentId)
-    .eq("from_agent_id", fromId)
+    .eq("to_agent_id", to)
+    .eq("from_agent_id", from)
     .eq("read", false);
   if (error) throw new Error(`markThreadRead: ${error.message}`);
 }

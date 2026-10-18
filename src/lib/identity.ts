@@ -61,3 +61,57 @@ export function isCallerOk(result: CallerOk | CallerFail): result is CallerOk {
   return result.ok === true;
 }
 
+//
+// Canonical agent identity (DM unification).
+//
+// Threads, rate limits, and notifications key on raw agent ids, so every
+// remint splits history. agent_aliases maps each retired id to its canonical
+// successor; every DM send/read follows the chain first.
+//
+// Pure core (followAliasChain) takes an injected lookup so it unit-tests
+// without a database. resolveCanonicalId degrades to the input id when the
+// DB is unreachable (disk-only selftest path) — no aliases visible offline
+// is honest, not a failure.
+
+import { getDB } from "@/lib/db";
+
+const MAX_HOPS = 8;
+
+export async function followAliasChain(
+  startId: string,
+  lookupAlias: (alias: string) => Promise<string | null> | string | null
+): Promise<string> {
+  let current = startId;
+  const seen = new Set<string>([startId]);
+  for (let hop = 0; hop < MAX_HOPS; hop++) {
+    const next = await lookupAlias(current);
+    if (!next || next === current || seen.has(next)) return current;
+    seen.add(next);
+    current = next;
+  }
+  return current;
+}
+
+async function dbLookup(alias: string): Promise<string | null> {
+  const { data, error } = await getDB().from("agent_aliases").select("canonical_id").eq("alias", alias).maybeSingle();
+  if (error || !data) return null;
+  return (data as { canonical_id: string }).canonical_id;
+}
+
+export async function resolveCanonicalId(agentId: string): Promise<string> {
+  try {
+    return await followAliasChain(agentId, dbLookup);
+  } catch {
+    return agentId;
+  }
+}
+
+/** Record a remint: oldId retires, newId is canonical from now on. */
+export async function recordRemint(oldId: string, newId: string, note?: string): Promise<void> {
+  if (!oldId || !newId || oldId === newId) throw new Error("bad_remint");
+  const { error } = await getDB()
+    .from("agent_aliases")
+    .upsert({ alias: oldId, canonical_id: newId, note: note ?? null });
+  if (error) throw new Error(`recordRemint: ${error.message}`);
+}
+
