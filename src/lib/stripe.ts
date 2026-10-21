@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { findSubscriptionByMerchantKeyWith } from "./merchant-key-core.mjs";
 
 function getStripe(): Stripe {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -22,7 +23,7 @@ export const stripe = new Proxy({} as Stripe, {
 });
 
 // 7-day free trial on every new Merchant Gate subscription. The rest of the
-// codebase already treats a `trialing` subscription as fully valid —
+// codebase already treats a `trialing` subscription as fully valid — 
 // /api/rider/issue and /api/verify both check ACTIVE_STATUSES = {"active",
 // "trialing"} — so a merchant can mint riders immediately during the trial,
 // no separate trial-specific gating needed. /api/provision's completion
@@ -108,11 +109,16 @@ export async function updateSubscriptionMetadata(
 
 // Stripe's Search API is eventually consistent — a subscription written
 // moments ago may not be found for a few seconds.
+//
+// The key comes straight from a request header or body, so it is untrusted.
+// merchant-key-core.mjs allowlists the exact key shape BEFORE a query is built
+// (a malformed key never reaches Stripe), then requires the stored metadata to
+// equal the presented key, so a search hit alone never grants access.
 export async function findSubscriptionByMerchantKey(key: string) {
-  const result = await stripe.subscriptions.search({
-    query: `metadata['merchant_key']:'${key}'`,
-  });
-  return result.data[0] ?? null;
+  return findSubscriptionByMerchantKeyWith(
+    (params) => stripe.subscriptions.search(params),
+    key
+  );
 }
 
 // Reports one billable /api/verify call above the free tier to Stripe's

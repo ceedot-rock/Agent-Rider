@@ -11,6 +11,7 @@
     "selftest:settle": "node lib/settle-hop.selftest.mjs",
     "selftest:file-share": "node lib/file-share.selftest.mjs",
     "selftest:identity": "node lib/identity.selftest.mjs",
+    "selftest:merchant-key": "node lib/merchant-key.selftest.mjs",
     "backfill:provenance": "node lib/backfill-provenance.mjs",
     "backfill:provenance:apply": "node lib/backfill-provenance.mjs --apply",
     "selftest:provenance": "node lib/provenance.selftest.mjs",

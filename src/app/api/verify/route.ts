@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findSubscriptionByMerchantKey, reportVerifyOverage } from "@/lib/stripe";
 import { checkMonthlyUsage } from "@/lib/rate-limit";
+import { isWellFormedMerchantKey, merchantKeyRef } from "@/lib/merchant-key-core.mjs";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
@@ -39,6 +40,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Strict allowlist before any lookup: a key that is not exactly the shape we
+  // issue never reaches Stripe, so it cannot be used to widen the search.
+  if (!isWellFormedMerchantKey(merchantKey)) {
+    return NextResponse.json(
+      { valid: false, error: "merchantKey malformed" },
+      { status: 400, headers: CORS_HEADERS }
+    );
+  }
+
   try {
     const subscription = await findSubscriptionByMerchantKey(merchantKey);
     const valid = !!subscription && ACTIVE_STATUSES.has(subscription.status);
@@ -50,7 +60,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const usage = await checkMonthlyUsage(`verify:${merchantKey}`, FREE_CALLS_PER_MONTH);
+    const usage = await checkMonthlyUsage(`verify:${merchantKeyRef(merchantKey)}`, FREE_CALLS_PER_MONTH);
     if (usage.overLimit) {
       const customerId =
         typeof subscription!.customer === "string" ? subscription!.customer : subscription!.customer.id;
