@@ -5,6 +5,7 @@
 
 import { resolveByApiKey } from "@/lib/agents";
 import { findSubscriptionByMerchantKey } from "@/lib/stripe";
+import { merchantKeyRef } from "@/lib/merchant-key-core.mjs";
 import { sandboxDemoKey } from "./toll-sandbox-core.mjs";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
@@ -87,7 +88,7 @@ export async function resolveTollPayer(req: Request): Promise<TollPayer> {
       return {
         ok: true,
         kind: "merchant",
-        payer_id: `merchant:${merchantKey.slice(0, 16)}`,
+        payer_id: `merchant:${merchantKeyRef(merchantKey)}`,
         stripe_customer_id: customerId,
         subscription_status: subscription.status,
       };
