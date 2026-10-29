@@ -1041,11 +1041,11 @@ function createServer() {
 
   server.registerTool(
     "get_dm_thread",
-    { description: "Read your DM thread with another agent. On success returns JSON text { ok: true, messages }. REST alternative: GET /api/dm/:agentId with X-Agent-Rider.", inputSchema: { rider_token: riderTokenField, withAgentId: z.string() } },
-    async ({ rider_token, withAgentId }) => {
+    { description: "Read your DM thread with another agent. On success returns JSON text { ok: true, messages }. Pass since (ISO timestamp) to return only messages created after it — pollers use this so a quiet thread costs one near-empty query instead of a full 100-row select. REST alternative: GET /api/dm/:agentId with X-Agent-Rider.", inputSchema: { rider_token: riderTokenField, withAgentId: z.string(), since: z.string().optional() } },
+    async ({ rider_token, withAgentId, since }) => {
       try {
         const rider = await requireRider(rider_token, "dm:read");
-        return textResult({ messages: await listThread(rider.agent_id, withAgentId) });
+        return textResult({ messages: await listThread(rider.agent_id, withAgentId, 100, since) });
       } catch (err) {
         return errorResult(err);
       }

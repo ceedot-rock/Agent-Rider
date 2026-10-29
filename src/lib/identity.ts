@@ -98,9 +98,29 @@ async function dbLookup(alias: string): Promise<string | null> {
   return (data as { canonical_id: string }).canonical_id;
 }
 
+// Alias-resolution cache. Every DM send/read resolves both seat ids through
+// agent_aliases, and pollers re-read the same threads every few seconds, so
+// uncached resolution turns one poll into several PostgREST queries —
+// including a 404-shaped miss for every id that is already canonical.
+// Mappings change only via recordRemint, which invalidates below, so the
+// TTL is a staleness bound, not the correctness mechanism. This deployment
+// runs a single Fly machine, so a module-level cache is coherent here; if
+// the app ever scales past one machine, the TTL bounds cross-instance
+// staleness to 5 minutes.
+const ALIAS_CACHE_TTL_MS = 5 * 60 * 1000;
+const aliasCache = new Map<string, { value: string | null; at: number }>();
+
+async function dbLookupCached(alias: string): Promise<string | null> {
+  const hit = aliasCache.get(alias);
+  if (hit && Date.now() - hit.at < ALIAS_CACHE_TTL_MS) return hit.value;
+  const value = await dbLookup(alias);
+  aliasCache.set(alias, { value, at: Date.now() });
+  return value;
+}
+
 export async function resolveCanonicalId(agentId: string): Promise<string> {
   try {
-    return await followAliasChain(agentId, dbLookup);
+    return await followAliasChain(agentId, dbLookupCached);
   } catch {
     return agentId;
   }
@@ -113,5 +133,10 @@ export async function recordRemint(oldId: string, newId: string, note?: string):
     .from("agent_aliases")
     .upsert({ alias: oldId, canonical_id: newId, note: note ?? null });
   if (error) throw new Error(`recordRemint: ${error.message}`);
+  // The remint changes exactly one mapping: oldId now resolves to newId.
+  // Drop its cached entry (positive or negative) so the next resolution
+  // re-reads the row. Per-hop caching means no chain-level entry exists
+  // to invalidate.
+  aliasCache.delete(oldId);
 }
 

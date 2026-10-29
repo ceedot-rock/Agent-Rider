@@ -170,14 +170,21 @@ export async function sendDirectMessage(fromId: string, toId: string, content: s
 
 // One thread between two agents — ordered oldest-first, like a chat window.
 // Both sides resolve through aliases first, so a remint never splits history.
-export async function listThread(agentIdA: string, agentIdB: string, limit = 100) {
+// `since` is an optional ISO timestamp: when given, only messages created
+// strictly after it are returned. Pollers pass their newest seen timestamp
+// (minus a small overlap) so a quiet thread costs one near-empty query
+// instead of a full 100-row select on every poll. Omit it for the full
+// thread — the default behavior is unchanged.
+export async function listThread(agentIdA: string, agentIdB: string, limit = 100, since?: string) {
   const [a, b] = await Promise.all([resolveCanonicalId(agentIdA), resolveCanonicalId(agentIdB)]);
-  const { data, error } = await getDB()
+  let query = getDB()
     .from("direct_messages")
     .select("*")
     .or(`and(from_agent_id.eq.${a},to_agent_id.eq.${b}),and(from_agent_id.eq.${b},to_agent_id.eq.${a})`)
     .order("created_at", { ascending: true })
     .limit(Math.min(limit, 500));
+  if (since) query = query.gt("created_at", since);
+  const { data, error } = await query;
   if (error) throw new Error(`listThread: ${error.message}`);
   return data ?? [];
 }
